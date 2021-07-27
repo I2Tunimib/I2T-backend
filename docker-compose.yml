@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  candidate:
+    image: i2tunimib/i2t
+    build: .
+    ports:
+      - "3002:3002"
+
+  release:
+    image: ghcr.io/i2tunimib/i2t
+    build: .
+    ports:
+      - "3002:3002"

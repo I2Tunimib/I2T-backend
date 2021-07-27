@@ -1,0 +1,128 @@
+#reconciliator services
+reconciliators:
+  - name: ASIA (wikifier)
+    #Cambia nome url myServerUrl (es)
+    relativeUrl: asia/reconcile/wikifier 
+    entityPageUrl: 
+    metaToViz: 
+      #possibilità di cambiare i nomi alle label dell'header
+      - id
+      - score
+      - match
+      - name
+  - name: ASIA (geonames)
+    relativeUrl: asia/reconcile/geonames
+    entityPageUrl: http://sws.geonames.org/
+    metaToViz: 
+      - id
+      - score
+      - match
+      - name
+  - name: ASIA (keywords matcher)
+    relativeUrl: asia/reconcile/keywordsmatcher 
+    entityPageUrl:
+    metaToViz: 
+      - id
+      - score
+      - match
+      - name
+  - name: Wikidata
+    relativeUrl: wikidata/reconcile
+    entityPageUrl: https://www.wikidata.org/wiki/
+    metaToViz: 
+      - id
+      - score
+      - match
+      - name
+  - name: LamAPI
+    relativeUrl: lamapi/reconcile
+    entityPageUrl:
+    metaToViz: 
+      - id
+      - score
+      - match
+      - name
+
+#Extension service
+
+#tipi dei parametri
+
+extensionServices:
+  - name: weather
+    relativeUrl: asia/extend/weather
+    requiredParams:
+      - name: ids
+        inputMode: selectCol 
+        # sing not plur
+        selectColMode: ids
+        required: true
+        default: null
+      - name: dates 
+        inputMode: selectCol
+        selectColMode: labels
+        required: true
+        default: null
+      - name: weatherParameters
+        inputMode: enumeration
+        required: true
+        deafault: null
+        #vincolo numero minimo di paramteri
+        values: 
+          - label: wind speed
+            value: ws
+            responseValue: avgValue
+              #- minValue
+              #- maxValue
+              #- avgValue
+          - label: 2 metre temperature
+            value: 2t
+            responseValue: avgValue
+              #- minValue
+              #- maxValue
+              #- avgValue
+          - label: 2 metre dewpoint temperature
+            value: 2d
+            responseValue: avgValue
+              #- minValue
+              #- maxValue
+              #- avgValue
+          - label: sunshine duration
+            value: sund
+            responseValue: cumulValue
+              #- cumulValue
+      - name: offsets #verificare se obbl. anche se può essere minore, se esiste un limite
+        inputMode: number
+        required: true
+        minValue: 0
+    responseParamsForItem:
+      reorderingParam: 
+        col1: geonamesId
+        col2: date
+      date: date
+      offset: offset
+  - name: ASIA (geonames)
+    relativeUrl: asia/extend/geonames
+    requiredParams:
+      - name: ids
+        inputMode: selectCol 
+        selectColMode: ids
+        required: true
+        isMatchingParam: true
+      - name: properties
+        inputMode: enumeration
+        required: true 
+        default: null
+        isMatchingParam: false
+        #vincolo numero minimo di paramteri
+        values: 
+          - label: parent admin 1
+            value: parentADM1
+          - label: parent admin 2
+            value: parentADM2
+          - label: parent admin 3
+            value: parentADM3
+          - label: parent admin 4
+            value: parentADM4
+      
+
+  
