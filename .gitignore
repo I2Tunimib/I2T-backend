@@ -24,3 +24,4 @@ yarn-debug.log*
 yarn-error.log*
 
 /public/saved/*
+!/public/saved/TABELLA_TEST_1.json
