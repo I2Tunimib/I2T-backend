@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start-dev": "node node_modules/cross-env/src/bin/cross-env.js ENV=DEV nodemon app.js",
+    "start-dev": "node node_modules/cross-env/src/bin/cross-env.js ENV=DEV npx nodemon app.js",
     "start-prod": "node node_modules/cross-env/src/bin/cross-env.js ENV=PROD node app.js"
   },
   "dependencies": {
