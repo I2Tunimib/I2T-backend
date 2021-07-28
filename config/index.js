@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 
 const env = dotenv.config();
-if (env.error) {
+if (process.env.ENV === 'DEV' && env.error) {
     // This error should crash whole process
     throw new Error("⚠️  Couldn't find '.env' file  ⚠️");
 }

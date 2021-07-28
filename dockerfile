@@ -12,7 +12,7 @@ RUN npm ci --production
 
 COPY . .
 # explicitly tell docker to copy .env file or it won't be copied to image
-COPY .env .
+# COPY .env .
 
 EXPOSE 3002
 CMD [ "npm", "run", "start-prod" ]
