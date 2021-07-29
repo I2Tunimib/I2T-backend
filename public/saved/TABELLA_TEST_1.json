@@ -22,8 +22,8 @@
         {
           "name": "Countries",
           "score": 100,
-          "match": false,
-          "id": "Q94587"
+          "match": true,
+          "id": "Q63635"
         }
       ]
     },
@@ -37,7 +37,7 @@
       "new": false,
       "metadata": [
         {
-          "name": "States of the United States",
+          "name": "First-order administrative division",
           "score": 100,
           "match": false,
           "id": "Q80069"
@@ -46,7 +46,7 @@
           "name": "Rivers",
           "score": 70,
           "match": false,
-          "id": "Q94587"
+          "id": "Q83664"
         }
       ]
     },
@@ -60,10 +60,10 @@
       "new": false,
       "metadata": [
         {
-          "name": "Universities",
-          "score": 90,
-          "match": false,
-          "id": "Q80069"
+          "name": "Second-order administrative division",
+          "score": 100,
+          "match": true,
+          "id": "Q90896"
         }
       ]
     }

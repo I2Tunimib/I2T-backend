@@ -115,13 +115,13 @@ extensionServices:
         isMatchingParam: false
         #vincolo numero minimo di paramteri
         values: 
-          - label: Regions (parent admin 1)
+          - label: First-order administrative division (Regions or States)
             value: parentADM1
-          - label: Provinces (parent admin 2)
+          - label: Second-order administrative division (Provinces)
             value: parentADM2
-          - label: Communes (parent admin 3)
+          - label: Third-order administrative division (Communes)
             value: parentADM3
-          - label: Fourth-order administrative division (parent admin 4)
+          - label: Fourth-order administrative division
             value: parentADM4
       
 
