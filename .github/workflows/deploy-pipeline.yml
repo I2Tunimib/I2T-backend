@@ -1,9 +1,11 @@
 name: Workflow to deploy app on remote docker engine
 on: 
   push:
-    branches:
-      - main
-      - pipeline-deploy
+    # Sequence of patterns matched against refs/heads
+    branches:    
+    # Push events on main branch
+    - not-running
+
 jobs:
   Deploy-App:
     runs-on: ubuntu-latest
