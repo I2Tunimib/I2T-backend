@@ -1,7 +1,7 @@
 name: Workflow to deploy app on remote docker engine
 on: 
   release:
-    types: [created]
+    types: [released]
 
 jobs:
   Deploy-App:
