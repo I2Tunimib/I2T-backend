@@ -1,8 +1,8 @@
 name: Workflow to deploy app on remote docker engine
 on: 
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
 jobs:
   Deploy-App:
