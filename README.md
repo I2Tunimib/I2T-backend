@@ -1,16 +1,38 @@
 # table-riconciliator-service
 
-## Workflows
-Two workflows are defined for this repository:
+## Deploy workflow
+A deploy workflow is triggered when a new release is published on the main branch. Deploy steps:
 
-1. **push-image**: triggered on a push action on `dev` branch. This workflow builds a docker image with the backend and frontend builds and pushes it to both DockerHub and GitHub Container.
-
-2. **deploy-pipeline**: triggered on (TBD: probably on push on `main` branch or when tagging a commit with a new release). This workflow adds a step to the previous pipeline which pulls the **release** image from GitHub Container and builds a container on a remote host.
-
-**Notes about the pipelines**: since the backend serves both the API and the frontend static files, the only way to have an updated image is to build both frontend and backend for each repository when a new version is released.
+1. Clone backend repository
+2. Clone frontend repository
+3. Build frontend and move the build to backend folder
+4. Build new image and push it to DockerHub and GitHub
+5. Copy docker-compose and .env file to remote host
+6. Through SSH shutdown old container and remove old images
+7. Through SSH pull new image and build new container
 
 #### Skip workflows
 To skip workflows add to the commit message `[skip ci]`. This way it won't be triggered.
+
+## Upload and download tables
+Two volumes are mounted for tables and annotated tables.
+- /datahdd/asia/I2T-backend/tables
+- /datahdd/asia/I2T-backend/saved
+
+To download a folder use **scp**:
+```bash
+scp -r username@host_url:path_to_remote_folder path_to_local_folder
+```
+
+To upload new tables:
+```bash
+ scp file1 file2 [more files] username@host_url:path_to_remote_folder
+```
+You can also upload all files inside a folder:
+```bash
+ scp path_to_local_folder/* username@host_url:path_to_remote_folder
+```
+
 
 ## Pulling an image
 
