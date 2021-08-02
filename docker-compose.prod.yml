@@ -2,7 +2,7 @@ version: "3.6"
 services:
   release:
     image: "ghcr.io/i2tunimib/i2t:latest"
-    build: .
+    env_file: .env
     volumes:
       - /datahdd/asia/I2T-backend/saved:/usr/src/app/public/saved
       - /datahdd/asia/I2T-backend/tables:/usr/src/app/public/tables
