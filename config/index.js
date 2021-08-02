@@ -16,5 +16,7 @@ const CONFIG = {
     LAMAPI_TOKEN: process.env.LAMAPI_TOKEN
 }
 
+console.log(CONFIG);
+
 module.exports = {CONFIG};
 
