@@ -105,4 +105,4 @@ jobs:
             shopt -s dotglob nullglob
             mv deploy/* .
             docker-compose pull release
-            docker-compose up -d release
+            docker-compose --env-file .env up -d release
