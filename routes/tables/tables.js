@@ -9,7 +9,7 @@ module.exports = (router, fs) => {
             files.forEach(file => {
                 tableArr.push(file.split('.')[0]);
             });
-            res.send(tableArr);
+            res.json({data: tableArr});
         })
     })
 }

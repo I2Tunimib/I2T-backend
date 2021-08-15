@@ -11,7 +11,7 @@ module.exports = (router, fs) => {
                 res.send({ error: "Impossible to retrieve config file" });
                 return;
             } else {
-                res.send(yaml.load(data));
+                res.json({data: yaml.load(data)});
             }
         }
         )

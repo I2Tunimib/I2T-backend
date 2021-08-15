@@ -4,34 +4,38 @@ const axios = require('axios').default;
 
 module.exports = (router) => {
     router.post('/asia/reconcile/geonames', (req, res)=>{
-        const queries = {};
-        for (const item of req.body.items) {
-            queries[`${req.body.name}-${item.column}-${item.index}`] = {query: item.label};
-        }
+        const { data } = req.body;
+
+        const request = data.map(col => {
+          const key = Object.keys(col)[0];
+
+          return col[key].reduce((acc, item, index) => {
+            acc[`${key}-${index}`] = {query: encodeURIComponent(item.label || '')}
+            return acc;
+          }, {})
+        })
+
+        const queries = request.reduce((acc, colValue) => ({...acc, ...colValue}), {})
+        
         const encodedKey = 'queries';
         const encodedValue = JSON.stringify(queries);
         const formBody = encodedKey + '=' + encodedValue;
         axios.post(`${CONFIG.ASIA_RECONCILIATION}/geonames`, formBody)
             .then((resp)=>{
-                console.log(resp.data);
-                const resToSend = {
-                    name: req.body.name,
-                    items: []
-                };
-                    for (const reqItem of req.body.items){
-                        if (resp.data[`${req.body.name}-${reqItem.column}-${reqItem.index}`]){
-                            resToSend.items.push({
-                                column: reqItem.column,
-                                index: reqItem.index,
-                                label: reqItem.label,
-                                metadata: resp.data[`${req.body.name}-${reqItem.column}-${reqItem.index}`].result,
-                            })
-                        }
-                    }
-                res.send(resToSend);
+                const serviceData = resp.data;
+                
+                const response = data.reduce((acc, col) => {
+                  const key = Object.keys(col)[0];
+                  acc[key] = col[key].map((_, index) => (
+                    {metadata: serviceData[`${key}-${index}`].result || []}
+                  ))
+                  return acc;
+                }, {})
+
+                res.json({data: response});
             })
             .catch((err)=>{
-                res.send({error: err});
+                // res.send({error: err});
                 console.log(err);
             })
     })

@@ -4,6 +4,6 @@ module.exports = (router, fs) => {
             .filter(dirent => dirent.isDirectory())
             .map(dirent => dirent.name)
         
-        res.json(tables);
+        res.json({data: tables});
     })
 }

@@ -1,6 +1,6 @@
 #reconciliator services
 reconciliators:
-  - name: ASIA (wikifier)
+  - name: ASIA (Wikifier)
     #Cambia nome url myServerUrl (es)
     relativeUrl: asia/reconcile/wikifier 
     entityPageUrl: 
@@ -10,7 +10,7 @@ reconciliators:
       - score
       - match
       - name
-  - name: ASIA (geonames)
+  - name: ASIA (Geonames)
     relativeUrl: asia/reconcile/geonames
     entityPageUrl: http://sws.geonames.org/
     metaToViz: 
@@ -18,7 +18,7 @@ reconciliators:
       - score
       - match
       - name
-  - name: ASIA (keywords matcher)
+  - name: ASIA (Keywords Matcher)
     relativeUrl: asia/reconcile/keywordsmatcher 
     entityPageUrl:
     metaToViz: 
