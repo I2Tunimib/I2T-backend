@@ -9,8 +9,8 @@ module.exports = (router) => {
         const request = data.map(col => {
           const key = Object.keys(col)[0];
 
-          return col[key].reduce((acc, item, index) => {
-            acc[`${key}-${index}`] = {query: encodeURIComponent(item.label || '')}
+          return col[key].reduce((acc, item) => {
+            acc[`${key}-${item.id}`] = {query: encodeURIComponent(item.label || '')}
             return acc;
           }, {})
         })
@@ -26,13 +26,16 @@ module.exports = (router) => {
                 
                 const response = data.reduce((acc, col) => {
                   const key = Object.keys(col)[0];
-                  acc[key] = col[key].map((_, index) => (
-                    {metadata: serviceData[`${key}-${index}`].result || []}
+                  acc[key] = col[key].map((item, index) => (
+                    {
+                      id: item.id,
+                      metadata: serviceData[`${key}-${item.id}`].result || []
+                    }
                   ))
                   return acc;
                 }, {})
 
-                res.json({data: response});
+                res.json(response);
             })
             .catch((err)=>{
                 // res.send({error: err});
