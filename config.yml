@@ -7,41 +7,41 @@ reconciliators:
     metaToViz: 
       #possibilità di cambiare i nomi alle label dell'header
       - id
+      - name
       - score
       - match
-      - name
   - name: ASIA (Geonames)
     relativeUrl: asia/reconcile/geonames
-    entityPageUrl: http://sws.geonames.org/
+    entityPageUrl: http://sws.geonames.org
     metaToViz: 
       - id
+      - name
       - score
       - match
-      - name
   - name: ASIA (Keywords Matcher)
     relativeUrl: asia/reconcile/keywordsmatcher 
     entityPageUrl:
     metaToViz: 
       - id
+      - name
       - score
       - match
-      - name
   - name: Wikidata
     relativeUrl: wikidata/reconcile
-    entityPageUrl: https://www.wikidata.org/wiki/
+    entityPageUrl: https://www.wikidata.org/wiki
     metaToViz: 
       - id
+      - name
       - score
       - match
-      - name
   - name: LamAPI
     relativeUrl: lamapi/reconcile
     entityPageUrl:
     metaToViz: 
       - id
+      - name
       - score
       - match
-      - name
 
 #Extension service
 
