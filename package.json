@@ -15,11 +15,15 @@
     "debug": "~2.6.9",
     "dotenv": "^10.0.0",
     "express": "~4.16.1",
+    "express-fileupload": "^1.2.1",
     "js-yaml": "^4.1.0",
     "morgan": "~1.9.1",
     "qs": "^6.10.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.12"
+  },
+  "nodemonConfig": {
+    "ignore": ["./public/*"]
   }
 }

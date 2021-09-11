@@ -7,8 +7,10 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const http = require('http');
+const fileUpload = require('express-fileupload');
 
 const app = express();
+app.use(fileUpload());
 
 const isProd = (req, res, next) => {
   if (CONFIG.ENV === 'DEV') {
