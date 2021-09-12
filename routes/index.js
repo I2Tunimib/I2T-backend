@@ -38,6 +38,9 @@ require('./saved/put-saved')(router, fs, cors);
 // upload
 require('./tables/upload')(router, fs);
 
+// fs
+require('./tables/file-system')(router, fs);
+
 router.get('/', (req, res) => {
     res.send('Welcome to reconciliator service API');
 })

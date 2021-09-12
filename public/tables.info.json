@@ -34,5 +34,11 @@
     "format": "csv",
     "separator": ",",
     "type": "raw"
+  },
+  "prova": {
+    "name": "prova",
+    "format": "csv",
+    "separator": ";",
+    "type": "raw"
   }
 }
