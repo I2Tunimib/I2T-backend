@@ -1,8 +1,9 @@
 #reconciliator services
 reconciliators:
-  - name: ASIA (Wikifier)
+  - id: s1LEcwp6sBXzbxWUKfLjE
+    name: ASIA (Wikifier)
     #Cambia nome url myServerUrl (es)
-    relativeUrl: asia/reconcile/wikifier 
+    relativeUrl: /asia/wikifier 
     entityPageUrl: 
     metaToViz: 
       #possibilità di cambiare i nomi alle label dell'header
@@ -10,32 +11,37 @@ reconciliators:
       - name
       - score
       - match
-  - name: ASIA (Geonames)
-    relativeUrl: asia/reconcile/geonames
+  - id: dle5z4NqbiEFTaJHIWTX_
+    name: ASIA (Geonames)
+    relativeUrl: /asia/geonames
     entityPageUrl: http://sws.geonames.org
     metaToViz: 
       - id
       - name
       - score
       - match
-  - name: ASIA (Keywords Matcher)
-    relativeUrl: asia/reconcile/keywordsmatcher 
+  - id: tX3y5z2xpfJnmLbMh42gJ
+    name: ASIA (Keywords Matcher)
+    relativeUrl: /asia/keywordsmatcher 
     entityPageUrl:
     metaToViz: 
       - id
       - name
       - score
       - match
-  - name: Wikidata
-    relativeUrl: wikidata/reconcile
+  - id: a9rPb8-nL9sBHJMmeZ9LK
+    name: Wikidata
+    prefix: "wd:/"
+    relativeUrl: /wikidata
     entityPageUrl: https://www.wikidata.org/wiki
     metaToViz: 
       - id
       - name
       - score
       - match
-  - name: LamAPI
-    relativeUrl: lamapi/reconcile
+  - id: Nc6SdW6-vPqWBnFnRU2sp
+    name: LamAPI
+    relativeUrl: /lamapi
     entityPageUrl:
     metaToViz: 
       - id
@@ -47,8 +53,9 @@ reconciliators:
 
 #tipi dei parametri
 
-extensionServices:
-  - name: weather
+extenders:
+  - id: wnfp58G33OytB9KQr6BS0
+    name: weather
     relativeUrl: asia/extend/weather
     requiredParams:
       - name: ids
@@ -100,7 +107,8 @@ extensionServices:
         col2: date
       date: date
       offset: offset
-  - name: ASIA (geonames)
+  - id: 4DIX1FKTWc6avs7XPBAbe
+    name: ASIA (geonames)
     relativeUrl: asia/extend/geonames
     requiredParams:
       - name: ids

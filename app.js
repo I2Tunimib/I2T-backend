@@ -1,16 +1,24 @@
-const {CONFIG} = require('./config');
+import { existsSync } from 'fs'
+import { writeFile } from 'fs/promises'
+import CONFIG from './config';
+import express from 'express';
+import cors from 'cors';
+import fileUpload from 'express-fileupload';
+import createError from 'http-errors';
+import path from 'path';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import http from 'http';
+import routes from './routes/index';
 
-const createError = require('http-errors');
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const indexRouter = require('./routes/index');
-const http = require('http');
-const fileUpload = require('express-fileupload');
+const __dirname = path.resolve();
 
 const app = express();
 app.use(fileUpload());
+
+if (!existsSync('./public/tables.info.json')) {
+  await writeFile('./public/tables.info.json', JSON.stringify({}))
+}
 
 const isProd = (req, res, next) => {
   if (CONFIG.ENV === 'DEV') {
@@ -20,15 +28,15 @@ const isProd = (req, res, next) => {
   }
 }
 
-//disabilitiamo la cache, (più che altro per debugging, poi può essere eliminato)
-app.disable('etag');
 
-app.use(logger('dev'));
+app.disable('etag');
+app.use(cors())
+app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true, parameterLimit: 1000000000000000 }));
-app.use('/api', indexRouter);
+app.use('/api', routes);
 
 // If production redirect to '/api'
 app.use(isProd);
@@ -46,6 +54,7 @@ app.use(function (req, res, next) {
 
 // error handler
 app.use(function (err, req, res, next) {
+  console.log(err);
   res.status(500).json({error: err.message});
 });
 

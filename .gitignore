@@ -24,5 +24,7 @@ yarn-debug.log*
 yarn-error.log*
 
 /public/saved/*
+/public/tables.info.json
 /public/raw-tables/*
+/public/annotated-tables/*
 !/public/saved/TABELLA_TEST_1.json
