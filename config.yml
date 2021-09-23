@@ -31,7 +31,7 @@ reconciliators:
       - match
   - id: a9rPb8-nL9sBHJMmeZ9LK
     name: Wikidata
-    prefix: "wd:/"
+    prefix: "wkd"
     relativeUrl: /wikidata
     entityPageUrl: https://www.wikidata.org/wiki
     metaToViz: 

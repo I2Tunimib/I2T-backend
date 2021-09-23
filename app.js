@@ -14,7 +14,10 @@ import routes from './routes/index';
 const __dirname = path.resolve();
 
 const app = express();
-app.use(fileUpload());
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: './public/tmp'
+}));
 
 if (!existsSync('./public/tables.info.json')) {
   await writeFile('./public/tables.info.json', JSON.stringify({}))

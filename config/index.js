@@ -10,6 +10,7 @@ const CONFIG = {
     ENV: process.env.ENV || 'DEV',
     PORT: process.env.PORT || '3002',
     TABLES_DB_PATH: './public/tables.info.json',
+    CHALLENGE_TABLES_BACKEND: 'http://localhost:3003',
     ASIA_RECONCILIATION: process.env.ASIA_RECONCILIATION,
     ASIA_EXTENSION: process.env.ASIA_EXTENSION,
     WIKIDATA: process.env.WIKIDATA,

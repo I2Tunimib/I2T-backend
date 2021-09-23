@@ -1,5 +1,5 @@
 import axios from 'axios';
-import CONFIG from '../../config/index';
+import CONFIG from '../config/index';
 
 const ReconciliationController = {
   asiaGeo: async (req, res, next) => {

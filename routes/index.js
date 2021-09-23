@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import configRoutes from './config/config.route';
-import reconciliationRoutes from './reconciliation/reconciliation.route';
-import tablesRoutes from './tables/tables.route';
+import configRoutes from './config.route';
+import reconciliationRoutes from './reconciliation.route';
+import tablesRoutes from './tables.route';
 
 const router = Router();
 
