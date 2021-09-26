@@ -1,3 +1,4 @@
+import { createWriteStream } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import TableService from '../services/tables/table.service';
 import ParseService from '../services/parse/parse.service';
@@ -98,6 +99,23 @@ const TablesController = {
   },
   getChallengeDatasets: async (req, res, next) => {
     res.json(await ChallengeService.findAllDatasets());
+  },
+  getChallengeTable: async (req, res, next) => {
+    const { datasetName, tableName } = req.params;
+    const tablePath = await ChallengeService.findTable(datasetName, tableName);
+
+    const tableFile = JSON.stringify(await ParseService.parse(tablePath, {
+      tableType: 'annotated',
+      tableFormat: 'json'
+    }));
+    const tableData = {
+      name: tableName,
+      format: 'json',
+      type: 'annotated'
+    }
+    await rm(tablePath);
+    const newTable = await TableService.addOne(tableData, tableFile);
+    res.json(newTable);
   }
 }
 

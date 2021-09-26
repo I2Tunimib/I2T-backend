@@ -7,6 +7,22 @@ import TableUtilsService from '../tables/table-utils.service';
 import yaml from 'js-yaml';
 import ParseW3C from './parse-w3c.service';
 
+const DEFAULT_HEADER_PROPERTIES = {
+  label: '',
+  status: 'empty',
+  extension: '',
+  context: {},
+  metadata: [],
+  expandend: false
+}
+
+const DEFAULT_CELL_PROPERTIES = {
+  label: '',
+  metadata: [],
+  editable: false,
+  expandend: false
+}
+
 const ParseService = {
   readYaml: async (path) => {
     const file = await readFile(path, 'utf-8');
@@ -91,13 +107,8 @@ const ParseService = {
     const cells = Object.keys(row).reduce((acc, column) => {
       acc[column] = {
         id: `${id}$${column}`,
+        ...DEFAULT_CELL_PROPERTIES,
         label: row[column] || '',
-        metadata: {
-          reconciliator: {},
-          values: []
-        },
-        editable: false,
-        expandend: false
       }
       return acc;
     }, {});
@@ -109,10 +120,8 @@ const ParseService = {
     return header.reduce((columns, column) => {
       columns.byId[column] = {
         id: column,
-        label: column,
-        status: 'empty',
-        reconciliators: {},
-        extension: ''
+        ...DEFAULT_HEADER_PROPERTIES,
+        label: column
       }
       columns.allIds.push(column);
       return columns;

@@ -1,9 +1,27 @@
 import ParseService from './parse.service';
 
+const DEFAULT_HEADER_PROPERTIES = {
+  label: '',
+  status: 'empty',
+  extension: '',
+  context: {},
+  metadata: [],
+  expanded: false
+}
+
+const DEFAULT_CELL_PROPERTIES = {
+  label: '',
+  editable: false,
+  expanded: false
+}
+
 const ParseW3C = {
-  initReconciliatorsMap: (column, reconciliators) => {
-    return reconciliators.reduce((acc, recon) => {
-      acc[recon.id] = {
+  getContext: (context) => {
+    return context.reduce((acc, item) => {
+      const prefix = item.prefix.substring(0, item.prefix.length - 1);
+      acc[prefix] = {
+        prefix,
+        ...item,
         total: 0,
         reconciliated: 0
       };
@@ -12,10 +30,10 @@ const ParseW3C = {
   },
   updateColumnsStatus: (columns, rows) => {
     columns.allIds.forEach((colId) => {
-      const { reconciliators } = columns.byId[colId];
-      const totalReconciliated = Object.keys(reconciliators)
-        .reduce((acc, key) => acc + reconciliators[key].reconciliated, 0);
-      const hasMetadata = Object.keys(reconciliators).some((key) => reconciliators[key].total > 0);
+      const { context } = columns.byId[colId];
+      const totalReconciliated = Object.keys(context)
+        .reduce((acc, key) => acc + context[key].reconciliated, 0);
+      const hasMetadata = Object.keys(context).some((key) => context[key].total > 0);
       
       if (totalReconciliated === rows.allIds.length) {
         columns.byId[colId].status = 'reconciliated';
@@ -26,13 +44,17 @@ const ParseW3C = {
   },
   parseHeader: (header, reconciliators) => {
     return Object.keys(header).reduce((columns, key) => {
-      const { label } = header[key];
+      const { 
+        label,
+        context = [],
+        ...rest 
+      } = header[key];
       columns.byId[label] = {
         id: label,
-        label: label,
-        status: 'empty',
-        reconciliators: ParseW3C.initReconciliatorsMap(label, reconciliators),
-        extension: ''
+        ...DEFAULT_HEADER_PROPERTIES,
+        label,
+        context: ParseW3C.getContext(context),
+        ...rest
       };
       columns.allIds.push(label);
       return columns;
@@ -59,13 +81,15 @@ const ParseW3C = {
     }
   },
   isCellReconciliated: (metadata) => metadata.some((item) => item.match),
-  updateReconciliatorsCount: ({ reconciliator, values }, column, columns) => {
-    if (reconciliator && reconciliator.id) {
-      const { total, reconciliated } = columns.byId[column].reconciliators[reconciliator.id];
-
-      columns.byId[column].reconciliators[reconciliator.id] = {
+  updateReconciliatorsCount: (metadata, column, columns) => {
+    if (metadata.length > 0) {
+      const [prefix, _] = metadata[0].id.split(':');
+      const { total, reconciliated } = columns.byId[column].context[prefix];
+      
+      columns.byId[column].context[prefix] = {
+        ...columns.byId[column].context[prefix],
         total: total + 1,
-        reconciliated: ParseW3C.isCellReconciliated(values) ? reconciliated + 1 : reconciliated
+        reconciliated: ParseW3C.isCellReconciliated(metadata) ? reconciliated + 1 : reconciliated
       }
     }
   },
@@ -76,15 +100,13 @@ const ParseW3C = {
   parseRow: (row, index, columns, reconciliators) => {
     const id = `r${index}`;
     const cells = Object.keys(row).reduce((acc, column) => {
-      const { label, metadata: metadataRaw } = row[column];
-      const metadata = ParseW3C.prepareMetadata(metadataRaw, reconciliators);
+      const { metadata = [], ...rest } = row[column]
       ParseW3C.updateReconciliatorsCount(metadata, column, columns);
       acc[column] = {
         id: `${id}$${column}`,
-        label: label || '',
-        metadata,
-        editable: false,
-        expandend: false
+        ...DEFAULT_CELL_PROPERTIES,
+        ...rest,
+        metadata
       }
       return acc;
     }, {});

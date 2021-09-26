@@ -1,48 +1,47 @@
 #reconciliator services
 reconciliators:
-  - id: s1LEcwp6sBXzbxWUKfLjE
-    name: ASIA (Wikifier)
+  - name: ASIA (Wikifier)
+    prefix: asiaWk
     #Cambia nome url myServerUrl (es)
     relativeUrl: /asia/wikifier 
-    entityPageUrl: 
+    uri: 
     metaToViz: 
       #possibilità di cambiare i nomi alle label dell'header
       - id
       - name
       - score
       - match
-  - id: dle5z4NqbiEFTaJHIWTX_
-    name: ASIA (Geonames)
+  - name: ASIA (Geonames)
+    prefix: geo
     relativeUrl: /asia/geonames
-    entityPageUrl: http://sws.geonames.org
+    uri: http://sws.geonames.org
     metaToViz: 
       - id
       - name
       - score
       - match
-  - id: tX3y5z2xpfJnmLbMh42gJ
-    name: ASIA (Keywords Matcher)
+  - name: ASIA (Keywords Matcher)
+    prefix: asiaKM
     relativeUrl: /asia/keywordsmatcher 
-    entityPageUrl:
+    uri:
     metaToViz: 
       - id
       - name
       - score
       - match
-  - id: a9rPb8-nL9sBHJMmeZ9LK
-    name: Wikidata
+  - name: Wikidata
     prefix: "wkd"
     relativeUrl: /wikidata
-    entityPageUrl: https://www.wikidata.org/wiki
+    uri: https://www.wikidata.org/wiki
     metaToViz: 
       - id
       - name
       - score
       - match
-  - id: Nc6SdW6-vPqWBnFnRU2sp
-    name: LamAPI
+  - name: LamAPI
+    prefix: lmp
     relativeUrl: /lamapi
-    entityPageUrl:
+    uri:
     metaToViz: 
       - id
       - name
