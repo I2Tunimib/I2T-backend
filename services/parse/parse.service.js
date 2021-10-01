@@ -13,14 +13,11 @@ const DEFAULT_HEADER_PROPERTIES = {
   extension: '',
   context: {},
   metadata: [],
-  expandend: false
 }
 
 const DEFAULT_CELL_PROPERTIES = {
   label: '',
-  metadata: [],
-  editable: false,
-  expandend: false
+  metadata: []
 }
 
 const ParseService = {
@@ -112,18 +109,16 @@ const ParseService = {
       }
       return acc;
     }, {});
-    acc.byId[id] = { id, cells };
-    acc.allIds.push(id);
+    acc[id] = { id, cells };
     return acc;
   },
   transformHeader: (acc, header) => {
     return header.reduce((columns, column) => {
-      columns.byId[column] = {
+      columns[column] = {
         id: column,
         ...DEFAULT_HEADER_PROPERTIES,
         label: column
       }
-      columns.allIds.push(column);
       return columns;
     }, acc);
   },
@@ -133,14 +128,14 @@ const ParseService = {
       separator,
       { toLine: 1 },
       ParseService.transformHeader,
-      { byId: {}, allIds: [] }
+      {}
     );
     const rows = await ParseService.readCsvWithTransform(
       path,
       separator,
       { columns: true },
       ParseService.transformRow,
-      { byId: {}, allIds: [] }
+      {}
     );
     return { columns, rows };
   },
@@ -148,10 +143,10 @@ const ParseService = {
     const rows = await ParseService.readJsonWithTransform(
       path,
       ParseService.transformRow,
-      { byId: {}, allIds: [] }
+      {}
     );
-    const header = Object.keys(rows.byId[rows.allIds[0]].cells);
-    const columns = ParseService.transformHeader({ byId: {}, allIds: [] }, header);
+    const header = Object.keys(rows[Object.keys(rows)[0]].cells);
+    const columns = ParseService.transformHeader({}, header);
     return { columns, rows };
   },
   parse: async (filePath, options) => {

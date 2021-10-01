@@ -3,16 +3,16 @@ import ParseService from './parse.service';
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',
   status: 'empty',
-  extension: '',
+  // extension: '',
   context: {},
   metadata: [],
-  expanded: false
+  // expanded: false
 }
 
 const DEFAULT_CELL_PROPERTIES = {
   label: '',
-  editable: false,
-  expanded: false
+  // editable: false,
+  // expanded: false
 }
 
 const ParseW3C = {
@@ -29,16 +29,16 @@ const ParseW3C = {
     }, {});
   },
   updateColumnsStatus: (columns, rows) => {
-    columns.allIds.forEach((colId) => {
-      const { context } = columns.byId[colId];
+    Object.keys(columns).forEach((colId) => {
+      const { context } = columns[colId];
       const totalReconciliated = Object.keys(context)
         .reduce((acc, key) => acc + context[key].reconciliated, 0);
       const hasMetadata = Object.keys(context).some((key) => context[key].total > 0);
       
-      if (totalReconciliated === rows.allIds.length) {
-        columns.byId[colId].status = 'reconciliated';
+      if (totalReconciliated === Object.keys(rows).length) {
+        columns[colId].status = 'reconciliated';
       } else if (hasMetadata) {
-        columns.byId[colId].status = 'pending';
+        columns[colId].status = 'pending';
       }
     });
   },
@@ -49,16 +49,15 @@ const ParseW3C = {
         context = [],
         ...rest 
       } = header[key];
-      columns.byId[label] = {
+      columns[label] = {
         id: label,
         ...DEFAULT_HEADER_PROPERTIES,
         label,
         context: ParseW3C.getContext(context),
         ...rest
       };
-      columns.allIds.push(label);
       return columns;
-    }, { byId: {}, allIds: [] });
+    }, {});
   },
   prepareMetadata: (metadata, reconciliators) => {
     if (metadata.length === 0) {
@@ -84,18 +83,17 @@ const ParseW3C = {
   updateReconciliatorsCount: (metadata, column, columns) => {
     if (metadata.length > 0) {
       const [prefix, _] = metadata[0].id.split(':');
-      const { total, reconciliated } = columns.byId[column].context[prefix];
+      const { total, reconciliated } = columns[column].context[prefix];
       
-      columns.byId[column].context[prefix] = {
-        ...columns.byId[column].context[prefix],
+      columns[column].context[prefix] = {
+        ...columns[column].context[prefix],
         total: total + 1,
         reconciliated: ParseW3C.isCellReconciliated(metadata) ? reconciliated + 1 : reconciliated
       }
     }
   },
   addRow: (rows, parsedRow) => {
-    rows.byId[parsedRow.id] = parsedRow;
-    rows.allIds.push(parsedRow.id);
+    rows[parsedRow.id] = parsedRow;
   },
   parseRow: (row, index, columns, reconciliators) => {
     const id = `r${index}`;
@@ -116,8 +114,8 @@ const ParseW3C = {
     const { reconciliators } = await ParseService.readYaml('./config.yml');
     const stream = ParseService.createJsonStreamReader(filePath);
 
-    let columns = { byId: {}, allIds: [] };
-    let rows = { byId: {}, allIds: [] };
+    let columns = {};
+    let rows = {};
     
     let rowIndex = -1;
     for await (const row of stream) {
