@@ -1,4 +1,6 @@
 import ParseService from './parse.service';
+import { PassThrough } from 'stream';
+import { parse } from 'JSONStream';
 
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',
@@ -110,9 +112,14 @@ const ParseW3C = {
     }, {});
     return { id, cells }
   },
-  parse: async (filePath) => {
+  parse: async (entry) => {
     const { reconciliators } = await ParseService.readYaml('./config.yml');
-    const stream = ParseService.createJsonStreamReader(filePath);
+    // const stream = ParseService.createJsonStreamReader(filePath);
+    const passThrough = new PassThrough({
+      objectMode: true
+    });
+    // const stream = ParseService.createJsonStreamReader(path);
+    const stream = entry.pipe(parse('*')).pipe(passThrough);
 
     let columns = {};
     let rows = {};

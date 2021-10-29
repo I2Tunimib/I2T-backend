@@ -9,6 +9,8 @@ if (process.env.ENV === 'DEV' && env.error) {
 const CONFIG = {
     ENV: process.env.ENV || 'DEV',
     PORT: process.env.PORT || '3002',
+    DATASET_FILES_PATH: './public/datasets',
+    DATASETS_DB_PATH: './public/datasets.info.json',
     TABLES_DB_PATH: './public/tables.info.json',
     CHALLENGE_TABLES_BACKEND: 'http://localhost:3003',
     ASIA_RECONCILIATION: process.env.ASIA_RECONCILIATION,

@@ -24,7 +24,8 @@ yarn-debug.log*
 yarn-error.log*
 
 /public/saved/*
-/public/tables.info.json
+/public/datasets/*
+/public/*.info*
 /public/tmp/*
 /public/raw-tables/*
 /public/annotated-tables/*

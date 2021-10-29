@@ -20,7 +20,11 @@ app.use(fileUpload({
 }));
 
 if (!existsSync('./public/tables.info.json')) {
-  await writeFile('./public/tables.info.json', JSON.stringify({}))
+  await writeFile('./public/tables.info.json', JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }), null, 2)
+}
+
+if (!existsSync('./public/datasets.info.json')) {
+  await writeFile('./public/datasets.info.json', JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}), null, 2)
 }
 
 const isProd = (req, res, next) => {

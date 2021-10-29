@@ -54,7 +54,7 @@ reconciliators:
 
 extenders:
   - id: wnfp58G33OytB9KQr6BS0
-    name: weather
+    name: Weather
     relativeUrl: asia/extend/weather
     requiredParams:
       - name: ids
@@ -108,7 +108,7 @@ extenders:
       offset: offset
   - id: 4DIX1FKTWc6avs7XPBAbe
     name: ASIA (geonames)
-    relativeUrl: asia/extend/geonames
+    relativeUrl: /asia/geonames
     requiredParams:
       - name: ids
         inputMode: selectCol 
