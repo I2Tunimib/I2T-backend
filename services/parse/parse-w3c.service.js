@@ -99,6 +99,7 @@ const ParseW3C = {
   },
   parseRow: (row, index, columns, reconciliators) => {
     const id = `r${index}`;
+    let nReconciliated = 0;
     const cells = Object.keys(row).reduce((acc, column) => {
       const { metadata = [], ...rest } = row[column]
       ParseW3C.updateReconciliatorsCount(metadata, column, columns);
@@ -108,9 +109,12 @@ const ParseW3C = {
         ...rest,
         metadata
       }
+      if (metadata.some((item) => item.match)) {
+        nReconciliated += 1;
+      }
       return acc;
     }, {});
-    return { id, cells }
+    return { id, cells, nReconciliated }
   },
   parse: async (entry) => {
     const { reconciliators } = await ParseService.readYaml('./config.yml');
@@ -123,6 +127,8 @@ const ParseW3C = {
 
     let columns = {};
     let rows = {};
+    let nCells = 0;
+    let nCellsReconciliated = 0;
     
     let rowIndex = -1;
     for await (const row of stream) {
@@ -135,12 +141,15 @@ const ParseW3C = {
         continue;
       }
       // parse row and update reconciliators count
-      ParseW3C.addRow(rows, ParseW3C.parseRow(row, rowIndex, columns, reconciliators));
+      const { nReconciliated, ...rest } = ParseW3C.parseRow(row, rowIndex, columns, reconciliators);
+      ParseW3C.addRow(rows, rest);
+      nCellsReconciliated += nReconciliated;
       rowIndex += 1;
     }
     // update columns reconciliated status
     ParseW3C.updateColumnsStatus(columns, rows);
-    return { columns, rows };
+    nCells = Object.keys(rows).length * Object.keys(columns).length 
+    return { columns, rows, nCells, nCellsReconciliated };
   }
 };
 

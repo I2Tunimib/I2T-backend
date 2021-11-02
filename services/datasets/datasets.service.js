@@ -104,6 +104,8 @@ const FileSystemService = {
             name: tableName,
             nCols: Object.keys(data.columns).length,
             nRows: Object.keys(data.rows).length,
+            nCells: data.nCells,
+            nCellsReconciliated: data.nCellsReconciliated,
             lastModifiedDate: new Date().toISOString()
           }           
         } else {
@@ -132,7 +134,7 @@ const FileSystemService = {
     // parse directly to app format and save it (no more distinction from raw and annotated)
   },
   updateTable: async ({ tableInstance, columns: columnsRaw, rows: rowsRaw }) => {
-    const { id: tableId, idDataset: datasetId, name: tableName } = tableInstance
+    const { id: tableId, idDataset: datasetId, name: tableName, nCells, nCellsReconciliated } = tableInstance
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
 
@@ -147,6 +149,8 @@ const FileSystemService = {
         name: tableName,
         nRows: allIdsRows.length,
         nCols: allIdsCols.length,
+        nCells,
+        nCellsReconciliated,
         lastModifiedDate: new Date().toISOString()
       }
 

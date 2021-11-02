@@ -165,6 +165,8 @@ const ParseService = {
     let index = 0;
     let columns = {}
     let rows = {}
+    let nCells = 0;
+    let nCellsReconciliated = 0;
     for await (const row of stream) {
       if (index === 0) {
         columns = ParseService.transformHeader(columns, Object.keys(row));
@@ -173,9 +175,12 @@ const ParseService = {
       index++;
     }
     stream.end();
-    return { columns, rows }
+    nCells = Object.keys(rows).length * Object.keys(columns).length 
+    return { columns, rows, nCells, nCellsReconciliated }
   },
   parseJson: async (entry) => {
+    let nCells = 0;
+    let nCellsReconciliated = 0;
     const rows = await ParseService.readJsonWithTransform(
       entry, 
       ParseService.transformRow,
@@ -183,7 +188,8 @@ const ParseService = {
     )
     const header = Object.keys(rows[Object.keys(rows)[0]].cells);
     const columns = ParseService.transformHeader({}, header);
-    return { columns, rows };
+    nCells = Object.keys(rows).length * Object.keys(columns).length 
+    return { columns, rows, nCells, nCellsReconciliated };
   },
   checkJsonFormat: async (entry) => {
     const passThrough = new PassThrough({
