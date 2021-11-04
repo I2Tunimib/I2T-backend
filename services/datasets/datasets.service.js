@@ -130,6 +130,67 @@ const FileSystemService = {
     });
     return { datasets: newDatasets, tables: newTables }
   },
+  removeDataset: async (datasetId) => {
+    await writeQueue.push(async () => {
+      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(DATASETS_DB_PATH))
+      const { meta: metaTables, tables } = JSON.parse(await readFile(TABLES_DB_PATH))
+
+      // remove tables
+      let nRemoved = 0;
+      for (const key in tables) {
+        if (tables[key].idDataset === datasetId) {
+          delete tables[key]
+          nRemoved += 1
+        }
+      }
+
+      // remove dataset
+      delete datasets[datasetId];
+
+      // replace db
+      await writeFile(DATASETS_DB_PATH, JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
+      // replace db
+      await writeFile(TABLES_DB_PATH, JSON.stringify({ meta: metaTables, tables }, null, 2));
+      
+      try {
+        // remove files
+        await rm(`${DATASET_FILES_PATH}/${datasetId}`, { recursive: true })
+      } catch(err) {
+        console.log(err);
+      }
+
+    });
+  },
+  removeTable: async (datasetId, tableId) => {
+    await writeQueue.push(async () => {
+      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(DATASETS_DB_PATH))
+      const { meta, tables } = JSON.parse(await readFile(TABLES_DB_PATH))
+
+      // remove tables
+      let nRemoved = 0;
+      for (const key in tables) {
+        if (tables[key].id === tableId) {
+          delete tables[key]
+          nRemoved += 1
+        }
+      }
+      datasets[datasetId].nTables -= nRemoved;
+      datasets[datasetId].lastModifiedDate = new Date().toISOString()
+
+      // replace db
+      await writeFile(DATASETS_DB_PATH, JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
+      // replace db
+      await writeFile(TABLES_DB_PATH, JSON.stringify({ meta, tables }, null, 2));
+      
+      try {
+        // remove files
+        await rm(`${DATASET_FILES_PATH}/${datasetId}/${tableId}.json`)
+      } catch(err) {
+        console.log(err);
+      }
+
+    });
+  },
   addTable: async (datasetId) => {
     // parse directly to app format and save it (no more distinction from raw and annotated)
   },

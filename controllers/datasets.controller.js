@@ -46,6 +46,26 @@ const DatasetsController = {
       next(err)
     }
   },
+  removeDataset: async (req, res, next) => {
+    const { idDataset } = req.params;
+    try {
+      await DatasetsService.removeDataset(idDataset);
+
+      res.status(200).end()
+    } catch (err) {
+      next(err)
+    }
+  },
+  removeTable: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    try {
+      await DatasetsService.removeTable(idDataset, idTable);
+
+      res.status(200).end()
+    } catch (err) {
+      next(err)
+    }
+  },
   updateTable: async (req, res, next) => {
     const data = req.body;
     try {
