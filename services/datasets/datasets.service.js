@@ -4,6 +4,7 @@ import { queue } from 'async';
 import unzipper from 'unzipper';
 import CONFIG from '../../config';
 import ParseService from '../parse/parse.service';
+import { COLLECTION_DATASETS_MAP, COLLECTION_TABLES_MAP } from '../../utils/constants';
 
 const { DATASETS_DB_PATH, TABLES_DB_PATH, DATASET_FILES_PATH } = CONFIG;
 
@@ -14,7 +15,7 @@ const writeQueue = queue(async (task, completed) => {
 
 const FileSystemService = {
   findOneDataset: async (idDataset) => {
-    return ParseService.readJsonFileWithCondition({
+    return ParseService.readJsonFile({
       path: DATASETS_DB_PATH,
       pattern: 'datasets.*',
       acc: [],
@@ -22,22 +23,40 @@ const FileSystemService = {
     });
   },
   findAllDatasets: async () => {
-    return ParseService.readJsonFile({
+    const datasets = await ParseService.readJsonFile({
       path: DATASETS_DB_PATH,
       pattern: 'datasets.*',
       acc: []
     });
+    return {
+      meta: COLLECTION_DATASETS_MAP,
+      collection: datasets
+    }
   },
   findAllTablesByDataset: async (idDataset) => {
-    return ParseService.readJsonFileWithCondition({
+    const tables = await ParseService.readJsonFile({
       path: TABLES_DB_PATH,
       pattern: 'tables.*',
       acc: [],
+      transformFn: (item) => {
+        const { nCells, nCellsReconciliated, ...rest } = item;
+        return {
+          ...rest,
+          completion: {
+            total: nCells,
+            value: nCellsReconciliated
+          }
+        }
+      },
       condition: (item) => item.idDataset === idDataset
     });
+    return {
+      meta: COLLECTION_TABLES_MAP,
+      collection: tables
+    }
   },
   findTable: async (idDataset, idTable) => {
-    const table = await ParseService.readJsonFileWithCondition({
+    const table = await ParseService.readJsonFile({
       path: TABLES_DB_PATH,
       pattern: 'tables.*',
       acc: [],
@@ -53,15 +72,15 @@ const FileSystemService = {
   },
   findTablesByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
-    return ParseService.readJsonFileWithCondition({
+    return ParseService.readJsonFile({
       path: TABLES_DB_PATH,
       pattern: 'tables.*',
-      condition: (obj) => { console.log(obj); return regex.test(obj.name.toLowerCase()); }
+      condition: (obj) => { return regex.test(obj.name.toLowerCase()); }
     });
   },
   findDatasetsByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
-    return ParseService.readJsonFileWithCondition({
+    return ParseService.readJsonFile({
       path: DATASETS_DB_PATH, 
       pattern: 'datasets.*',
       condition: (obj) => regex.test(obj.name.toLowerCase())

@@ -45,20 +45,6 @@ const ParseService = {
   readJsonFile: async ({
     path,
     pattern,
-    acc = {}, 
-    pushFn
-  }) => {
-    const stream = ParseService.createJsonStreamReader(path, pattern);
-    const push = pushFn || ParseService.getPushFunction(acc);
-    for await (const obj of stream) {
-      push(obj);
-    }
-    stream.end();
-    return acc;
-  },
-  readJsonFileWithCondition: async ({
-    path,
-    pattern,
     condition,
     transformFn,
     stopAtFirst = false,
@@ -67,12 +53,15 @@ const ParseService = {
     const stream = ParseService.createJsonStreamReader(path, pattern);
     const push = ParseService.getPushFunction(acc);
     for await (const obj of stream) {
-
-      if (condition(obj)) {
-        if (stopAtFirst) {
-          acc = transformFn ? transformFn(obj) : obj;
-          break;
-        }
+      if (condition) {
+        if (condition(obj)) {
+          if (stopAtFirst) {
+            acc = transformFn ? transformFn(obj) : obj;
+            break;
+          }
+          push(transformFn ? transformFn(obj) : obj)
+        } 
+      } else {
         push(transformFn ? transformFn(obj) : obj)
       }
     }
@@ -117,7 +106,6 @@ const ParseService = {
     const stream = entry.pipe(csv({ ...parserOptions }));
     let index = 0;
     for await (const row of stream) {
-      console.log(row);
       acc = transformFn(acc, row, index);
       index++;
     }
