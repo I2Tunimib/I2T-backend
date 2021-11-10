@@ -14,7 +14,7 @@ reconciliators:
   - name: ASIA (Geonames)
     prefix: geo
     relativeUrl: /asia/geonames
-    uri: http://sws.geonames.org
+    uri: http://www.geonames.org/
     metaToViz: 
       - id
       - name
@@ -32,7 +32,7 @@ reconciliators:
   - name: Wikidata
     prefix: "wkd"
     relativeUrl: /wikidata
-    uri: https://www.wikidata.org/wiki
+    uri: https://www.wikidata.org/wiki/
     metaToViz: 
       - id
       - name
