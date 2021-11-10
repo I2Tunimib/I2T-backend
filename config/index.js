@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import ParseService from '../services/parse/parse.service';
 const env = dotenv.config();
 
 if (process.env.ENV === 'DEV' && env.error) {
@@ -17,7 +18,8 @@ const CONFIG = {
     ASIA_EXTENSION: process.env.ASIA_EXTENSION,
     WIKIDATA: process.env.WIKIDATA,
     LAMAPI_BASE: process.env.LAMAPI_BASE,
-    LAMAPI_TOKEN: process.env.LAMAPI_TOKEN
+    LAMAPI_TOKEN: process.env.LAMAPI_TOKEN,
+    SERVICES_CONFIG: await ParseService.readYaml('./config.yml')
 }
 
 export default CONFIG;

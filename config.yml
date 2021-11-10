@@ -6,7 +6,7 @@ reconciliators:
     relativeUrl: /asia/wikifier 
     uri: 
     metaToViz: 
-      #possibilità di cambiare i nomi alle label dell'header
+      #possibilità di cambiare i nomi alle label dell"header
       - id
       - name
       - score
@@ -48,88 +48,70 @@ reconciliators:
       - score
       - match
 
-#Extension service
-
-#tipi dei parametri
-
+# Extension services
 extenders:
-  - id: wnfp58G33OytB9KQr6BS0
-    name: Weather
-    relativeUrl: asia/extend/weather
-    requiredParams:
-      - name: ids
-        inputMode: selectCol 
-        # sing not plur
-        selectColMode: ids
-        required: true
-        default: null
-      - name: dates 
-        inputMode: selectCol
-        selectColMode: labels
-        required: true
-        default: null
-      - name: weatherParameters
-        inputMode: enumeration
-        required: true
-        deafault: null
-        #vincolo numero minimo di paramteri
-        values: 
-          - label: wind speed
-            value: ws
-            responseValue: avgValue
-              #- minValue
-              #- maxValue
-              #- avgValue
-          - label: 2 metre temperature
-            value: 2t
-            responseValue: avgValue
-              #- minValue
-              #- maxValue
-              #- avgValue
-          - label: 2 metre dewpoint temperature
-            value: 2d
-            responseValue: avgValue
-              #- minValue
-              #- maxValue
-              #- avgValue
-          - label: sunshine duration
-            value: sund
-            responseValue: cumulValue
-              #- cumulValue
-      - name: offsets #verificare se obbl. anche se può essere minore, se esiste un limite
-        inputMode: number
-        required: true
-        minValue: 0
-    responseParamsForItem:
-      reorderingParam: 
-        col1: geonamesId
-        col2: date
-      date: date
-      offset: offset
   - id: 4DIX1FKTWc6avs7XPBAbe
+    serviceKey: asiaGeo
     name: ASIA (geonames)
     relativeUrl: /asia/geonames
-    requiredParams:
-      - name: ids
-        inputMode: selectCol 
-        selectColMode: ids
-        required: true
-        isMatchingParam: true
-      - name: properties
-        inputMode: enumeration
-        required: true 
-        default: null
-        isMatchingParam: false
-        #vincolo numero minimo di paramteri
-        values: 
-          - label: First-order administrative division (Regions or States)
-            value: parentADM1
-          - label: Second-order administrative division (Provinces)
-            value: parentADM2
-          - label: Third-order administrative division (Communes)
-            value: parentADM3
-          - label: Fourth-order administrative division
-            value: parentADM4
-      
+    description: "ASIA extension service based on geonames allows to extend a column with data on locations of a certain administrative order, given a column reconciliated with First-order administrative division ids."
+    formParams:
+      - id: property
+        description: "Select on or more <b>Property</b> values:"
+        label: "Property"
+        inputType: checkbox # select / selectColumns / checkbox / text
+        rules: ["required"]
+        options:
+          - id: adm1
+            label: "First-order administrative division (Regions or States)"
+            value: "parentADM1"
+          - id: adm2
+            label: "Second-order administrative division (Provinces)"
+            value: "parentADM2"
+          - id: adm3
+            label: "Third-order administrative division (Communes)"
+            value: "parentADM3"
+          - id: adm4
+            label: "Fourth-order administrative division"
+            value: "parentADM4"
+  - id: wnfp58G33OytB9KQr6BS0
+    serviceKey: asiaWeather
+    name: Weather
+    relativeUrl: /asia/weather
+    description: "ASIA weather-based extension service allows to extend a column with meteorological data for given locations and dates."
+    formParams:
+      - id: dates
+        description: "Select a column for <b>Dates</b> values:"
+        label: "Dates"
+        infoText: "Only date for the years between 2017 and 2019 and German regions are supported (ISO format yyyy-mm-dd)"
+        inputType: selectColumns # select / selectColumns / checkbox / text
+        rules: ["required"]
 
-  
+      - id: weatherParams
+        description: "Select one or more <b>Weather</b> parameters:"
+        label: "Weather parameters"
+        infoText: "Meteorological parameter with which you want to extend the table"
+        inputType: checkbox # select / selectColumns / checkbox / text
+        rules: ["required"]
+        options:
+          - id: "ws"
+            value: "ws"
+            label: "Wind speed"
+          - id: "2t"
+            value: "2t"
+            label: "2 metre temperature"
+          - id: "2d"
+            value: "2d"
+            label: "2 metre dewpoint temperature"
+          - id: "sund"
+            value: "sund"
+            label: "Sunshine duration"
+      
+      - id: "offsets"
+        description: "Enter desired <b>Offsets</b>:"
+        label: "Offset"
+        infoText: "The offset is the difference in days for which we want to retrieve the data with respect to the input dates. You can add multiple offsets separated by a COMMA"
+        inputType: text # select / selectColumns / checkbox / text
+        defaultValue: "2"
+        rules: ["required"]
+            

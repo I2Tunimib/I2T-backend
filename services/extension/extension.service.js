@@ -41,26 +41,80 @@ const processResponse = (data, idsMap) => {
 }
 
 const ExtensionService = {
-  asiaGeo: async ({ items, props }) => {
-    const { ids, idsMap } = Object.keys(items).reduce((acc, key) => {
-      acc.ids.push(items[key]);
-      acc.idsMap[items[key]] = key
-      return acc;
-    }, { ids: [], idsMap: {} });
+  asiaGeo: async (req) => {
+    const { items, property } = req;
 
-    const properties = props.map((prop) => ({ id: prop }));
-    
-    const params = stringify({
-      extend: JSON.stringify({ ids, properties }),
-      conciliator: 'geonames',
-    })
+    return Promise.all(Object.keys(items).map( async (colId) => {
+      const columnItems = items[colId]
+      const { ids, idsMap } = Object.keys(columnItems).reduce((acc, key) => {
+        const id = columnItems[key].split(':')[1];
+        acc.ids.push(id);
+        acc.idsMap[id] = key
+        return acc;
+      }, { ids: [], idsMap: {} });
+  
+      const properties = property.map((prop) => ({ id: prop }));
+      
+      const params = stringify({
+        extend: JSON.stringify({ ids, properties }),
+        conciliator: 'geonames',
+      })
+  
+      const res = await axios.post(`${CONFIG.ASIA_EXTENSION}/extend`, params);
+  
+      if (res.data) {
+        const { data } = res;
+        return {
+          id: colId,
+          data: processResponse(data, idsMap)
+        };
+      }
+    }));
 
-    const res = await axios.post(`${CONFIG.ASIA_EXTENSION}/extend`, params);
+    // return {
+    //   req,
+    //   res: allResponses,
+    //   idsMap
+    // }
 
-    if (res.data) {
-      const { data } = res;
-      return processResponse(data, idsMap);
-    }
+    // await ExtensionResponseTransformer.asiaGeo({
+    //   req,
+    //   res: allResponses,
+    //   idsMap
+    // })
+  },
+  asiaWeather: async ({ items, offsets, dates: datesInput, weatherParams: weatherParamsInput }) => {
+    const res = await Promise.all(Object.keys(items).map( async (colId) => {
+      const columnItems = items[colId];
+      
+      const { ids, idsMap } = Object.keys(columnItems).reduce((acc, key, index) => {
+        const id = columnItems[key].split(':')[1];
+        if (index === 0) {
+          acc.ids += id
+        } else {
+          acc.ids += `,${id}`;
+        }
+        acc.idsMap[id] = key
+        return acc;
+      }, { ids: '', idsMap: {} });
+
+      const dates = Object.keys(datesInput).map((key) => datesInput[key]).join(',');
+      const weatherParams = weatherParamsInput.join(',');
+
+      const params = stringify({
+        ids,
+        dates,
+        offsets,
+        weatherParams
+      })
+  
+      const res = await axios.post(`${CONFIG.ASIA_EXTENSION}/weather`, params)
+      return {
+        id: colId,
+        data: res.data
+      };
+    }));
+    console.log(res);
   }
 }
 
