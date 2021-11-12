@@ -12,7 +12,7 @@ export const ExtensionRequestTransformer = {
   asiaGeo: async (req) => {
     const { items, property } = req;
 
-    const allResponses = await Promise.all(Object.keys(items).map( async (colId) => {
+    return Promise.all(Object.keys(items).map(async (colId) => {
       const columnItems = items[colId]
       const { ids, idsMap } = Object.keys(columnItems).reduce((acc, key) => {
         const id = columnItems[key].split(':')[1];
@@ -20,65 +20,54 @@ export const ExtensionRequestTransformer = {
         acc.idsMap[id] = key
         return acc;
       }, { ids: [], idsMap: {} });
-  
+
       const properties = property.map((prop) => ({ id: prop }));
-      
+
       const params = stringify({
         extend: JSON.stringify({ ids, properties }),
         conciliator: 'geonames',
       })
-  
+
       const res = await axios.post(`${CONFIG.ASIA_EXTENSION}/extend`, params);
-  
+
       return {
         res: res.data,
         idsMap
       }
     }));
-
-    return {
-      req,
-      res: allResponses
-    }
   },
   asiaWeather: async (req) => {
     const { items, offsets, dates: datesInput, weatherParams: weatherParamsInput } = req;
-
-    const allResponses = await Promise.all(Object.keys(items).map( async (colId) => {
+    // process weather params
+    const weatherParams = weatherParamsInput.join(',');
+    // for each column to extend
+    const allResponses = await Promise.all(Object.keys(items).map(async (colId) => {
       const columnItems = items[colId];
-      
-      const { ids, idsMap } = Object.keys(columnItems).reduce((acc, key, index) => {
-        const id = columnItems[key].split(':')[1];
-        if (index === 0) {
-          acc.ids += id
-        } else {
-          acc.ids += `,${id}`;
+
+      const requests = Object.keys(columnItems).map((rowId) => {
+        const id = columnItems[rowId].split(':')[1];
+        const date = datesInput[rowId];
+
+        return {
+          ids: id,
+          rowId,
+          dates: date,
+          offsets,
+          weatherParams
         }
-        acc.idsMap[id] = key
-        return acc;
-      }, { ids: '', idsMap: {} });
+      });
 
-      const dates = Object.keys(datesInput).map((key) => datesInput[key]).join(',');
-      const weatherParams = weatherParamsInput.join(',');
-
-      const params = stringify({
-        ids,
-        dates,
-        offsets,
-        weatherParams
-      })
-  
-      const res = await axios.post(`${CONFIG.ASIA_EXTENSION}/weather`, params)
-      return {
-        data: res.data,
-        idsMap
-      };
+      return Promise.all(requests.map(async ({ ids, rowId, ...rest }) => {
+        const res = await axios.post(`${CONFIG.ASIA_EXTENSION}/weather`, stringify({ ids, ...rest }));
+        return {
+          id: ids,
+          rowId,
+          data: res.data
+        }
+      }))
     }));
 
-    return {
-      req,
-      res: allResponses
-    }
+    return allResponses;
   }
 }
 
@@ -124,16 +113,17 @@ export const ExtensionRequestTransformer = {
  * Each function takes as input the request body, the response body 
  * and additional parameters.
  */
-export const ExtensionResponseTransformer = { 
-  asiaGeo: async ({ req, res, ...rest }) => {
+export const ExtensionResponseTransformer = {
+  asiaGeo: async ({ req, res }) => {
     // response is an array of responses coming from the extension service (one for each column)
     const { items } = req;
 
     const inputColumnsLabels = Object.keys(items);
 
-    let data = {
+    let response = {
       columns: {},
-      rows: {}
+      rows: {},
+      meta: {}
     }
 
     // build each column in standard format
@@ -142,7 +132,7 @@ export const ExtensionResponseTransformer = {
       // each meta is a property which identifies a new column
       const { meta, rows } = serviceResponse.res;
       const { idsMap } = serviceResponse
- 
+
       const standardCol = meta.reduce((acc, property) => {
         const { id: propId } = property;
         const colId = `${inputColumnsLabels[colIndex]}_${propId}`;
@@ -152,6 +142,7 @@ export const ExtensionResponseTransformer = {
           label: colId,
           metadata: []
         }
+        acc.meta[colId] = inputColumnsLabels[colIndex];
         // add rows
         acc.rows = Object.keys(rows).reduce((accRows, metaId) => {
           const metadataItems = rows[metaId][propId];
@@ -165,7 +156,7 @@ export const ExtensionResponseTransformer = {
             accRows[rowId] = {
               id: rowId,
               cells: {
-                ...(accRows[rowId] && {...accRows[rowId].cells}),
+                ...(accRows[rowId] && { ...accRows[rowId].cells }),
                 [colId]: {
                   id: cellId,
                   label: metadataItemName,
@@ -182,7 +173,7 @@ export const ExtensionResponseTransformer = {
             accRows[rowId] = {
               id: rowId,
               cells: {
-                ...(accRows[rowId] && {...accRows[rowId].cells}),
+                ...(accRows[rowId] && { ...accRows[rowId].cells }),
                 [colId]: {
                   id: cellId,
                   label: 'null',
@@ -192,30 +183,67 @@ export const ExtensionResponseTransformer = {
             }
           }
           return accRows;
-        }, data.rows)
+        }, response.rows)
         return acc;
-      }, data);
+      }, response);
 
-      data.columns = {
-        ...data.columns,
+      response.columns = {
+        ...response.columns,
         ...standardCol.columns
       }
-      data.rows = {
-        ...data.rows,
+      response.rows = {
+        ...response.rows,
         ...standardCol.rows
       }
     })
-    return data;
+    return response;
   },
-  asiaWeather: async ({ req, res, ...rest }) => {
-    res.forEach((serviceResponse, colIndex) => {
-      const { data, idsMap } = serviceResponse;
+  asiaWeather: async ({ req, res }) => {
+    const { items } = req;
+    const inputColumnsLabels = Object.keys(items);
 
-      // console.log(data);
-      data.forEach((item) => {
-        console.log(item);
-      })
+    let response = {
+      columns: {},
+      rows: {},
+      meta: {}
+    }
+
+    // result for each input column
+    res.forEach((serviceResponse, colIndex) => {
+      serviceResponse.forEach(({ rowId, data }) => {
+        data.forEach(({ weatherParameters, offset }) => {
+          if (weatherParameters) {
+            // for each combination offest_weatherParam build a column
+            weatherParameters.forEach(({ id, ...rest }) => {
+              // for each item in weatherParameters build a column
+              const colId = `${inputColumnsLabels[colIndex]}_offset${offset}_${id}`;
+              response.columns[colId] = {
+                id: colId,
+                label: colId,
+                metadata: []
+              }
+              response.meta[colId] = inputColumnsLabels[colIndex];
+
+              const cellId = `${rowId}$${colId}`;
+              response.rows[rowId] = {
+                ...response.rows[rowId],
+                id: rowId,
+                cells: {
+                  ...(response.rows[rowId] && { ...response.rows[rowId].cells }),
+                  [colId]: {
+                    id: cellId,
+                    label: id === 'sund' ? rest.cumulValue : rest.avgValue,
+                    metadata: []
+                  }
+                }
+              }
+            });
+          }
+        });
+      });
     });
+
+    return response;
   }
 }
 
@@ -240,7 +268,7 @@ const getColumnStatus = (context, rowKeys) => {
  * Count cell reconciliated and compute column status
  */
 export const postTransform = async (standardData) => {
-  const { columns, rows } = standardData;
+  const { columns, rows, ...rest } = standardData;
 
   const rowKeys = Object.keys(rows);
 
@@ -252,7 +280,7 @@ export const postTransform = async (standardData) => {
 
       if (metadata) {
         metadata.forEach((metaItem) => {
-          const prefix =  metaItem.id.split(':')[0];
+          const prefix = metaItem.id.split(':')[0];
 
           if (!context[prefix]) {
             context[prefix] = {
@@ -276,6 +304,7 @@ export const postTransform = async (standardData) => {
 
   return {
     columns,
-    rows
+    rows,
+    ...rest
   }
 }

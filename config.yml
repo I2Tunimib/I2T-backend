@@ -112,6 +112,6 @@ extenders:
         label: "Offset"
         infoText: "The offset is the difference in days for which we want to retrieve the data with respect to the input dates. You can add multiple offsets separated by a COMMA"
         inputType: text # select / selectColumns / checkbox / text
-        defaultValue: "2"
+        defaultValue: "0"
         rules: ["required"]
             

@@ -30,7 +30,7 @@ const extensionPipeline = async (reqBody) => {
   const serviceResponse = await transformReqFn(rest);
 
   // transform response to app format
-  const transformedResponse = await transformResFn(serviceResponse);
+  const transformedResponse = await transformResFn({req: rest, res: serviceResponse });
 
   // post transform and return final response
   return postTransform(transformedResponse);
