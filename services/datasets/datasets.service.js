@@ -2,11 +2,12 @@ import { readFile, mkdir, writeFile, rm } from 'fs/promises';
 import { createReadStream } from 'fs';
 import { queue } from 'async';
 import unzipper from 'unzipper';
-import CONFIG from '../../config';
 import ParseService from '../parse/parse.service';
 import { COLLECTION_DATASETS_MAP, COLLECTION_TABLES_MAP } from '../../utils/constants';
+import config from '../../config/index';
 
-const { DATASETS_DB_PATH, TABLES_DB_PATH, DATASET_FILES_PATH } = CONFIG;
+const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath } = config.helpers;
+
 
 // create queue so that writes to file are not lost
 const writeQueue = queue(async (task, completed) => {
@@ -16,7 +17,7 @@ const writeQueue = queue(async (task, completed) => {
 const FileSystemService = {
   findOneDataset: async (idDataset) => {
     return ParseService.readJsonFile({
-      path: DATASETS_DB_PATH,
+      path: getDatasetDbPath(),
       pattern: 'datasets.*',
       acc: [],
       condition: ({ id }) => id === idDataset
@@ -24,7 +25,7 @@ const FileSystemService = {
   },
   findAllDatasets: async () => {
     const datasets = await ParseService.readJsonFile({
-      path: DATASETS_DB_PATH,
+      path: getDatasetDbPath(),
       pattern: 'datasets.*',
       acc: []
     });
@@ -35,7 +36,7 @@ const FileSystemService = {
   },
   findAllTablesByDataset: async (idDataset) => {
     const tables = await ParseService.readJsonFile({
-      path: TABLES_DB_PATH,
+      path: getTablesDbPath(),
       pattern: 'tables.*',
       acc: [],
       transformFn: (item) => {
@@ -57,13 +58,13 @@ const FileSystemService = {
   },
   findTable: async (idDataset, idTable) => {
     const table = await ParseService.readJsonFile({
-      path: TABLES_DB_PATH,
+      path: getTablesDbPath(),
       pattern: 'tables.*',
       acc: [],
       condition: (item) => item.id === idTable,
       stopAtFirst: true
     });
-    const { columns, rows } = JSON.parse(await readFile(`${DATASET_FILES_PATH}/${idDataset}/${idTable}.json`));
+    const { columns, rows } = JSON.parse(await readFile(`${getDatasetFilesPath()}/${idDataset}/${idTable}.json`));
     return {
       table,
       columns,
@@ -73,7 +74,7 @@ const FileSystemService = {
   findTablesByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
     return ParseService.readJsonFile({
-      path: TABLES_DB_PATH,
+      path: getDatasetDbPath(),
       pattern: 'tables.*',
       condition: (obj) => { return regex.test(obj.name.toLowerCase()); }
     });
@@ -81,7 +82,7 @@ const FileSystemService = {
   findDatasetsByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
     return ParseService.readJsonFile({
-      path: DATASETS_DB_PATH, 
+      path: getDatasetDbPath(), 
       pattern: 'datasets.*',
       condition: (obj) => regex.test(obj.name.toLowerCase())
     });
@@ -92,14 +93,14 @@ const FileSystemService = {
     
     await writeQueue.push(async () => {
       // read db datasets
-      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(DATASETS_DB_PATH))
+      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
 
       metaDatasets.lastIndex += 1;
-      const datasetFolderPath = `${DATASET_FILES_PATH}/${metaDatasets.lastIndex}`
+      const datasetFolderPath = `${getDatasetFilesPath()}/${metaDatasets.lastIndex}`
       // create dataset folder
       await mkdir(datasetFolderPath, { recursive: true })
       // read tables datasets
-      const { meta: metaTables, tables } = JSON.parse(await readFile(TABLES_DB_PATH))
+      const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
 
       const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
       let nFiles = 0;
@@ -140,9 +141,9 @@ const FileSystemService = {
         lastModifiedDate: new Date().toISOString()
       }
       // add dataset entry
-      await writeFile(DATASETS_DB_PATH, JSON.stringify({ meta: metaDatasets, datasets: {...datasets, ...newDatasets} }, null, 2));
+      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: {...datasets, ...newDatasets} }, null, 2));
       // add table entries
-      await writeFile(TABLES_DB_PATH, JSON.stringify({ meta: metaTables, tables: {...tables, ...newTables} }, null, 2));
+      await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: {...tables, ...newTables} }, null, 2));
       // delete temp file
       await rm(filePath)
       
@@ -151,8 +152,8 @@ const FileSystemService = {
   },
   removeDataset: async (datasetId) => {
     await writeQueue.push(async () => {
-      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(DATASETS_DB_PATH))
-      const { meta: metaTables, tables } = JSON.parse(await readFile(TABLES_DB_PATH))
+      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
+      const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
 
       // remove tables
       let nRemoved = 0;
@@ -167,13 +168,13 @@ const FileSystemService = {
       delete datasets[datasetId];
 
       // replace db
-      await writeFile(DATASETS_DB_PATH, JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
+      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
       // replace db
-      await writeFile(TABLES_DB_PATH, JSON.stringify({ meta: metaTables, tables }, null, 2));
+      await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables }, null, 2));
       
       try {
         // remove files
-        await rm(`${DATASET_FILES_PATH}/${datasetId}`, { recursive: true })
+        await rm(`${getDatasetFilesPath()}/${datasetId}`, { recursive: true })
       } catch(err) {
         console.log(err);
       }
@@ -182,8 +183,8 @@ const FileSystemService = {
   },
   removeTable: async (datasetId, tableId) => {
     await writeQueue.push(async () => {
-      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(DATASETS_DB_PATH))
-      const { meta, tables } = JSON.parse(await readFile(TABLES_DB_PATH))
+      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
+      const { meta, tables } = JSON.parse(await readFile(getTablesDbPath()))
 
       // remove tables
       let nRemoved = 0;
@@ -197,13 +198,13 @@ const FileSystemService = {
       datasets[datasetId].lastModifiedDate = new Date().toISOString()
 
       // replace db
-      await writeFile(DATASETS_DB_PATH, JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
+      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
       // replace db
-      await writeFile(TABLES_DB_PATH, JSON.stringify({ meta, tables }, null, 2));
+      await writeFile(getTablesDbPath(), JSON.stringify({ meta, tables }, null, 2));
       
       try {
         // remove files
-        await rm(`${DATASET_FILES_PATH}/${datasetId}/${tableId}.json`)
+        await rm(`${getDatasetFilesPath()}/${datasetId}/${tableId}.json`)
       } catch(err) {
         console.log(err);
       }
@@ -218,12 +219,12 @@ const FileSystemService = {
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
 
-    const pathToTable = `${DATASET_FILES_PATH}/${datasetId}/${tableId}`
+    const pathToTable = `${getDatasetFilesPath()}/${datasetId}/${tableId}`
 
     let newTable = {}
 
     await writeQueue.push(async () => {
-      const { meta, tables } = JSON.parse(await readFile(TABLES_DB_PATH))
+      const { meta, tables } = JSON.parse(await readFile(getTablesDbPath()))
       newTable = {
         ...tables[tableId],
         name: tableName,
@@ -239,7 +240,7 @@ const FileSystemService = {
         ...newTable
       }
       // write updated db
-      await writeFile(`${TABLES_DB_PATH}`, JSON.stringify({ meta, tables }, null, 2))
+      await writeFile(`${getTablesDbPath()}`, JSON.stringify({ meta, tables }, null, 2))
       // write updated table
       await writeFile(`${pathToTable}.json`, JSON.stringify({ columns, rows }))
     })

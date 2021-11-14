@@ -1,7 +1,15 @@
 import axios from 'axios';
 import CONFIG from '../config/index';
+import reconciliationPipeline from '../services/reconciliation/reconciliation-pipeline';
 
 const ReconciliationController = {
+  reconcile: async (req, res, next) => {
+    try {
+      res.json(await reconciliationPipeline(req.body))
+    } catch (err) {
+      next(err);
+    }
+  },
   asiaGeo: async (req, res, next) => {
     const data = req.body; 
 

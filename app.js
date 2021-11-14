@@ -1,6 +1,5 @@
 import { existsSync } from 'fs'
 import { writeFile } from 'fs/promises'
-import CONFIG from './config';
 import express from 'express';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
@@ -10,8 +9,11 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import http from 'http';
 import routes from './routes/index';
+import config from './config/index';
 
 const __dirname = path.resolve();
+
+const { ENV, PORT } = config;
 
 const app = express();
 app.use(fileUpload({
@@ -28,7 +30,7 @@ if (!existsSync('./public/datasets.info.json')) {
 }
 
 const isProd = (req, res, next) => {
-  if (CONFIG.ENV === 'DEV') {
+  if (ENV === 'DEV') {
     res.redirect('/api'); 
   } else {
     next();
@@ -67,7 +69,7 @@ app.use(function (err, req, res, next) {
 
 const server = http.createServer(app);
 
-server.listen(CONFIG.PORT, () => {
-  console.log(`🚀 App running on http://localhost:${CONFIG.PORT} - ${CONFIG.ENV}`);
+server.listen(PORT, () => {
+  console.log(`🚀 App running on http://localhost:${PORT} - ${ENV}`);
 });
 

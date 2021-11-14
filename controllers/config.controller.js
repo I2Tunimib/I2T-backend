@@ -1,14 +1,24 @@
-import { readFile } from 'fs/promises';
-import yaml from 'js-yaml';
+import config from '../config/index';
+
+const { extenders: extConfig, reconciliators: reconConfig } = config;
+
+const getPublicConfiguration = (services) => {
+  return Object.keys(services).map((key) => ({ id: key, ...services[key].info.public }))
+}
 
 const ConfigController = {
   /**
    * Get app configuration.
    */
   getConfig: async (req, res, next) => {
+    const reconciliators = getPublicConfiguration(reconConfig);
+    const extenders = getPublicConfiguration(extConfig);
+
     try {
-      const file = await readFile('config.yml', 'utf-8');
-      res.json(yaml.load(file));
+      res.json({
+        reconciliators,
+        extenders
+      });
     } catch (err) {
       next(err);
     }
