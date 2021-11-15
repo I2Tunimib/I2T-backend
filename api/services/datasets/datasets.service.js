@@ -3,10 +3,44 @@ import { createReadStream } from 'fs';
 import { queue } from 'async';
 import unzipper from 'unzipper';
 import ParseService from '../parse/parse.service';
-import { COLLECTION_DATASETS_MAP, COLLECTION_TABLES_MAP } from '../../utils/constants';
-import config from '../../config/index';
+import config from '../../../config/index';
 
 const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath } = config.helpers;
+
+const COLLECTION_DATASETS_MAP = {
+  name: {
+    label: 'Name',
+    // type: 'date' | 'percentage' | 'tag' 
+  },
+  nTables: {
+    label: 'N. Tables'
+  },
+  lastModifiedDate: {
+    label: 'Last Modified',
+    type: 'date'
+  }
+}
+
+const COLLECTION_TABLES_MAP = {
+  name: {
+    label: 'Name'
+  },
+  nCols: {
+    label: 'N. Cols'
+  },
+  nRows: {
+    label: 'N. Rows'
+  },
+  completion: {
+    label: 'Completion',
+    type: 'percentage'
+  },
+  lastModifiedDate: {
+    label: 'Last Modified',
+    type: 'date'
+  }
+}
+
 
 
 // create queue so that writes to file are not lost

@@ -1,4 +1,4 @@
-import { KG_INFO } from '../../utils/constants';
+import { KG_INFO } from '../../../utils/constants';
 
 const getColumnStatus = (context, rowKeys) => {
   const { total, reconciliated } = Object.keys(context).reduce((acc, key) => {

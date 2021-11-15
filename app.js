@@ -8,7 +8,7 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import http from 'http';
-import routes from './routes/index';
+import routes from './api/routes/index';
 import config from './config/index';
 
 const __dirname = path.resolve();

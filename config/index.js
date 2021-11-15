@@ -6,13 +6,13 @@ const env = dotenv.config();
 if (process.env.ENV === 'DEV' && env.error) {
   throw new Error("⚠️  Couldn't find '.env' file  ⚠️");
 }
-if (!CONFIG.DATASET_FILES_PATH) {
+if (!CONFIG.datasetFilesPath) {
   throw new Error("⚠️  You must provide a path to the dataset files in config.js ⚠️");
 }
-if (!CONFIG.DATASETS_DB_PATH) {
+if (!CONFIG.datasetDbPath) {
   throw new Error("⚠️  You must provide a path to the dataset db in config.js ⚠️");
 }
-if (!CONFIG.TABLES_DB_PATH) {
+if (!CONFIG.tablesDbPath) {
   throw new Error("⚠️  You must provide a path to the tables db in config.js ⚠️");
 }
 
@@ -63,12 +63,11 @@ const loadReconciliators = async () => {
 }
 
 const loadHelperFunctions = async () => {
-  const { DATASETS_DB_PATH, DATASET_FILES_PATH, TABLES_DB_PATH } = CONFIG;
-  console.log(CONFIG);
+  const { datasetDbPath, datasetFilesPath, tablesDbPath } = CONFIG;
   return {
-    getDatasetFilesPath: () => `${process.env.PWD}${DATASET_FILES_PATH}`,
-    getDatasetDbPath: () => `${process.env.PWD}${DATASETS_DB_PATH}`,
-    getTablesDbPath: () => `${process.env.PWD}${TABLES_DB_PATH}`
+    getDatasetFilesPath: () => `${process.env.PWD}${datasetFilesPath}`,
+    getDatasetDbPath: () => `${process.env.PWD}${datasetDbPath}`,
+    getTablesDbPath: () => `${process.env.PWD}${tablesDbPath}`
   }
 }
 

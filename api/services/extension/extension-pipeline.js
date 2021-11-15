@@ -1,18 +1,20 @@
-import config from "../../config/index";
+import config from '../../../config/index';
+import { postTransform } from './utils';
 
-const { reconciliators } = config;
+const { extenders } = config;
 
-const reconciliationPipeline = async (reqBody) => {
+const extensionPipeline = async (reqBody) => {
   const { serviceId, ...rest } = reqBody;
 
-  const service = reconciliators[serviceId];
+  const service = extenders[serviceId];
 
   if (!service) {
+    // if an extender isn't found throw an error. (extenderId probably is not sent correctly by client)
     throw new Error('Service not found');
   }
 
   const { requestTransformer, responseTransformer } = service;
-  
+
   if (!requestTransformer) {
     // get transform request function. If not found throw error (user probably didn't implement a transform function)
     throw new Error('No transformer request function found')
@@ -28,7 +30,8 @@ const reconciliationPipeline = async (reqBody) => {
   // transform response to app format
   const transformedResponse = await responseTransformer(rest, serviceResponse);
 
-  return transformedResponse;
+  // post transform and return final response
+  return postTransform(transformedResponse);
 }
 
-export default reconciliationPipeline;
+export default extensionPipeline;
