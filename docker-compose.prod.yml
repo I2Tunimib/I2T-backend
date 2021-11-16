@@ -1,10 +1,10 @@
 version: "3.6"
 services:
   release:
-    image: "ghcr.io/i2tunimib/i2t:latest"
+    image: "ghcr.io/tUI/tUI:latest"
     env_file: .env
     volumes:
-      - /datahdd/asia/I2T-backend/saved:/usr/src/app/public/saved
-      - /datahdd/asia/I2T-backend/tables:/usr/src/app/public/tables
+      - /datahdd/asia/tUI/public:/usr/src/app/public
     ports:
       - "3002:3002"
+      

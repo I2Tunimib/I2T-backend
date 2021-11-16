@@ -18,7 +18,7 @@ const { ENV, PORT } = config;
 const app = express();
 app.use(fileUpload({
   useTempFiles: true,
-  tempFileDir: './public/tmp'
+  tempFileDir: './tmp'
 }));
 
 if (!existsSync('./public/tables.info.json')) {

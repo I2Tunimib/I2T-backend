@@ -11,7 +11,7 @@ const ChallengeService = {
     return result.data;
   },
   findTable: async (datasetName, tableName) => {
-    const tmpFilePath = `./public/tmp/${nanoid()}.json`;
+    const tmpFilePath = `./tmp/${nanoid()}.json`;
     const writer = createWriteStream(tmpFilePath)
     const result = await axios.get(`${CHALLENGE_TABLES_BACKEND}/datasets/${datasetName}/tables/${tableName}`, {
       responseType: 'stream'
