@@ -108,7 +108,7 @@ const FileSystemService = {
   findTablesByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
     return ParseService.readJsonFile({
-      path: getDatasetDbPath(),
+      path: getTablesDbPath(),
       pattern: 'tables.*',
       condition: (obj) => { return regex.test(obj.name.toLowerCase()); }
     });
