@@ -6,5 +6,4 @@ services:
     volumes:
       - /datahdd/asia/tUI/public:/usr/src/app/public
     ports:
-      - "3002:3002"
-      
+      - "3003:3002"
