@@ -1,0 +1,9 @@
+version: "3.6"
+services:
+  release:
+    image: "ghcr.io/tUI/tUI:latest"
+    build: .
+    volumes:
+      - /datahdd/asia/tUI/public:/usr/src/app/public
+    ports:
+      - "3003:3002"
