@@ -1,7 +1,7 @@
 version: "3.6"
 services:
   release:
-    image: "ghcr.io/tUI/tUI:latest"
+    image: "ghcr.io/i2tunimib/tui:latest"
     build: .
     volumes:
       - /datahdd/asia/tUI/public:/usr/src/app/public
