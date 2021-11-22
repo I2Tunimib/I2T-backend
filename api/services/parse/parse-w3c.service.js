@@ -1,6 +1,7 @@
 import ParseService from './parse.service';
 import { PassThrough } from 'stream';
 import { parse } from 'JSONStream';
+import { KG_INFO } from '../../../utils/constants';
 
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',
@@ -61,24 +62,22 @@ const ParseW3C = {
       return columns;
     }, {});
   },
-  prepareMetadata: (metadata, reconciliators) => {
-    if (metadata.length === 0) {
-      return {
-        reconciliator: '',
-        values: []
-      }
-    }
-    const [prefix, id] = metadata[0].id.split(':');
-    const reconciliator = reconciliators.find((reconciliator) => prefix === reconciliator.prefix);
-    const values = metadata.map((meta) => ({
-      ...meta,
-      id
-    }));
-    return {
-      reconciliator: reconciliator ? {
-        id: reconciliator.id
-      } : '',
-      values
+  prepareMetadata: (metadata) => {
+    try {
+      const a = metadata.map(({id, name, ...rest}) => {
+        const [prefix, resourceId] = id.split(':');
+
+        const kgUrl = KG_INFO[prefix] ? KG_INFO[prefix].uri : ''
+  
+        return {
+          id,
+          name: { value: name, uri: `${kgUrl}${resourceId}` },
+          ...rest
+        }
+      })
+      return a;
+    } catch (err) {
+      console.log(err);
     }
   },
   isCellReconciliated: (metadata) => metadata.some((item) => item.match),
@@ -101,7 +100,8 @@ const ParseW3C = {
     const id = `r${index}`;
     let nReconciliated = 0;
     const cells = Object.keys(row).reduce((acc, column) => {
-      const { metadata = [], ...rest } = row[column]
+      const { metadata: metaRaw = [], ...rest } = row[column]
+      const metadata = ParseW3C.prepareMetadata(metaRaw);
       ParseW3C.updateReconciliatorsCount(metadata, column, columns);
       acc[column] = {
         id: `${id}$${column}`,

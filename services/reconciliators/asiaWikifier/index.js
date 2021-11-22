@@ -4,10 +4,29 @@ export default {
   },
   public: {
     name: 'ASIA (Wikifier)',
-    prefix: 'asiaWk',
+    prefix: 'dbp',
     relativeUrl: '/asia/wikifier',
     description: '',
-    uri: '',
-    metaToViz: ['id', 'name', 'score', 'match']
+    uri: 'http://dbpedia.org/resource',
+    metaToView: {
+      id: {
+        label: 'ID',
+      },
+      name: {
+        label: 'Name',
+        type: 'link'
+      },
+      score: {
+        label: 'Score'
+      },
+      type: {
+        label: 'Types',
+        type: 'subComponent'
+      },
+      match: {
+        label: 'Match',
+        type: 'tag'
+      }
+    }
   }
 }

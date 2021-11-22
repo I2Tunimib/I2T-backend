@@ -5,6 +5,7 @@ import ReconciliationController from '../controllers/reconciliation.controller';
 const router = Router();
 
 // Define routes for Configuration
+router.get('/list', asyncMiddleware(ReconciliationController.list));
 router.post('/*', asyncMiddleware(ReconciliationController.reconcile));
 
 export default router;

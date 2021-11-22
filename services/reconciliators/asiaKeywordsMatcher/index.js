@@ -7,7 +7,26 @@ export default {
     prefix: 'asiaKM',
     relativeUrl: '/asia/keywordsmatcher',
     description: '',
-    uri: 'http://www.geonames.org/',
-    metaToViz: ['id', 'name', 'score', 'match']
+    uri: 'http://www.jot-im.com/rdf/adwords',
+    metaToView: {
+      id: {
+        label: 'ID',
+      },
+      name: {
+        label: 'Name',
+        type: 'link'
+      },
+      score: {
+        label: 'Score'
+      },
+      type: {
+        label: 'Types',
+        type: 'subComponent'
+      },
+      match: {
+        label: 'Match',
+        type: 'tag'
+      }
+    }
   }
 }

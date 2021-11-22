@@ -1,8 +1,14 @@
 import axios from 'axios';
 import CONFIG from '../../config/index';
 import reconciliationPipeline from '../services/reconciliation/reconciliation-pipeline';
+import config from '../../config/index';
+
+const { reconciliators } = config;
 
 const ReconciliationController = {
+  list: async (req, res, next) => {
+    res.json(Object.keys(reconciliators).map((key) => ({ id: key, ...reconciliators[key].info.public })))
+  },
   reconcile: async (req, res, next) => {
     try {
       res.json(await reconciliationPipeline(req.body))

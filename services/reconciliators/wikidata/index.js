@@ -7,7 +7,29 @@ export default {
     prefix: 'wkd',
     relativeUrl: '/wikidata',
     description: '',
-    uri: '',
-    metaToViz: ['id', 'name', 'score', 'match']
+    uri: 'https://www.wikidata.org/wiki',
+    metaToView: {
+      id: {
+        label: 'ID',
+      },
+      name: {
+        label: 'Name',
+        type: 'link'
+      },
+      score: {
+        label: 'Score'
+      },
+      type: {
+        label: 'Types',
+        type: 'subComponent'
+      },
+      description: {
+        label: 'Description'
+      },
+      match: {
+        label: 'Match',
+        type: 'tag'
+      }
+    }
   }
 }

@@ -26,7 +26,7 @@ yarn-error.log*
 /public/saved/*
 /public/datasets/*
 /public/*.info*
-/public/tmp/*
+/tmp/*
 /public/raw-tables/*
 /public/annotated-tables/*
 !/public/saved/TABELLA_TEST_1.json

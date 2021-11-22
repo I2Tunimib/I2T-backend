@@ -80,7 +80,7 @@ const DatasetsController = {
     try {
       const table = await DatasetsService.findTable(idDataset, idTable)
       
-      res.json(await ExportService.w3c({ ...table, keepMatching }));
+      res.json(await ExportService[format]({ ...table, keepMatching }));
     } catch(err) {
       next(err)
     }

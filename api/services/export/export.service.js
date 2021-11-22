@@ -6,9 +6,15 @@ const ExportService = {
       keepMatching
     ) => {
       if (keepMatching) {
-        return metadata.filter((meta) => meta.match);
+        return metadata.filter((meta) => meta.match).map(({ name, ...rest }) => ({
+          name: name.value,
+          ...rest
+        }));
       }
-      return metadata;
+      return metadata.map(({ name, ...rest }) => ({
+        name: name.value,
+        ...rest
+      }));
     };
 
     const firstRow = Object.keys(columns).reduce((acc, colId, index) => {
