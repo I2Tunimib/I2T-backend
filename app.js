@@ -8,6 +8,7 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import http from 'http';
+import compression from 'compression';
 import routes from './api/routes/index';
 import config from './config/index';
 
@@ -16,6 +17,8 @@ const __dirname = path.resolve();
 const { ENV, PORT } = config;
 
 const app = express();
+app.use(compression());
+
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: './tmp'
