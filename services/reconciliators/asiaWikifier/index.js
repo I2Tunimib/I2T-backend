@@ -21,7 +21,7 @@ export default {
       },
       type: {
         label: 'Types',
-        type: 'subComponent'
+        type: 'subList'
       },
       match: {
         label: 'Match',
