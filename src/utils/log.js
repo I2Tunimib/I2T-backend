@@ -1,5 +1,6 @@
 const colors = {
   reset: '\x1b[0m',
+  static: "\x1b[33m",
   api: '\x1b[35m',
   db: '\x1b[31m',
   mantis: '\x1b[32m',

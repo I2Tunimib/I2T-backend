@@ -4,7 +4,7 @@ import fileUpload from 'express-fileupload';
 import createError from 'http-errors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
+import morgan, { token } from 'morgan';
 import compression from 'compression';
 import routes from './api/routes/index';
 import config from './config/index';
@@ -34,10 +34,11 @@ const isProd = (req, res, next) => {
 app.disable('etag');
 app.use(cors())
 app.use(morgan((tokens, req, res) => {
+  const url = tokens.url(req, res);
   return [
-    colorString('api'),
+    url.startsWith('/api') ? colorString('api') : colorString('static'),
     tokens.method(req, res),
-    tokens.url(req, res),
+    url,
     tokens.status(req, res),
     tokens['response-time'](req, res), 'ms'
   ].join(' ')

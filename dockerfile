@@ -1,5 +1,8 @@
 FROM node:14-alpine
 
+# install zip
+RUN apk update && apk add zip
+
 # Create app directory
 WORKDIR /usr/src/app
 
