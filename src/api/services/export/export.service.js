@@ -1,4 +1,21 @@
+import { parse } from 'json2csv'
+
 const ExportService = {
+  rawJson: async ({ columns, rows }) => {
+    return Object.keys(rows).map((rowId) => {
+      const colIds = Object.keys(rows[rowId].cells);
+
+      return colIds.reduce((acc, colId) => {
+        acc[columns[colId].label] = rows[rowId].cells[colId].label
+        return acc;
+      }, {});
+    })
+
+  },
+  csv: async ({ columns, rows }) => {
+    const jsonData = await ExportService.rawJson({ columns, rows });
+    return parse(jsonData);
+  },
   w3c: async ({ columns, rows, keepMatching = false }) => {
 
     const getMetadata = (

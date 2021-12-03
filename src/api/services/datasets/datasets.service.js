@@ -1,11 +1,15 @@
-import { readFile, mkdir, writeFile, rm } from 'fs/promises';
-import { createReadStream } from 'fs';
+import { readFile, mkdir, writeFile, rm, readdir } from 'fs/promises';
+import { createReadStream, existsSync, lstatSync } from 'fs';
 import { queue } from 'async';
 import unzipper from 'unzipper';
+import { spawn } from 'child_process';
 import ParseService from '../parse/parse.service';
 import config from '../../../config/index';
+import path from "path"
+import { KG_INFO } from '../../../utils/constants'
+const __dirname = path.resolve();
 
-const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath } = config.helpers;
+const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } = config.helpers;
 
 const COLLECTION_DATASETS_MAP = {
   name: {
@@ -49,11 +53,49 @@ const writeQueue = queue(async (task, completed) => {
 }, 1);
 
 const FileSystemService = {
+  zip: async (inputFile, outputFile, timeout=(1000*60*5)) => {
+    return new Promise((resolve, reject) => {
+
+        const subprocess = spawn('zip', ['-j', outputFile, inputFile], {
+            shell: false,
+            stdio: 'ignore',
+            cwd: __dirname,
+        });
+    
+        //failed to spawn process
+        subprocess.on('error', reject);
+        
+       const t = setTimeout(() => {
+           subprocess.kill();
+           reject(new Error('TIMEDOUT'));
+        }, timeout);
+    
+        //process exited
+        subprocess.on('exit', (code, signal) => {
+            clearTimeout(t);
+            if (code === 0) {
+                resolve();
+            }
+            else { 
+                reject(code || signal);
+            }
+        });
+    });
+  },
+  deleteFiles: async (pattern) => {
+    const files = await readdir(getTmpPath());
+    for (const file of files) {
+      if (file.match(pattern)) {
+        rm(`${getTmpPath()}/${file}`)
+      }
+    }
+  },
   findOneDataset: async (idDataset) => {
     return ParseService.readJsonFile({
       path: getDatasetDbPath(),
       pattern: 'datasets.*',
       acc: [],
+      stopAtFirst: true,
       condition: ({ id }) => id === idDataset
     });
   },
@@ -90,20 +132,39 @@ const FileSystemService = {
       collection: tables
     }
   },
+  findTables: async (condition) => {
+    return ParseService.readJsonFile({
+      path: getTablesDbPath(),
+      pattern: 'tables.*',
+      acc: [],
+      condition
+    });
+  },
   findTable: async (idDataset, idTable) => {
     const table = await ParseService.readJsonFile({
       path: getTablesDbPath(),
       pattern: 'tables.*',
       acc: [],
-      condition: (item) => item.id === idTable,
+      condition: (item) => item.idDataset === idDataset && item.id === idTable,
       stopAtFirst: true
     });
+
     const { columns, rows } = JSON.parse(await readFile(`${getDatasetFilesPath()}/${idDataset}/${idTable}.json`));
     return {
       table,
       columns,
       rows
     }
+  },
+  findOneTable: async (idDataset, idTable) => {
+    const table = await ParseService.readJsonFile({
+      path: getTablesDbPath(),
+      pattern: 'tables.*',
+      acc: [],
+      stopAtFirst: true,
+      condition: ({ id, idDataset: currentIdDataset }) => currentIdDataset === idDataset && id === idTable
+    });
+    return table
   },
   findTablesByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
@@ -280,6 +341,38 @@ const FileSystemService = {
     })
 
     return newTable;
+  },
+  computeStats: async (tableData) => {
+    const { table, columns, rows: rawRows } = tableData;
+
+    const rows = Object.keys(rawRows).reduce((acc, rowId) => {
+      acc[rowId] = {
+        ...rawRows[rowId],
+        cells: Object.keys(rawRows[rowId].cells).reduce((accCell, colId) => {
+          accCell[colId] = {
+            ...rawRows[rowId].cells[colId],
+            metadata: rawRows[rowId].cells[colId].metadata.map((metaItem) => {
+              const [prefix, id] = metaItem.id.split(':');
+              return {
+                ...metaItem,
+                name: {
+                  value: metaItem.name,
+                  uri: `${KG_INFO[prefix].uri}${id}`
+                }
+              }
+            })
+          }
+          return accCell;
+        }, {})
+      }
+      return acc;
+    }, {});
+
+    return {
+      table,
+      rows,
+      columns
+    }
   }
 };
 

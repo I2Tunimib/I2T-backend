@@ -1,5 +1,3 @@
-import { existsSync } from 'fs'
-import { writeFile } from 'fs/promises'
 import express from 'express';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
@@ -7,30 +5,23 @@ import createError from 'http-errors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
-import http from 'http';
 import compression from 'compression';
 import routes from './api/routes/index';
 import config from './config/index';
-
+import { colorString } from './utils/log';
 const __dirname = path.resolve();
+
 
 const { ENV, PORT } = config;
 
-const app = express();
+export const app = express();
+
 app.use(compression());
 
 app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: './tmp'
 }));
-
-if (!existsSync('./public/tables.info.json')) {
-  await writeFile('./public/tables.info.json', JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }), null, 2)
-}
-
-if (!existsSync('./public/datasets.info.json')) {
-  await writeFile('./public/datasets.info.json', JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}), null, 2)
-}
 
 const isProd = (req, res, next) => {
   if (ENV === 'DEV') {
@@ -40,10 +31,17 @@ const isProd = (req, res, next) => {
   }
 }
 
-
 app.disable('etag');
 app.use(cors())
-app.use(morgan('dev'));
+app.use(morgan((tokens, req, res) => {
+  return [
+    colorString('api'),
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens['response-time'](req, res), 'ms'
+  ].join(' ')
+}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '500mb' }));
@@ -70,9 +68,8 @@ app.use(function (err, req, res, next) {
   res.status(500).json({error: err.message});
 });
 
-const server = http.createServer(app);
-
-server.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 App running on http://localhost:${PORT} - ${ENV}`);
 });
 
+export default server;

@@ -1,6 +1,7 @@
-import CONFIG from '../config';
+import CONFIG from '../../config';
 import dotenv from 'dotenv';
-import { readdirSync } from 'fs';
+import { readdirSync, existsSync } from 'fs';
+import { log } from '../utils/log';
 const env = dotenv.config();
 
 if (process.env.ENV === 'DEV' && env.error) {
@@ -16,10 +17,13 @@ if (!CONFIG.tablesDbPath) {
   throw new Error("⚠️  You must provide a path to the tables db in config.js ⚠️");
 }
 
+/**
+ * Load extenders services in memory
+ */
 const loadExtenders = async () => {
   const { services } = CONFIG;
 
-  const basePath = `${process.env.PWD}${services.path}/extenders`;
+  const basePath = `${process.env.PWD}/src${services.path}/extenders`;
 
   const extenders = readdirSync(basePath).filter((extender) => !services.exclude.extenders.includes(extender));
 
@@ -39,10 +43,13 @@ const loadExtenders = async () => {
   }, {});
 }
 
+/**
+ * Load reconciliators services in memory
+ */
 const loadReconciliators = async () => {
   const { services } = CONFIG;
 
-  const basePath = `${process.env.PWD}${services.path}/reconciliators`;
+  const basePath = `${process.env.PWD}/src${services.path}/reconciliators`;
 
   const reconciliators = readdirSync(basePath).filter((reconciliator) => !services.exclude.reconciliators.includes(reconciliator));
 
@@ -62,27 +69,49 @@ const loadReconciliators = async () => {
   }, {});
 }
 
+/**
+ * Load helper functions in memory
+ */
 const loadHelperFunctions = async () => {
-  const { datasetDbPath, datasetFilesPath, tablesDbPath } = CONFIG;
+  const { datasetDbPath, datasetFilesPath, tablesDbPath, tmpPath } = CONFIG;
   return {
     getDatasetFilesPath: () => `${process.env.PWD}${datasetFilesPath}`,
     getDatasetDbPath: () => `${process.env.PWD}${datasetDbPath}`,
-    getTablesDbPath: () => `${process.env.PWD}${tablesDbPath}`
+    getTablesDbPath: () => `${process.env.PWD}${tablesDbPath}`,
+    getTmpPath: () => `${process.env.PWD}${tmpPath}`
   }
 }
 
-
+/**
+ * Load initial configuration
+ */
 const loadConfig = async () => {
   const reconciliators = await loadReconciliators();
   const extenders = await loadExtenders();
   const helpers = await loadHelperFunctions();
 
+  if (!existsSync(helpers.getTablesDbPath())) {
+    log('db', 'Create tables DB')
+    await writeFile(helpers.getTablesDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }), null, 2)
+  }
+  
+  if (!existsSync(helpers.getDatasetDbPath())) {
+    log('db', 'Create dataset DB')
+    await writeFile(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}), null, 2)
+  }
+  
+
   return {
     ENV: process.env.ENV || 'dev',
     PORT: process.env.PORT || '3002',
+    MANTIS: process.env.MANTIS,
+    MANTIS_AUTH_TOKEN: process.env.MANTIS_AUTH_TOKEN,
     reconciliators,
     extenders,
-    helpers
+    helpers,
+    mantisObjs: { 
+      cronsMap: {}
+    }
   }
 }
 

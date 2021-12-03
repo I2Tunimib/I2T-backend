@@ -11,6 +11,7 @@ router.get('/', (req, res) => {
 })
 
 router.use('/config', configRoutes);
+router.use('/full-annotation', reconciliationRoutes);
 router.use('/reconciliators', reconciliationRoutes);
 router.use('/extenders', extensionRoutes);
 router.use('/dataset', datasetsRoutes);

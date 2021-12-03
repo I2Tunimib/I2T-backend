@@ -5,9 +5,11 @@ export default {
   datasetDbPath: '/public/datasets.info.json',
   // path to tables db relative to root folder
   tablesDbPath: '/public/tables.info.json',
+  // path to folder with temporary files
+  tmpPath: '/tmp',
 
   services: {
-    // path to services relative to root folder
+    // path to services relative to src folder
     path: '/services',
     // specify services to exclude during config initialization
     // excluded services won't be loaded during app startup

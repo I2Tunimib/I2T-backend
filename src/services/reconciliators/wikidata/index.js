@@ -4,7 +4,7 @@ export default {
   },
   public: {
     name: 'Wikidata',
-    prefix: 'wkd',
+    prefix: 'wd',
     relativeUrl: '/wikidata',
     description: '',
     uri: 'https://www.wikidata.org/wiki',

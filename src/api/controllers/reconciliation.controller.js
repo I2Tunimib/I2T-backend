@@ -1,7 +1,11 @@
 import axios from 'axios';
-import CONFIG from '../../config/index';
+// import CONFIG from '../../config/index';
 import reconciliationPipeline from '../services/reconciliation/reconciliation-pipeline';
 import config from '../../config/index';
+import path from 'path';
+import MantisService from '../services/reconciliation/mantis.service';
+
+const __dirname = path.resolve();
 
 const { reconciliators } = config;
 
@@ -14,6 +18,36 @@ const ReconciliationController = {
       res.json(await reconciliationPipeline(req.body))
     } catch (err) {
       next(err);
+    }
+  },
+  fullAnnoation: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const io = req.app.get('io');
+    try {
+      // if dataset and table already have mantisId (already uploaded) they are simply returned
+      const { mantisDatasetId, mantisTableId } = await MantisService.createTable(idDataset, idTable);
+      // start annotation process
+      const result = await MantisService.annotate(mantisDatasetId, mantisTableId);
+
+      if (result.message == 'accepted') {
+        // start cronjob to periodically check annotation status for the table
+        await MantisService.trackAnnotationStatus({
+          io,
+          localDatasetId: idDataset,
+          localTableId: idTable,
+          mantisDatasetId, 
+          mantisTableId
+        });
+        res.json({
+          datasetId: idDataset,
+          tableId: idTable,
+          mantisStatus: 'PENDING'
+        });
+      } else {
+        next({ msg: 'Failed to add annotation task to queue' })
+      }
+    } catch (err) {
+      next(err)
     }
   },
   lamapi: async (req, res, next) => {
