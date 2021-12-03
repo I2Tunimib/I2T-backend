@@ -4,6 +4,7 @@ import { queue } from 'async';
 import unzipper from 'unzipper';
 import { spawn } from 'child_process';
 import ParseService from '../parse/parse.service';
+import MantisService from '../reconciliation/mantis.service';
 import config from '../../../config/index';
 import path from "path"
 import { KG_INFO } from '../../../utils/constants'
@@ -258,6 +259,11 @@ const FileSystemService = {
           nRemoved += 1
         }
       }
+      const { mantisId } = datasets[datasetId];
+
+      if (mantisId !== undefined) {
+        await MantisService.deleteDataset(mantisId);
+      }
 
       // remove dataset
       delete datasets[datasetId];
@@ -285,6 +291,10 @@ const FileSystemService = {
       let nRemoved = 0;
       for (const key in tables) {
         if (tables[key].id === tableId) {
+          if (tables[key].mantisId !== undefined) {
+            await MantisService.deleteTable(datasets[datasetId].mantisId, tables[key].mantisId);
+          }
+
           delete tables[key]
           nRemoved += 1
         }

@@ -143,6 +143,24 @@ const MantisService = {
     });
     return result.data;
   },
+  deleteDataset: async (mantisDatasetId) => {
+    log('mantis', `Delete dataset [${mantisDatasetId}]`)
+    const result = await axios.delete(`${MANTIS}/dataset/${mantisDatasetId}`, {
+      headers: {
+        token: MANTIS_AUTH_TOKEN
+      }
+    });
+    return result.data;
+  },
+  deleteTable: async (mantisDatasetId, mantisTableId) => {
+    log('mantis', `Delete table [${mantisTableId}] from [${mantisDatasetId}]`)
+    const result = await axios.delete(`${MANTIS}/dataset/${mantisDatasetId}/table/${mantisTableId}`, {
+      headers: {
+        token: MANTIS_AUTH_TOKEN
+      }
+    });
+    return result.data;
+  },
   checkPendingTable: async (io) => {
     // if there are table pending the server stopped while Mantis 
     // annotation processes were undergoing
