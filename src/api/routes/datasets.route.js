@@ -14,7 +14,7 @@ router.get('/:idDataset/table/:idTable/export', asyncMiddleware(DatasetsControll
 router.post('/', asyncMiddleware(DatasetsController.addDataset));
 router.put('/:idDataset/table/:idTable', asyncMiddleware(DatasetsController.updateTable));
 router.delete('/:idDataset', asyncMiddleware(DatasetsController.removeDataset));
-router.delete('/:idDataset/:idTable', asyncMiddleware(DatasetsController.removeTable));
+router.delete('/:idDataset/table/:idTable', asyncMiddleware(DatasetsController.removeTable));
 
 
 export default router;

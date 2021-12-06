@@ -283,6 +283,7 @@ const MantisService = {
             }
             // update tables
             await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables }, null, 2));
+            await FileSystemService.deleteFiles(new RegExp(tableTmpId))
             data = {
               mantisDatasetId: mantisDataset.id,
               mantisTableId: mantisTables[0].id
@@ -322,6 +323,7 @@ const MantisService = {
         }
       } catch (err) {
         console.log(err);
+        await FileSystemService.deleteFiles(new RegExp(tableTmpId))
         throw new err;
       }
     })

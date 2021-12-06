@@ -8,6 +8,7 @@ import MantisService from '../reconciliation/mantis.service';
 import config from '../../../config/index';
 import path from "path"
 import { KG_INFO } from '../../../utils/constants'
+import { log } from '../../../utils/log';
 const __dirname = path.resolve();
 
 const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } = config.helpers;
@@ -54,33 +55,33 @@ const writeQueue = queue(async (task, completed) => {
 }, 1);
 
 const FileSystemService = {
-  zip: async (inputFile, outputFile, timeout=(1000*60*5)) => {
+  zip: async (inputFile, outputFile, timeout = (1000 * 60 * 5)) => {
     return new Promise((resolve, reject) => {
 
-        const subprocess = spawn('zip', ['-j', outputFile, inputFile], {
-            shell: false,
-            stdio: 'ignore',
-            cwd: __dirname,
-        });
-    
-        //failed to spawn process
-        subprocess.on('error', reject);
-        
-       const t = setTimeout(() => {
-           subprocess.kill();
-           reject(new Error('TIMEDOUT'));
-        }, timeout);
-    
-        //process exited
-        subprocess.on('exit', (code, signal) => {
-            clearTimeout(t);
-            if (code === 0) {
-                resolve();
-            }
-            else { 
-                reject(code || signal);
-            }
-        });
+      const subprocess = spawn('zip', ['-j', outputFile, inputFile], {
+        shell: false,
+        stdio: 'ignore',
+        cwd: __dirname,
+      });
+
+      //failed to spawn process
+      subprocess.on('error', reject);
+
+      const t = setTimeout(() => {
+        subprocess.kill();
+        reject(new Error('TIMEDOUT'));
+      }, timeout);
+
+      //process exited
+      subprocess.on('exit', (code, signal) => {
+        clearTimeout(t);
+        if (code === 0) {
+          resolve();
+        }
+        else {
+          reject(code || signal);
+        }
+      });
     });
   },
   deleteFiles: async (pattern) => {
@@ -178,7 +179,7 @@ const FileSystemService = {
   findDatasetsByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
     return ParseService.readJsonFile({
-      path: getDatasetDbPath(), 
+      path: getDatasetDbPath(),
       pattern: 'datasets.*',
       condition: (obj) => regex.test(obj.name.toLowerCase())
     });
@@ -186,7 +187,7 @@ const FileSystemService = {
   addDataset: async (filePath, datasetName) => {
     let newDatasets = {}
     let newTables = {}
-    
+
     await writeQueue.push(async () => {
       // read db datasets
       const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
@@ -223,7 +224,7 @@ const FileSystemService = {
             nCells: data.nCells,
             nCellsReconciliated: data.nCellsReconciliated,
             lastModifiedDate: new Date().toISOString()
-          }           
+          }
         } else {
           entry.autodrain();
         }
@@ -237,49 +238,52 @@ const FileSystemService = {
         lastModifiedDate: new Date().toISOString()
       }
       // add dataset entry
-      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: {...datasets, ...newDatasets} }, null, 2));
+      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: { ...datasets, ...newDatasets } }, null, 2));
       // add table entries
-      await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: {...tables, ...newTables} }, null, 2));
+      await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: { ...tables, ...newTables } }, null, 2));
       // delete temp file
       await rm(filePath)
-      
+
     });
     return { datasets: newDatasets, tables: newTables }
   },
   removeDataset: async (datasetId) => {
     await writeQueue.push(async () => {
-      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
-      const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
-
-      // remove tables
-      let nRemoved = 0;
-      for (const key in tables) {
-        if (tables[key].idDataset === datasetId) {
-          delete tables[key]
-          nRemoved += 1
-        }
-      }
-      const { mantisId } = datasets[datasetId];
-
-      if (mantisId !== undefined) {
-        await MantisService.deleteDataset(mantisId);
-      }
-
-      // remove dataset
-      delete datasets[datasetId];
-
-      // replace db
-      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
-      // replace db
-      await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables }, null, 2));
-      
       try {
+        const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
+        const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
+
+        // remove tables
+        let nRemoved = 0;
+        for (const key in tables) {
+          if (tables[key].idDataset === datasetId) {
+            delete tables[key]
+            nRemoved += 1
+          }
+        }
+        const { mantisId } = datasets[datasetId];
+
+        if (mantisId !== undefined) {
+          try {
+            await MantisService.deleteDataset(mantisId);
+          } catch {
+            log('mantis', `Dataset [${mantisId}] not found`)
+          }
+        }
+
+        // remove dataset
+        delete datasets[datasetId];
+
+        // replace db
+        await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
+        // replace db
+        await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables }, null, 2));
+
         // remove files
         await rm(`${getDatasetFilesPath()}/${datasetId}`, { recursive: true })
       } catch(err) {
         console.log(err);
       }
-
     });
   },
   removeTable: async (datasetId, tableId) => {
@@ -287,31 +291,27 @@ const FileSystemService = {
       const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
       const { meta, tables } = JSON.parse(await readFile(getTablesDbPath()))
 
-      // remove tables
-      let nRemoved = 0;
-      for (const key in tables) {
-        if (tables[key].id === tableId) {
-          if (tables[key].mantisId !== undefined) {
-            await MantisService.deleteTable(datasets[datasetId].mantisId, tables[key].mantisId);
-          }
-
-          delete tables[key]
-          nRemoved += 1
+      if (tables[tableId]) {
+        // remove table
+        if (tables[tableId].mantisId !== undefined) {
+          await MantisService.deleteTable(datasets[datasetId].mantisId, tables[tableId].mantisId);
         }
-      }
-      datasets[datasetId].nTables -= nRemoved;
-      datasets[datasetId].lastModifiedDate = new Date().toISOString()
+        delete tables[tableId];
 
-      // replace db
-      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
-      // replace db
-      await writeFile(getTablesDbPath(), JSON.stringify({ meta, tables }, null, 2));
-      
-      try {
-        // remove files
-        await rm(`${getDatasetFilesPath()}/${datasetId}/${tableId}.json`)
-      } catch(err) {
-        console.log(err);
+        datasets[datasetId].nTables -= 1;
+        datasets[datasetId].lastModifiedDate = new Date().toISOString()
+
+        // replace db
+        await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets }, null, 2));
+        // replace db
+        await writeFile(getTablesDbPath(), JSON.stringify({ meta, tables }, null, 2));
+
+        try {
+          // remove files
+          await rm(`${getDatasetFilesPath()}/${datasetId}/${tableId}.json`)
+        } catch (err) {
+          console.log(err);
+        }
       }
 
     });
