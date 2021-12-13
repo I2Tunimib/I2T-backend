@@ -1,6 +1,7 @@
 import CONFIG from '../../config';
 import dotenv from 'dotenv';
 import { readdirSync, existsSync } from 'fs';
+import { writeFile } from 'fs/promises';
 import { log } from '../utils/log';
 const env = dotenv.config();
 
