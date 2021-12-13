@@ -43,7 +43,9 @@ const handleAnnotationCompletion = async ({ mantisDatasetId, mantisTableId, loca
       table: {
         status,
         nCells,
-        nCellsReconciliated
+        nCellsReconciliated,
+        minMetaScore,
+        maxMetaScore
       },
       columns,
       rows
@@ -55,6 +57,8 @@ const handleAnnotationCompletion = async ({ mantisDatasetId, mantisTableId, loca
       mantisStatus: status,
       nCells,
       nCellsReconciliated,
+      minMetaScore,
+      maxMetaScore,
       lastModifiedDate: new Date().toISOString()
     }
 

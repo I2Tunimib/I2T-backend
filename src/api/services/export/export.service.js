@@ -19,7 +19,7 @@ const ExportService = {
   w3c: async ({ columns, rows, keepMatching = false }) => {
 
     const getMetadata = (
-      metadata,
+      metadata = [],
       keepMatching
     ) => {
       if (keepMatching) {
@@ -39,6 +39,7 @@ const ExportService = {
         id,
         status,
         context,
+        metadata,
         ...propsToKeep
       } = columns[colId];
 
@@ -46,9 +47,15 @@ const ExportService = {
         const { uri } = context[prefix];
         return [...accCtx, { prefix: `${prefix}:`, uri }];
       }, []);
-
+      
       acc[`th${index}`] = {
         ...propsToKeep,
+        metadata: metadata.length > 0 ? [{
+          ...metadata[0],
+          ...(metadata[0].entity && {
+            entity: getMetadata(metadata[0].entity, keepMatching)
+          })
+        }] : [],
         context: standardContext
       };
       return acc;

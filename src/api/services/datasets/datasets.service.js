@@ -18,8 +18,14 @@ const COLLECTION_DATASETS_MAP = {
     label: 'Name',
     // type: 'date' | 'percentage' | 'tag' 
   },
+  description: {
+    label: 'Description'
+  },
   nTables: {
     label: 'N. Tables'
+  },
+  mentions: {
+    label: 'N. Mentions'
   },
   lastModifiedDate: {
     label: 'Last Modified',
@@ -320,7 +326,7 @@ const FileSystemService = {
     // parse directly to app format and save it (no more distinction from raw and annotated)
   },
   updateTable: async ({ tableInstance, columns: columnsRaw, rows: rowsRaw }) => {
-    const { id: tableId, idDataset: datasetId, name: tableName, nCells, nCellsReconciliated } = tableInstance
+    const { id: tableId, idDataset: datasetId, name: tableName, nCells, nCellsReconciliated, minMetaScore, maxMetaScore } = tableInstance
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
 
@@ -337,6 +343,8 @@ const FileSystemService = {
         nCols: allIdsCols.length,
         nCells,
         nCellsReconciliated,
+        minMetaScore,
+        maxMetaScore,
         lastModifiedDate: new Date().toISOString()
       }
 
@@ -352,25 +360,64 @@ const FileSystemService = {
 
     return newTable;
   },
+  transformMetadata: (metadata) => {
+    let lowestScore = 0;
+    let highestScore = 0;
+    let match = false;
+
+    const meta = metadata.map((metaItem, index) => {
+      const [prefix, id] = metaItem.id.split(':');
+      if (metaItem.match) {
+        match = true;
+      }
+      if (index === 0) {
+        lowestScore = metaItem.score;
+        highestScore =metaItem.score;
+      } else {
+        lowestScore = metaItem.score < lowestScore ? metaItem.score : lowestScore;
+        highestScore = metaItem.score > highestScore ? metaItem.score : highestScore;
+      }
+      return {
+        ...metaItem,
+        name: {
+          value: metaItem.name,
+          uri: `${KG_INFO[prefix].uri}${id}`
+        }
+      }
+    })
+
+    return {
+      metadata: meta,
+      highestScore,
+      lowestScore,
+      match
+    }
+  },
   computeStats: async (tableData) => {
     const { table, columns, rows: rawRows } = tableData;
+
+    let minMetaScore = 0
+    let maxMetaScore = 0
 
     const rows = Object.keys(rawRows).reduce((acc, rowId) => {
       acc[rowId] = {
         ...rawRows[rowId],
         cells: Object.keys(rawRows[rowId].cells).reduce((accCell, colId) => {
+          const { lowestScore, highestScore, match, metadata } = FileSystemService.transformMetadata(rawRows[rowId].cells[colId].metadata);
+          minMetaScore = lowestScore < minMetaScore ? lowestScore : minMetaScore;
+          maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
+
           accCell[colId] = {
             ...rawRows[rowId].cells[colId],
-            metadata: rawRows[rowId].cells[colId].metadata.map((metaItem) => {
-              const [prefix, id] = metaItem.id.split(':');
-              return {
-                ...metaItem,
-                name: {
-                  value: metaItem.name,
-                  uri: `${KG_INFO[prefix].uri}${id}`
-                }
-              }
-            })
+            annotationMeta: {
+              ...(columns[colId].kind === 'entity' && {
+                annotated: true
+              }),
+              match,
+              lowestScore,
+              highestScore
+            },
+            metadata
           }
           return accCell;
         }, {})
@@ -379,7 +426,11 @@ const FileSystemService = {
     }, {});
 
     return {
-      table,
+      table: {
+        ...table,
+        minMetaScore,
+        maxMetaScore
+      },
       rows,
       columns
     }
