@@ -49,7 +49,13 @@ export default async (req, res) => {
                   name: metadataItemName,
                   match: true,
                   score: 100
-                }]
+                }],
+                annotationMeta: {
+                  annotated: true,
+                  match: true,
+                  lowestScore: 100,
+                  highestScore: 100
+                }
               }
             }
           }
@@ -61,8 +67,14 @@ export default async (req, res) => {
               [colId]: {
                 id: cellId,
                 label: 'null',
-                metadata: []
-              }
+                metadata: [],
+                annotationMeta: {
+                  annotated: false,
+                  match: false,
+                  lowestScore: 0,
+                  highestScore: 0
+                }
+              },
             }
           }
         }

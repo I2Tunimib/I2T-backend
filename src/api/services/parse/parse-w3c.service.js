@@ -1,4 +1,5 @@
 import ParseService from './parse.service';
+import FileSystemService from '../datasets/datasets.service';
 import { PassThrough } from 'stream';
 import { parse } from 'JSONStream';
 import { KG_INFO } from '../../../utils/constants';
@@ -62,24 +63,53 @@ const ParseW3C = {
       return columns;
     }, {});
   },
-  prepareMetadata: (metadata) => {
-    try {
-      const a = metadata.map(({id, name, ...rest}) => {
-        const [prefix, resourceId] = id.split(':');
+  // prepareMetadata: (metadata, columns, minMetaScore, maxMetaScore) => {
+  //   const { lowestScore, highestScore, match, metadata } = FileSystemService.transformMetadata(metadata);
+  //   minMetaScore = lowestScore < minMetaScore ? lowestScore : minMetaScore;
+  //   maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
 
-        const kgUrl = KG_INFO[prefix] ? KG_INFO[prefix].uri : ''
+  //   return {
+  //     annotationMeta: {
+  //       ...(columns[colId].kind === 'entity' && {
+  //         annotated: true
+  //       }),
+  //       match,
+  //       lowestScore,
+  //       highestScore
+  //     },
+  //     metadata
+  //   }
+  //   try {
+  //     const a = metadata.map(({id, name, ...rest}) => {
+  //       const [prefix, resourceId] = id.split(':');
+
+  //       const kgUrl = KG_INFO[prefix] ? KG_INFO[prefix].uri : ''
+
+  //       return {
+  //         id,
+  //         name: { value: name, uri: `${kgUrl}${resourceId}` },
+  //         ...rest,
+  //         annotationMeta: {
+  //           ...(columns[colId].kind === 'entity' && {
+  //             annotated: true
+  //           }),
+  //           match,
+  //           lowestScore,
+  //           highestScore
+  //         },
+  //         metadata
+  //       }
   
-        return {
-          id,
-          name: { value: name, uri: `${kgUrl}${resourceId}` },
-          ...rest
-        }
-      })
-      return a;
-    } catch (err) {
-      console.log(err);
-    }
-  },
+  //       return {
+  //         id,
+  //         name: { value: name, uri: `${kgUrl}${resourceId}` },
+  //         ...rest
+  //       }
+  //     })
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // },
   isCellReconciliated: (metadata) => metadata.some((item) => item.match),
   updateReconciliatorsCount: (metadata, column, columns) => {
     if (metadata.length > 0) {
@@ -96,18 +126,29 @@ const ParseW3C = {
   addRow: (rows, parsedRow) => {
     rows[parsedRow.id] = parsedRow;
   },
-  parseRow: (row, index, columns, reconciliators) => {
+  parseRow: (row, index, columns, minMetaScore, maxMetaScore) => {
     const id = `r${index}`;
     let nReconciliated = 0;
     const cells = Object.keys(row).reduce((acc, column) => {
       const { metadata: metaRaw = [], ...rest } = row[column]
-      const metadata = ParseW3C.prepareMetadata(metaRaw);
+      const { lowestScore, highestScore, match, metadata } = FileSystemService.transformMetadata(metaRaw);
+      minMetaScore = lowestScore < minMetaScore ? lowestScore : minMetaScore;
+      maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
+
       ParseW3C.updateReconciliatorsCount(metadata, column, columns);
       acc[column] = {
         id: `${id}$${column}`,
         ...DEFAULT_CELL_PROPERTIES,
         ...rest,
-        metadata
+        metadata,
+        annotationMeta: {
+          ...(columns[column].kind === 'entity' && {
+            annotated: true
+          }),
+          match,
+          lowestScore,
+          highestScore
+        }
       }
       if (metadata.some((item) => item.match)) {
         nReconciliated += 1;
@@ -129,6 +170,8 @@ const ParseW3C = {
     let rows = {};
     let nCells = 0;
     let nCellsReconciliated = 0;
+    let minMetaScore = 0
+    let maxMetaScore = 0
     
     let rowIndex = -1;
     for await (const row of stream) {
@@ -141,7 +184,7 @@ const ParseW3C = {
         continue;
       }
       // parse row and update reconciliators count
-      const { nReconciliated, ...rest } = ParseW3C.parseRow(row, rowIndex, columns, reconciliators);
+      const { nReconciliated, ...rest } = ParseW3C.parseRow(row, rowIndex, columns, minMetaScore, maxMetaScore);
       ParseW3C.addRow(rows, rest);
       nCellsReconciliated += nReconciliated;
       rowIndex += 1;

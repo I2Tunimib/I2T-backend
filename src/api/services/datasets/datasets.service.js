@@ -16,7 +16,10 @@ const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } = c
 const COLLECTION_DATASETS_MAP = {
   name: {
     label: 'Name',
-    // type: 'date' | 'percentage' | 'tag' 
+    type: 'link', //'date' | 'percentage' | 'tag' | 'link',    
+    props: {
+      url: '/datasets/:id/tables'
+    }
   },
   description: {
     label: 'Description'
@@ -35,7 +38,12 @@ const COLLECTION_DATASETS_MAP = {
 
 const COLLECTION_TABLES_MAP = {
   name: {
-    label: 'Name'
+    label: 'Name',
+    type: 'link',
+    props: {
+      url: '/datasets/:idDataset/tables/:id',
+      queryParams: '?view=table'
+    }
   },
   nCols: {
     label: 'N. Cols'

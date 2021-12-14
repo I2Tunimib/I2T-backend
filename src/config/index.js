@@ -1,7 +1,7 @@
 import CONFIG from '../../config';
 import dotenv from 'dotenv';
 import { readdirSync, existsSync } from 'fs';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { log } from '../utils/log';
 const env = dotenv.config();
 
@@ -90,6 +90,10 @@ const loadConfig = async () => {
   const reconciliators = await loadReconciliators();
   const extenders = await loadExtenders();
   const helpers = await loadHelperFunctions();
+
+  if (!existsSync(helpers.getTmpPath())) {
+    await mkdir(helpers.getTmpPath());
+  }
 
   if (!existsSync(helpers.getTablesDbPath())) {
     log('db', 'Create tables DB')
