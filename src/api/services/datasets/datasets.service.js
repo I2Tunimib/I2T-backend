@@ -9,6 +9,7 @@ import config from '../../../config/index';
 import path from "path"
 import { KG_INFO } from '../../../utils/constants'
 import { log } from '../../../utils/log';
+import ParseW3C from '../parse/parse-w3c.service';
 const __dirname = path.resolve();
 
 const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } = config.helpers;
@@ -432,6 +433,8 @@ const FileSystemService = {
       }
       return acc;
     }, {});
+
+    ParseW3C.updateColumnsStatus(columns, rows);
 
     return {
       table: {
