@@ -372,12 +372,17 @@ const FileSystemService = {
   transformMetadata: (metadata) => {
     let lowestScore = 0;
     let highestScore = 0;
-    let match = false;
+    let match = {
+      value: false
+    };
 
     const meta = metadata.map((metaItem, index) => {
       const [prefix, id] = metaItem.id.split(':');
       if (metaItem.match) {
-        match = true;
+        match = {
+          value: true,
+          reason: 'reconciliator'
+        };
       }
       if (index === 0) {
         lowestScore = metaItem.score;

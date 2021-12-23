@@ -6,8 +6,8 @@ export default {
     name: 'ASIA (Wikifier)',
     prefix: 'dbp',
     relativeUrl: '/asia/wikifier',
-    description: '',
-    uri: 'http://dbpedia.org/resource',
+    description: 'Reconcile entities to DBPedia using ASIA.',
+    uri: 'http://dbpedia.org/resource/',
     metaToView: {
       id: {
         label: 'ID',

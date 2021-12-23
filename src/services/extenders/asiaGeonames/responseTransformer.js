@@ -1,3 +1,5 @@
+import { KG_INFO } from "../../../utils/constants";
+
 export default async (req, res) => {
   // response is an array of responses coming from the extension service (one for each column)
   const { items } = req;
@@ -46,13 +48,13 @@ export default async (req, res) => {
                 label: metadataItemName,
                 metadata: [{
                   id: `geo:${metadataItemId}`,
-                  name: metadataItemName,
+                  name: { value: metadataItemName, uri: `${KG_INFO.geo.uri}${metadataItemId}` },
                   match: true,
                   score: 100
                 }],
                 annotationMeta: {
                   annotated: true,
-                  match: true,
+                  match: { value: true, reason: 'reconciliator' },
                   lowestScore: 100,
                   highestScore: 100
                 }
@@ -70,7 +72,7 @@ export default async (req, res) => {
                 metadata: [],
                 annotationMeta: {
                   annotated: false,
-                  match: false,
+                  match: { value: false },
                   lowestScore: 0,
                   highestScore: 0
                 }

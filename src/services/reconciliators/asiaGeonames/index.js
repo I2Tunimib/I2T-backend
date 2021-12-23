@@ -6,8 +6,8 @@ export default {
     name: 'ASIA (geonames)',
     prefix: 'geo',
     relativeUrl: '/asia/geonames',
-    description: '',
-    uri: 'http://www.geonames.org',
+    description: 'Reconcile entities to Geonames using ASIA.',
+    uri: 'http://www.geonames.org/',
     metaToView: {
       id: {
         label: 'ID',

@@ -8,7 +8,7 @@ export default async (req, res) => {
       ...metaItem,
       name: {
         value: metaItem.name,
-        uri: `${uri}/${metaItem.id}`
+        uri: `${uri}${metaItem.id}`
       }
     }))
 

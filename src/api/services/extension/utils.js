@@ -44,6 +44,7 @@ export const postTransform = async (standardData) => {
           }
 
           context[prefix] = {
+            ...context[prefix],
             total: context[prefix].total + 1,
             reconciliated: metaItem.match ? context[prefix].reconciliated + 1 : context[prefix].reconciliated
           }

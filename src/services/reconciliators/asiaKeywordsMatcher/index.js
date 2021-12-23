@@ -5,7 +5,7 @@ export default {
   public: {
     name: 'ASIA (Keywords Matcher)',
     prefix: 'asiaKM',
-    relativeUrl: '/asia/keywordsmatcher',
+    relativeUrl: '/asia/keywordsmatcher/',
     description: '',
     uri: 'http://www.jot-im.com/rdf/adwords',
     metaToView: {
