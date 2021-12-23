@@ -9,6 +9,7 @@ import compression from 'compression';
 import routes from './api/routes/index';
 import config from './config/index';
 import { colorString } from './utils/log';
+import zipTmpFileMiddleware from './middleware/zip-tmp-file.middleware';
 const __dirname = path.resolve();
 
 
@@ -22,6 +23,8 @@ app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: './tmp'
 }));
+
+app.use(zipTmpFileMiddleware)
 
 const isProd = (req, res, next) => {
   if (ENV === 'DEV') {

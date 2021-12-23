@@ -56,6 +56,30 @@ const DatasetsController = {
       next(err)
     }
   },
+  addTable: async (req, res, next) => {
+    const { file } = req.files;
+    const { name } = req.body;
+    const { idDataset } = req.params;
+    
+    try {
+      const tables = await DatasetsService.addTable(idDataset, file.tempFilePath, name);
+
+      res.json({
+        tables: Object.keys(tables).map((key) => {
+          const { nCells, nCellsReconciliated, ...rest } = tables[key];
+          return {
+            ...rest,
+            completion: {
+              total: nCells,
+              value: nCellsReconciliated
+            }
+          }
+        })
+      })
+    } catch (err) {
+      next(err)
+    }
+  },
   removeTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
     try {

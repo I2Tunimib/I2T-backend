@@ -197,19 +197,45 @@ const ParseService = {
   },
   parse: async (entry) => {
     const { path } = entry;
-    const extension = path.split('.').pop()
+    // console.log(entry);
+    const entryA = entry.pipe(new PassThrough())
+    const entryB = entry.pipe(new PassThrough())
+    // console.log(entry);
+    // const extension = path.split('.').pop()
+    try {
+      return await ParseService.parseCsv(entry)
+    } catch (err) {
 
-    if (extension === 'csv') {
-      return ParseService.parseCsv(entry)
-    } else if (extension === 'json') {
-      const entryA = entry.pipe(new PassThrough())
-      const entryB = entry.pipe(new PassThrough())
-
-      if (await ParseService.checkJsonFormat(entryA) === 'raw') {
+      if (ParseService.checkJsonFormat(entryA) === 'raw') {
         return ParseService.parseJson(entryB)
       }
       return ParseW3C.parse(entryB)
     }
+
+    // try {
+    //   return ParseService.parseCsv(entry)
+    // } catch {
+    //   console.log('AAAAAAA');
+    //   const entryA = entry.pipe(new PassThrough())
+    //   const entryB = entry.pipe(new PassThrough())
+
+    //   if (ParseService.checkJsonFormat(entryA) === 'raw') {
+    //     return ParseService.parseJson(entryB)
+    //   }
+    //   return ParseW3C.parse(entryB)
+    // }
+
+    // if (extension === 'csv') {
+    //   return ParseService.parseCsv(entry)
+    // } else if (extension === 'json') {
+    //   const entryA = entry.pipe(new PassThrough())
+    //   const entryB = entry.pipe(new PassThrough())
+
+    //   if (await ParseService.checkJsonFormat(entryA) === 'raw') {
+    //     return ParseService.parseJson(entryB)
+    //   }
+    //   return ParseW3C.parse(entryB)
+    // }
   }
 };
 

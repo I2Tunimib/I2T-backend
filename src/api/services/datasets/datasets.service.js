@@ -10,6 +10,7 @@ import path from "path"
 import { KG_INFO } from '../../../utils/constants'
 import { log } from '../../../utils/log';
 import ParseW3C from '../parse/parse-w3c.service';
+import { PassThrough } from 'stream';
 const __dirname = path.resolve();
 
 const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } = config.helpers;
@@ -204,60 +205,65 @@ const FileSystemService = {
     let newTables = {}
 
     await writeQueue.push(async () => {
-      // read db datasets
-      const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
+      try {
+        // read db datasets
+        const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
 
-      metaDatasets.lastIndex += 1;
-      const datasetFolderPath = `${getDatasetFilesPath()}/${metaDatasets.lastIndex}`
-      // create dataset folder
-      await mkdir(datasetFolderPath, { recursive: true })
-      // read tables datasets
-      const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
+        metaDatasets.lastIndex += 1;
+        const datasetFolderPath = `${getDatasetFilesPath()}/${metaDatasets.lastIndex}`
+        // create dataset folder
+        await mkdir(datasetFolderPath, { recursive: true })
+        // read tables datasets
+        const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
 
-      const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
-      let nFiles = 0;
+        const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
+        let nFiles = 0;
 
-      // unzip and write each file
-      for await (const entry of zip) {
-        const { path, type } = entry;
+        // unzip and write each file
+        for await (const entry of zip) {
+          const { path, type } = entry;
 
-        const tableName = path.split('.')[0] || 'Unnamend';
+          const tableName = path.split('.')[0] || 'Unnamend';
 
-        if (type === 'File') {
-          metaTables.lastIndex += 1;
-          nFiles += 1;
-          // transform to app format and write to file
-          const data = await ParseService.parse(entry);
-          await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
+          if (type === 'File') {
+            metaTables.lastIndex += 1;
+            nFiles += 1;
+            // transform to app format and write to file
+            const data = await ParseService.parse(entry);
+            await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
 
-          newTables[`${metaTables.lastIndex}`] = {
-            id: `${metaTables.lastIndex}`,
-            idDataset: `${metaDatasets.lastIndex}`,
-            name: tableName,
-            nCols: Object.keys(data.columns).length,
-            nRows: Object.keys(data.rows).length,
-            nCells: data.nCells,
-            nCellsReconciliated: data.nCellsReconciliated,
-            lastModifiedDate: new Date().toISOString()
+            newTables[`${metaTables.lastIndex}`] = {
+              id: `${metaTables.lastIndex}`,
+              idDataset: `${metaDatasets.lastIndex}`,
+              name: tableName,
+              nCols: Object.keys(data.columns).length,
+              nRows: Object.keys(data.rows).length,
+              nCells: data.nCells,
+              nCellsReconciliated: data.nCellsReconciliated,
+              lastModifiedDate: new Date().toISOString()
+            }
+          } else {
+            entry.autodrain();
           }
-        } else {
-          entry.autodrain();
         }
+
+        // add dataset entry
+        newDatasets[`${metaDatasets.lastIndex}`] = {
+          id: `${metaDatasets.lastIndex}`,
+          name: datasetName,
+          nTables: nFiles,
+          lastModifiedDate: new Date().toISOString()
+        }
+        // add dataset entry
+        await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: { ...datasets, ...newDatasets } }, null, 2));
+        // add table entries
+        await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: { ...tables, ...newTables } }, null, 2));
+        // delete temp file
+        await rm(filePath)
+      } catch (err) {
+        console.log(err)
       }
 
-      // add dataset entry
-      newDatasets[`${metaDatasets.lastIndex}`] = {
-        id: `${metaDatasets.lastIndex}`,
-        name: datasetName,
-        nTables: nFiles,
-        lastModifiedDate: new Date().toISOString()
-      }
-      // add dataset entry
-      await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: { ...datasets, ...newDatasets } }, null, 2));
-      // add table entries
-      await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: { ...tables, ...newTables } }, null, 2));
-      // delete temp file
-      await rm(filePath)
 
     });
     return { datasets: newDatasets, tables: newTables }
@@ -296,7 +302,7 @@ const FileSystemService = {
 
         // remove files
         await rm(`${getDatasetFilesPath()}/${datasetId}`, { recursive: true })
-      } catch(err) {
+      } catch (err) {
         console.log(err);
       }
     });
@@ -331,8 +337,66 @@ const FileSystemService = {
 
     });
   },
-  addTable: async (datasetId) => {
-    // parse directly to app format and save it (no more distinction from raw and annotated)
+  addTable: async (idDataset, filePath, tableName) => {
+    let newDatasets = {}
+    let newTables = {}
+
+    await writeQueue.push(async () => {
+      try {
+        // read db datasets
+        const { meta: metaDatasets, datasets } = JSON.parse(await readFile(getDatasetDbPath()))
+        // metaDatasets.lastIndex += 1;
+        const datasetFolderPath = `${getDatasetFilesPath()}/${idDataset}`
+        // read tables datasets
+        const { meta: metaTables, tables } = JSON.parse(await readFile(getTablesDbPath()))
+
+        const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
+
+        // unzip and write each file
+        for await (const entry of zip) {
+
+          const { type } = entry;
+
+          if (type === 'File') {
+            metaTables.lastIndex += 1;
+            // transform to app format and write to file
+            const data = await ParseService.parse(entry);
+
+            await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
+
+            newTables[`${metaTables.lastIndex}`] = {
+              id: `${metaTables.lastIndex}`,
+              idDataset,
+              name: tableName,
+              nCols: Object.keys(data.columns).length,
+              nRows: Object.keys(data.rows).length,
+              nCells: data.nCells,
+              nCellsReconciliated: data.nCellsReconciliated,
+              lastModifiedDate: new Date().toISOString()
+            }
+
+            datasets[idDataset] = {
+              ...datasets[idDataset],
+              nTables: datasets[idDataset].nTables + 1
+            }
+          } else {
+            entry.autodrain();
+          }
+        }
+
+        // add dataset entry
+        await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: { ...datasets, ...newDatasets } }, null, 2));
+        // add table entries
+        await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: { ...tables, ...newTables } }, null, 2));
+        // delete temp file
+        await rm(filePath)
+      } catch (err) {
+        console.log(err)
+      }
+
+
+    });
+    return newTables
   },
   updateTable: async ({ tableInstance, columns: columnsRaw, rows: rowsRaw }) => {
     const { id: tableId, idDataset: datasetId, name: tableName, nCells, nCellsReconciliated, minMetaScore, maxMetaScore } = tableInstance
@@ -386,7 +450,7 @@ const FileSystemService = {
       }
       if (index === 0) {
         lowestScore = metaItem.score;
-        highestScore =metaItem.score;
+        highestScore = metaItem.score;
       } else {
         lowestScore = metaItem.score < lowestScore ? metaItem.score : lowestScore;
         highestScore = metaItem.score > highestScore ? metaItem.score : highestScore;
