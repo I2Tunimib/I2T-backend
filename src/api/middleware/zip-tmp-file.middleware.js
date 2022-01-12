@@ -1,5 +1,5 @@
 import isEligibleRequest from "express-fileupload/lib/isEligibleRequest";
-import FileSystemService from "../api/services/datasets/datasets.service";
+import FileSystemService from "../services/datasets/datasets.service";
 import { rm } from 'fs/promises';
 
 const VALID_TYPES = ['application/x-zip-compressed'];

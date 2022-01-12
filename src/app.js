@@ -9,7 +9,7 @@ import compression from 'compression';
 import routes from './api/routes/index';
 import config from './config/index';
 import { colorString } from './utils/log';
-import zipTmpFileMiddleware from './middleware/zip-tmp-file.middleware';
+import zipTmpFileMiddleware from './api/middleware/zip-tmp-file.middleware';
 const __dirname = path.resolve();
 
 
