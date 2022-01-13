@@ -5,7 +5,7 @@ export default {
   public: {
     name: 'ASIA (geonames)',
     relativeUrl: '/asia/geonames',
-    description: 'ASIA extension service based on geonames allows to extend a column with data on locations of a certain administrative order, given a column reconciliated with First-order administrative division ids.',
+    description: 'ASIA extension service based on geonames allows to extend a column with data on locations of a certain administrative order. The input column has to be reconciliated against geonames entities.',
     formParams: [
       {
         id: 'property',
