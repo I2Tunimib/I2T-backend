@@ -6,7 +6,7 @@ export default {
     name: 'Wikidata',
     prefix: 'wd',
     relativeUrl: '/wikidata',
-    description: 'Reconcile entities to Wikidata using OpenRefine.',
+    description: 'Provides a general-purpose reconciliation against Wikidata using using OpenRefine.',
     uri: 'https://www.wikidata.org/wiki/',
     metaToView: {
       id: {
