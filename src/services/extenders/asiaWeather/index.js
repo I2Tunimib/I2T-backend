@@ -5,7 +5,7 @@ export default {
   public: {
     name: 'Weather',
     relativeUrl: '/asia/weather',
-    description: 'ASIA weather-based extension service allows to extend a column with meteorological data for given locations and dates.',
+    description: 'ASIA weather-based extension service allows to extend a column with meteorological data for given locations and dates. The selected locations needs to be regions (ADM4) reconciliated with the ASIA (geonames) service.',
     formParams: [
       {
         id: 'dates',
