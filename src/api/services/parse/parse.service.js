@@ -9,7 +9,6 @@ import ParseW3C from './parse-w3c.service';
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',
   status: 'empty',
-  extension: '',
   context: {},
   metadata: [],
 }
@@ -203,12 +202,15 @@ const ParseService = {
     // console.log(entry);
     // const extension = path.split('.').pop()
     try {
+      console.log('A');
       return await ParseService.parseCsv(entry)
     } catch (err) {
 
       if (ParseService.checkJsonFormat(entryA) === 'raw') {
+        console.log('B');
         return ParseService.parseJson(entryB)
       }
+      console.log('C');
       return ParseW3C.parse(entryB)
     }
 

@@ -40,6 +40,7 @@ const ExportService = {
         status,
         context,
         metadata,
+        annotationMeta,
         ...propsToKeep
       } = columns[colId];
 
@@ -67,6 +68,7 @@ const ExportService = {
         const {
           id,
           metadata,
+          annotationMeta,
           ...propsToKeep
         } = cells[colId];
 

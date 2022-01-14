@@ -47,17 +47,62 @@ const ParseW3C = {
     });
   },
   parseHeader: (header, reconciliators) => {
+    const getEntityMetadata = (metaRaw) => {
+      if (!metaRaw || metaRaw.length === 0) {
+        return {
+          annotated: false
+        };
+      }
+
+      if (metaRaw.length > 0 && !metaRaw[0].entity) {
+        return {
+          annotated: false
+        };
+      }
+
+      return {
+        annotated: true,
+        data: FileSystemService.transformMetadata(metaRaw[0].entity)
+      };
+    }
+
+
     return Object.keys(header).reduce((columns, key) => {
       const { 
         label,
         context = [],
+        metadata: metaRaw,
         ...rest 
       } = header[key];
+
+
+      const { 
+        annotated, 
+        data: { lowestScore, highestScore, match, metadata }  = { lowestScore: 0, highestScore: 0, match: false , metadata: [] }
+      } = getEntityMetadata(metaRaw);
+      
+
       columns[label] = {
         id: label,
         ...DEFAULT_HEADER_PROPERTIES,
         label,
         context: ParseW3C.getContext(context),
+        ...(metaRaw && metaRaw.length > 0 && {
+          metadata: [{
+            ...metaRaw[0],
+            ...(annotated && {
+              entity: metadata,
+            })
+          }]
+        }),
+        annotationMeta: {
+          annotated: annotated,
+          match: {
+            value: match
+          },
+          lowestScore,
+          highestScore
+        },
         ...rest
       };
       return columns;
@@ -174,6 +219,7 @@ const ParseW3C = {
     let maxMetaScore = 0
     
     let rowIndex = -1;
+
     for await (const row of stream) {
       if (rowIndex === -1) {
         // to parse header and transform to initial state.

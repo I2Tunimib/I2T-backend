@@ -49,7 +49,7 @@ export default {
         id: 'offsets',
         description: "Enter desired <b>Offsets</b>:",
         label: "Offset",
-        infoText: "The offset is the difference in days for which we want to retrieve the data with respect to the input dates. You can add multiple offsets separated by a COMMA",
+        infoText: "The offset is the difference in days for which we want to retrieve the data with respect to the input dates. You can add multiple offsets separated by a COMMA. Offset 0 means the same day of the corresponding date.",
         inputType: 'text',
         defaultValue: '0',
         rules: ['required']
