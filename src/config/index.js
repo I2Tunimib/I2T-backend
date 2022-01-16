@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { readdirSync, existsSync } from 'fs';
 import { writeFile, mkdir } from 'fs/promises';
 import { log } from '../utils/log';
+import { safeWriteFileToPath } from '../utils/safeWriteFile';
 const env = dotenv.config();
 
 if (process.env.ENV === 'DEV' && env.error) {
@@ -97,12 +98,12 @@ const loadConfig = async () => {
 
   if (!existsSync(helpers.getTablesDbPath())) {
     log('db', 'Create tables DB')
-    await writeFile(helpers.getTablesDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }), null, 2)
+    await safeWriteFileToPath(helpers.getTablesDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2))
   }
   
   if (!existsSync(helpers.getDatasetDbPath())) {
     log('db', 'Create dataset DB')
-    await writeFile(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}), null, 2)
+    await safeWriteFileToPath(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}, null, 2))
   }
   
 
