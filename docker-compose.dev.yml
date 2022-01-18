@@ -7,5 +7,6 @@ services:
     env_file: .env
     volumes:
       - .:/usr/src/app/
+      - /usr/src/app/node_modules
     ports:
       - "3002:3002"
