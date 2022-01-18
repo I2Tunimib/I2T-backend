@@ -221,11 +221,11 @@ const FileSystemService = {
 
         // unzip and write each file
         for await (const entry of zip) {
-          const { path, type } = entry;
+          const { path, type } = entry;          
 
           const tableName = path.split('.')[0] || 'Unnamend';
 
-          if (type === 'File') {
+          if (type === 'File' && path.split('/').length === 1) {
             metaTables.lastIndex += 1;
             nFiles += 1;
             // transform to app format and write to file
