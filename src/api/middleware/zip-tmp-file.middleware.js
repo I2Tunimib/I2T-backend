@@ -2,7 +2,7 @@ import isEligibleRequest from "express-fileupload/lib/isEligibleRequest";
 import FileSystemService from "../services/datasets/datasets.service";
 import { rm } from 'fs/promises';
 
-const VALID_TYPES = ['application/x-zip-compressed'];
+const VALID_TYPES = ['application/x-zip-compressed', 'application/zip'];
 
 const isZipFile = (mimetype) => VALID_TYPES.includes(mimetype);
 
