@@ -26,6 +26,7 @@ jobs:
         run: |
           touch frontend/.env
           echo REACT_APP_BACKEND_API_URL=${{ secrets.REACT_APP_BACKEND_API_URL }} >> frontend/.env
+          echo REACT_APP_BACKEND_DOMAIN=${{ secrets.REACT_APP_BACKEND_DOMAIN }} >> frontend/.env
           cd frontend && npm ci && npm run build && cd ../
 
       - name: Clone backend repo
