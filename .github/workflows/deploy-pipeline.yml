@@ -82,18 +82,20 @@ jobs:
         with:
           host: ${{ secrets.REMOTE_HOST_URL }}
           username: ${{ secrets.REMOTE_HOST_USERNAME }}
+          port: ${{ secrets.REMOTE_HOST_PORT }}
           key: ${{ secrets.SSH_PRIV_KEY }}
           source: "backend/docker-compose.prod.yml,backend/.env"
-          target: "/datahdd/asia/tui/deploy"
+          target: "/home/asia/semtui/deploy"
 
       - name: Deploy through ssh
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.REMOTE_HOST_URL }}
           username: ${{ secrets.REMOTE_HOST_USERNAME }}
+          port: ${{ secrets.REMOTE_HOST_PORT }}
           key: ${{ secrets.SSH_PRIV_KEY }}
           script: |
-            cd /datahdd/asia/tui
+            cd /home/asia/semtui
             ls -A
             docker-compose -f docker-compose.prod.yml down --rmi all
             shopt -s dotglob nullglob

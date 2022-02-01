@@ -4,6 +4,6 @@ services:
     image: "ghcr.io/i2tunimib/tui:latest"
     env_file: .env
     volumes:
-      - /datahdd/asia/tui/public:/usr/src/app/public
+      - /home/asia/semtui/public:/usr/src/app/public
     ports:
       - "3003:3002"
