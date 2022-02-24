@@ -5,24 +5,32 @@ import { stringify } from 'qs';
 const { endpoint } = config.private;
 
 export default async (req) => {
-  const { items, offsets, dates: datesInput, weatherParams: weatherParamsInput } = req;
+  const { items, props } = req.processed;
+  const { offsets, dates: datesInput, weatherParams: weatherParamsInput } = props;
+
   // process weather params
   const weatherParams = weatherParamsInput.join(',');
+
   // for each column to extend
   const allResponses = await Promise.all(Object.keys(items).map(async (colId) => {
     const columnItems = items[colId];
 
-    const requests = Object.keys(columnItems).map((rowId) => {
-      const id = columnItems[rowId].split(':')[1];
-      const date = datesInput[rowId];
+    let requests = [];
 
-      return {
-        ids: id,
-        rowId,
-        dates: date,
-        offsets,
-        weatherParams
-      }
+    Object.keys(columnItems).forEach((metaId) => {
+      const [prefix, id] = metaId.split(':');
+
+      columnItems[metaId].forEach((rowId) => {
+        const date = datesInput[rowId];
+
+        requests.push({ 
+          ids: id,
+          rowId,
+          dates: date,
+          offsets,
+          weatherParams
+        })
+      });
     });
 
     return Promise.all(requests.map(async ({ ids, rowId, ...rest }) => {

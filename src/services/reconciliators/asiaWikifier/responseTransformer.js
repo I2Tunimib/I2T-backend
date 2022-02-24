@@ -3,20 +3,20 @@ import config from './index';
 const { uri } = config.public;
 
 export default async (req, res) => {
-  const response = Object.keys(res).map((id) => {
-    const metadata = res[id].result.map((metaItem) => ({
-      ...metaItem,
-      name: {
-        value: metaItem.name,
-        uri: `${uri}${metaItem.id}`
-      }
+  const { items } = req.processed;
+
+  const response = Object.keys(res).flatMap((label) => {
+    const metadata = res[label].result.map(({ id, ...rest }) => ({
+      id: `dbp:${id}`,
+      ...rest
     }))
 
-    return {
-      id,
+    return items[label].map((cellId) => ({
+      id: cellId,
       metadata
-    }
+    }))
   });
+
   return response;
 }
 

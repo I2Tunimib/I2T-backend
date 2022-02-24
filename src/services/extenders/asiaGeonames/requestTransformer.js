@@ -4,18 +4,22 @@ import { stringify } from 'qs';
 
 const { endpoint } = config.private;
 
+
 export default async (req) => {
-  const { items, property } = req;
+  const { items, props } = req.processed;
+
+  const { property } = props;
 
   return Promise.all(Object.keys(items).map(async (colId) => {
-    const columnItems = items[colId]
-    const { ids, idsMap } = Object.keys(columnItems).reduce((acc, key) => {
-      const id = columnItems[key].split(':')[1];
-      acc.ids.push(id);
-      acc.idsMap[id] = key
-      return acc;
-    }, { ids: [], idsMap: {} });
 
+    const columnItems = items[colId];
+
+    // id to query
+    const ids = Object.keys(columnItems).map((metaId) => {
+      const [prefix, id] = metaId.split(':');
+      return id;
+    });
+    // selected admins properties
     const properties = property.map((prop) => ({ id: prop }));
 
     const params = stringify({
@@ -26,8 +30,7 @@ export default async (req) => {
     const res = await axios.post(`${endpoint}/extend`, params);
 
     return {
-      res: res.data,
-      idsMap
+      res: res.data
     }
   }));
 }

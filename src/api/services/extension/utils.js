@@ -1,5 +1,27 @@
 import { KG_INFO } from '../../../utils/constants';
 
+const mapToUnique = (column) => {
+  return Object.keys(column).reduce((acc, rowId) => {
+    // get id
+    // const id = column[rowId].split(':')[1];
+    const id = column[rowId]
+
+    if (column[rowId] in acc) {
+      acc[id] = [...acc[id], rowId];
+    } else {
+      acc[id] = [rowId];
+    }
+    return acc;
+  }, {});
+}
+
+export const getUniqueMaps = (columns) => {
+  return Object.keys(columns).reduce((acc, colId) => {
+    acc[colId] = mapToUnique(columns[colId]);
+    return acc;
+  }, {});
+}
+
 const getColumnStatus = (context, rowKeys) => {
   const { total, reconciliated } = Object.keys(context).reduce((acc, key) => {
     acc.total += context[key].total

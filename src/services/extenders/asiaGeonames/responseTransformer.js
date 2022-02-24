@@ -1,98 +1,64 @@
-import { KG_INFO } from "../../../utils/constants";
+const getMetadata = (metaRaw) => {
+  return metaRaw.map(({ id, name }) => ({
+    id: `geo:${id}`,
+    name,
+    score: 100,
+    match: true
+  }))
+}
 
 export default async (req, res) => {
-  // response is an array of responses coming from the extension service (one for each column)
-  const { items } = req;
-
-  const inputColumnsLabels = Object.keys(items);
+  const { items } = req.processed;
+  const inputColumns = Object.keys(items);
 
   let response = {
     columns: {},
-    rows: {},
     meta: {}
   }
-
-  // build each column in standard format
-  // for each input column a set of extended column is created
+  
+  // each input column generated a response from the external service
   res.forEach((serviceResponse, colIndex) => {
-    // each meta is a property which identifies a new column
     const { meta, rows } = serviceResponse.res;
-    const { idsMap } = serviceResponse
 
-    const standardCol = meta.reduce((acc, property) => {
+    meta.forEach((property) => {
       const { id: propId } = property;
-      const colId = `${inputColumnsLabels[colIndex]}_${propId}`;
-      // add column
-      acc.columns[colId] = {
-        id: colId,
+      const colId = `${inputColumns[colIndex]}_${propId}`;
+      // create columns
+      response.columns[colId] = {
         label: colId,
-        metadata: []
+        metadata: [],
+        cells: {}
       }
-      acc.meta[colId] = inputColumnsLabels[colIndex];
-      // add rows
-      acc.rows = Object.keys(rows).reduce((accRows, metaId) => {
-        const metadataItems = rows[metaId][propId];
-        const rowId = idsMap[metaId];
-        const cellId = `${rowId}$${colId}`;
-        // check if service returned something
-        if (metadataItems && metadataItems.length > 0) {
-          // get first one
-          const { id: metadataItemId, name: metadataItemName } = metadataItems[0];
+      // add columns mapping
+      response.meta = {
+        ...response.meta,
+        [colId]: inputColumns[colIndex]
+      }
 
-          accRows[rowId] = {
-            id: rowId,
-            cells: {
-              ...(accRows[rowId] && { ...accRows[rowId].cells }),
-              [colId]: {
-                id: cellId,
-                label: metadataItemName,
-                metadata: [{
-                  id: `geo:${metadataItemId}`,
-                  name: { value: metadataItemName, uri: `${KG_INFO.geo.uri}${metadataItemId}` },
-                  match: true,
-                  score: 100
-                }],
-                annotationMeta: {
-                  annotated: true,
-                  match: { value: true, reason: 'reconciliator' },
-                  lowestScore: 100,
-                  highestScore: 100
-                }
-              }
-            }
-          }
-        } else {
-          accRows[rowId] = {
-            id: rowId,
-            cells: {
-              ...(accRows[rowId] && { ...accRows[rowId].cells }),
-              [colId]: {
-                id: cellId,
-                label: 'null',
-                metadata: [],
-                annotationMeta: {
-                  annotated: false,
-                  match: { value: false },
-                  lowestScore: 0,
-                  highestScore: 0
-                }
-              },
-            }
-          }
+      // add cells to each column
+      Object.keys(rows).forEach((metadataId) => {
+        // get rows for each metaId
+        const requestRowsIds = items[inputColumns[colIndex]][`geo:${metadataId}`];
+
+        // build cells
+        const cells = requestRowsIds.reduce((acc, rowId) => {
+          const cellMetadata = getMetadata(rows[metadataId][property.id]);
+
+          acc[rowId] = cellMetadata && cellMetadata.length > 0 ? {
+            label: cellMetadata[0].name,
+            metadata: cellMetadata
+          } : null;
+          return acc;
+        }, {});
+
+        // add cells to column
+        response.columns[colId].cells = {
+          ...response.columns[colId].cells,
+          ...cells
         }
-        return accRows;
-      }, response.rows)
-      return acc;
-    }, response);
+      });
+    }); 
+  });
 
-    response.columns = {
-      ...response.columns,
-      ...standardCol.columns
-    }
-    response.rows = {
-      ...response.rows,
-      ...standardCol.rows
-    }
-  })
   return response;
 }

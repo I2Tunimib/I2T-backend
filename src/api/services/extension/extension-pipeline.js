@@ -1,5 +1,5 @@
 import config from '../../../config/index';
-import { postTransform } from './utils';
+import { postTransform, getUniqueMaps } from './utils';
 
 const { extenders } = config;
 
@@ -13,7 +13,11 @@ const extensionPipeline = async (reqBody) => {
     throw new Error('Service not found');
   }
 
-  const { requestTransformer, responseTransformer } = service;
+  const { 
+    info,
+    requestTransformer,
+    responseTransformer 
+  } = service;
 
   if (!requestTransformer) {
     // get transform request function. If not found throw error (user probably didn't implement a transform function)
@@ -24,14 +28,26 @@ const extensionPipeline = async (reqBody) => {
     throw new Error('No transformer response function found')
   }
 
+  const { items, ...props } = rest;
+
+  const req = { 
+    // original request
+    original: { items, props }, 
+    // processed request with unique items
+    ...(info.private.processRequest && { 
+      processed: { items: getUniqueMaps(items), props } 
+    })
+  };
+
   // get response from service
-  const serviceResponse = await requestTransformer(rest);
+  const serviceResponse = await requestTransformer(req);
 
   // transform response to app format
-  const transformedResponse = await responseTransformer(rest, serviceResponse);
+  const transformedResponse = await responseTransformer(req, serviceResponse);
 
   // post transform and return final response
-  return postTransform(transformedResponse);
+  // return postTransform(transformedResponse);
+  return transformedResponse;
 }
 
 export default extensionPipeline;

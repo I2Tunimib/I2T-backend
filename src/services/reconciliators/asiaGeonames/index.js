@@ -1,6 +1,7 @@
 export default {
   private: {
-    endpoint: process.env.ASIA_RECONCILIATION
+    endpoint: process.env.ASIA_RECONCILIATION,
+    processRequest: true
   },
   public: {
     name: 'ASIA (geonames)',

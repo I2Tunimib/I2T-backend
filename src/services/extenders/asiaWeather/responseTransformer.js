@@ -1,41 +1,36 @@
 export default async (req, res) => {
-  const { items } = req;
-  const inputColumnsLabels = Object.keys(items);
+  const inputColumns = Object.keys(req.processed.items);
 
   let response = {
     columns: {},
-    rows: {},
     meta: {}
   }
 
   // result for each input column
   res.forEach((serviceResponse, colIndex) => {
     serviceResponse.forEach(({ rowId, data }) => {
-      data.forEach(({ weatherParameters, offset }) => {
+      data.forEach(({ geonamesId, weatherParameters, offset }) => {
         if (weatherParameters) {
           // for each combination offest_weatherParam build a column
           weatherParameters.forEach(({ id, ...rest }) => {
             // for each item in weatherParameters build a column
-            const colId = `${inputColumnsLabels[colIndex]}_offset${offset}_${id}`;
-            response.columns[colId] = {
-              id: colId,
-              label: colId,
-              metadata: []
-            }
-            response.meta[colId] = inputColumnsLabels[colIndex];
-
-            const cellId = `${rowId}$${colId}`;
-            response.rows[rowId] = {
-              ...response.rows[rowId],
-              id: rowId,
-              cells: {
-                ...(response.rows[rowId] && { ...response.rows[rowId].cells }),
-                [colId]: {
-                  id: cellId,
-                  label: id === 'sund' ? rest.cumulValue : rest.avgValue,
-                  metadata: []
-                }
+            const colId = `${inputColumns[colIndex]}_offset${offset}_${id}`;
+            if (!(colId in response.columns)) {
+              response.columns[colId] = {
+                label: colId,
+                metadata: [],
+                cells: {}
               }
+            }
+
+            response.meta[colId] = inputColumns[colIndex];
+            // add column cells
+            response.columns[colId].cells = {
+              ...response.columns[colId].cells,
+              [rowId]: data.length > 0 ?{
+                label: id === 'sund' ? rest.cumulValue : rest.avgValue,
+                metadata: []
+              } : null
             }
           });
         }

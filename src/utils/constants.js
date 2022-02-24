@@ -3,7 +3,7 @@ export const KG_INFO = {
     uri: 'http://www.geonames.org/'
   },
   dbp: {
-    uri: 'http://www.geonames.org/'
+    uri: 'https://dbpedia.org/page/'
   },
   wd: {
     uri: 'https://www.wikidata.org/wiki/'

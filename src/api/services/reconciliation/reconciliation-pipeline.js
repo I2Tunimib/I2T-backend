@@ -1,4 +1,5 @@
 import config from "../../../config/index";
+import { mapToUnique } from "./utils";
 
 const { reconciliators } = config;
 
@@ -11,7 +12,12 @@ const reconciliationPipeline = async (reqBody) => {
     throw new Error('Service not found');
   }
 
-  const { requestTransformer, responseTransformer } = service;
+  const { 
+    info,
+    requestTransformer,
+    responseTransformer 
+  } = service;
+
   
   if (!requestTransformer) {
     // get transform request function. If not found throw error (user probably didn't implement a transform function)
@@ -22,11 +28,20 @@ const reconciliationPipeline = async (reqBody) => {
     throw new Error('No transformer response function found')
   }
 
+  const { items } = rest;
+
+  const req =  {
+    original: { items },
+    ...(info.private.processRequest && { 
+      processed: { items: mapToUnique(items) } 
+    })
+  }
+
   // get response from service
-  const serviceResponse = await requestTransformer(rest);
+  const serviceResponse = await requestTransformer(req);
 
   // transform response to app format
-  const transformedResponse = await responseTransformer(rest, serviceResponse);
+  const transformedResponse = await responseTransformer(req, serviceResponse);
 
   return transformedResponse;
 }

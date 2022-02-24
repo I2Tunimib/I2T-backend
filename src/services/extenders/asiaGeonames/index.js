@@ -1,6 +1,7 @@
 export default {
   private: {
-    endpoint: process.env.ASIA_EXTENSION
+    endpoint: process.env.ASIA_EXTENSION,
+    processRequest: true
   },
   public: {
     name: 'ASIA (geonames)',

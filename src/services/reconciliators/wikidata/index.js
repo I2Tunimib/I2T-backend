@@ -1,6 +1,7 @@
 export default {
   private: {
-    endpoint: process.env.WIKIDATA
+    endpoint: process.env.WIKIDATA,
+    processRequest: true
   },
   public: {
     name: 'Wikidata',
