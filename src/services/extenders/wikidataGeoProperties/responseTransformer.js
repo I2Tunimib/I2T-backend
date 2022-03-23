@@ -1,9 +1,52 @@
-import { KG_INFO } from "../../../utils/constants";
-
 const PROPS = {
-  P625: 'Latitude_Longitude',
-  P421: 'Time zone',
-  P281: 'Postal code'
+  // latitude and logitude
+  P625: {
+    label: 'Latitude_Longitude',
+    getColumn: (colId) => {
+      return {
+        label: colId,
+        metadata: [],
+        cells: {}
+      }
+    },
+    getCell: ({ entities, entityId, prop }) => { 
+      const { value } = entities[entityId].claims[prop][0].mainsnak.datavalue
+      return {
+        label: `${value.latitude},${value.longitude}`,
+        metadata: []
+      }
+    }
+  },
+  // timezone
+  P421: {
+    label: 'Time zone',
+    getColumn: (colId) => {
+      return {
+        label: colId,
+        metadata: [],
+        cells: {}
+      }
+    },
+    getCell: ({ entities, entityId, prop }) => {
+      // implement this
+      return null
+    }
+  },
+  // postal code
+  P281: {
+    label: 'Postal code',
+    getColumn: (colId) => {
+      return {
+        label: colId,
+        metadata: [],
+        cells: {}
+      }
+    },
+    getCell: ({ entities, entityId, prop }) => {
+      // implement this
+      return null
+    }
+  }
 }
 
 export default async (req, res) => {
@@ -21,21 +64,12 @@ export default async (req, res) => {
     const { entities } = serviceResponse.res;
 
     property.forEach((prop) => {
-      // for now let's only work with lat&long
-      if (prop === 'P625') {
-        const colId = `${inputColumns[colIndex]}_${PROPS[prop]}`;
+      // get label, getColumn and getCell for the current prop
+      const { label, getColumn, getCell } = PROPS[prop];
+      
+        const colId = `${inputColumns[colIndex]}_${label}`;
         // create columns
-        response.columns[colId] = {
-          label: colId,
-          metadata: [],
-          cells: {}
-        }
-
-        // add columns mapping
-        response.meta = {
-          ...response.meta,
-          [colId]: inputColumns[colIndex]
-        }
+        response.columns[colId] = getColumn(colId);
 
         // add cells to each column
         Object.keys(entities).forEach((entityId) => {
@@ -44,15 +78,8 @@ export default async (req, res) => {
 
           // build cells
           const cells = requestRowsIds.reduce((acc, rowId) => {
-            // lat and long do not have metadata
-            const cellMetadata = [];
-
-            const { value } = entities[entityId].claims[prop][0].mainsnak.datavalue
-
-            acc[rowId] = {
-              label: `${value.latitude},${value.longitude}`,
-              metadata: cellMetadata
-            }
+            // get a cell for the appropriate prop
+            acc[rowId] = getCell({ entities, entityId, prop })
             return acc;
           }, {});
 
@@ -62,7 +89,12 @@ export default async (req, res) => {
             ...cells
           }
         });
-      }
+
+        // add columns mapping
+        response.meta = {
+          ...response.meta,
+          [colId]: inputColumns[colIndex]
+        }
     });
 
   });
