@@ -60,6 +60,6 @@ export default async (req, res) => {
     }
     response.push(row);
   });
-  console.log(response[0].metadata[0]);
+  console.log(response);
   return response;
 }

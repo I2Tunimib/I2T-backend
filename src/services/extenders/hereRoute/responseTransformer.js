@@ -24,10 +24,11 @@ function getPropRoute(item, prop) {
     return [];
   }else{
      return [{
-      id: "here:"+item.routes[0].id,
+      id: "",
       name: "",
       score: 100,
-      match: true
+      match: true,
+      unit
     }];
   }
 }*/
@@ -53,6 +54,8 @@ export default async (req, res) => {
   property.forEach(prop => {
     response.columns[prop] = {
       label: prop,
+      kind: 'literal',
+      //entity:[] mettere la riconciliazione della label
       metadata: [],
       cells: {}
     }
