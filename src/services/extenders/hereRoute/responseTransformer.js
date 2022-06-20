@@ -19,19 +19,6 @@ function getPropRoute(item, prop) {
   return "";
 }
 
-/*function getCellMetadata(item, label, prop){
-  if(label === ""){
-    return [];
-  }else{
-     return [{
-      id: "",
-      name: "",
-      score: 100,
-      match: true,
-      unit
-    }];
-  }
-}*/
 
 
 
@@ -55,7 +42,7 @@ export default async (req, res) => {
     response.columns[prop] = {
       label: prop,
       kind: 'literal',
-      //entity:[] mettere la riconciliazione della label
+      entity:[],
       metadata: [],
       cells: {}
     }
@@ -75,17 +62,62 @@ export default async (req, res) => {
       score: 100
     }];
 
+    let colType = "";
+    let colEntity = "";
+    if(prop === "duration"){
+      colType = [{ "id": "wd:Q29934271",
+      "match" : true,
+      "name" : "Quantity",
+      "score" : 100},
+      {
+        "id": "wd:Q7727",
+        "name": "minute",
+        "match": true,
+        "score": 100
+      }];
+      colEntity = [
+        {
+          "name":"duration",
+          "id":"wd:Q2199864",
+          "score":100,
+          "match": true
+        }
+      ];
+    }else{
+      colType = [{ "id": "wd:Q29934271",
+      "match" : true,
+      "name" : "Quantity",
+      "score" : 100},
+      {
+        "id": "wd:Q828224",
+        "name": "kilometre",
+        "match": true,
+        "score": 100
+      }];
+      colEntity = [
+        {
+          "name":"length",
+          "id":"wd:Q36253",
+          "score":100,
+          "match": true
+        }
+      ];
+    }
+
 
     response.columns[prop].metadata[0] = {
       "id": "path_"+start_label+"_"+end_label,
       "name": prop,
-      "type": [{ "id": "Q29934271",
-      "match" : true,
-      "name" : "Quantity",
-      "score" : 100,}],
+      "entity": colEntity,
+      "type": colType,
       "property": colProperty
     }
 
+    
+    
+
+
+    
 
     res.forEach(item_res => {
       let row_id = RowDict[item_res.origin.toString() + item_res.destination.toString()];
@@ -93,7 +125,6 @@ export default async (req, res) => {
       response.columns[prop].cells[row_id] = {
         label: label_result,
         metadata: []
-        //metadata: getCellMetadata(item_res,label_result, prop)
       }
     });
   });
