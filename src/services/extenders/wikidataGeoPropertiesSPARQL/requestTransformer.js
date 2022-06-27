@@ -65,7 +65,6 @@ export default async (req) => {
     let select = creaSelect(prop);
     let where = creaWhere(ids, prop);
     let query = creaQuery(select, where);
-    console.log(query)
     const result = await axios.get(endpoint + encodeURIComponent(query));
     res = result.data.results.bindings;
     res.push({'prop' : prop})
