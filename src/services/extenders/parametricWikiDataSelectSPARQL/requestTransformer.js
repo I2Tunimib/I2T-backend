@@ -8,7 +8,7 @@ const labelReturn = ' SERVICE wikibase:label { bd:serviceParam wikibase:language
 function creaSelect(prope) {
   return [prope].reduce(
     (previousValue, currentValue) => previousValue + " ?" + currentValue + " ?" + currentValue +
-      "Label ?values" + currentValue + " ?values" + currentValue + "Label ",
+      "Label ?values" + currentValue + " ?values" + currentValue + "Label ?instance"+currentValue+" ?instance"+currentValue+"Label",
     "?values "
   );
 }
@@ -24,7 +24,7 @@ function creaValues(ids) {
 function creaOptional(prope) {
   return [prope].reduce(
     (previousValue, currentValue) => previousValue +
-      "OPTIONAL{?values" + " wdt:" + currentValue + " ?values" + currentValue + "} ",
+      "OPTIONAL{?values" + " wdt:" + currentValue + " ?values" + currentValue +".} OPTIONAL{?values" + " wdt:" + currentValue + " ?values" + currentValue +"_. ?values"+currentValue+"_ wdt:P31 ?instance"+currentValue+".}",
     "")
 }
 
@@ -62,7 +62,7 @@ export default async (req) => {
     let select = creaSelect(prop);
     let where = creaWhere(ids, prop);
     let query = creaQuery(select, where);
-
+    
     const result = await axios.get(endpoint + encodeURIComponent(query));
     res = result.data.results.bindings;
     res.push({ 'prop': prop })

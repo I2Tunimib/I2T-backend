@@ -24,7 +24,7 @@ function getMetaData(data){
     'name': data.name_eng,
     'score': data.score,
     'match': true,
-    'type': [{'id': "wd:Q29934236", 'name': "GlobeCoordinate"}]
+    'type': [{'id': "Q29934236", 'name': "GlobeCoordinate"}]
   }]
 }
 
@@ -34,6 +34,7 @@ function getColumnMetadata(){
     'name': "GlobeCoordinate",
     'score': 0,
     'match': true,
+    'type': []
   }]
 }
 

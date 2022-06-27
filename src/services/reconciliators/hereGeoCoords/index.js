@@ -17,10 +17,14 @@ export default {
       },
       name: {
         label: 'Name',
-        type: 'string'
+        type: 'link'
       },
       score: {
         label: 'Score'
+      },
+      type: {
+        label: 'Types',
+        type: 'subList'
       },
       match: {
         label: 'Match',
