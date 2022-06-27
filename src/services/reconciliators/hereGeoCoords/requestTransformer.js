@@ -2,6 +2,7 @@ import config from './index';
 import axios from 'axios';
 
 const { endpoint } = config.private;
+const {access_token} = config.private;
 
 function getAddressFormat(items){
   return {'address': items}
@@ -14,7 +15,7 @@ export default async (req) => {
     addressList.push(getAddressFormat(item));
   });
 
-  const res = await axios.post(endpoint, {'json': addressList});
+  const res = await axios.post(endpoint+"?token="+access_token, {'json': addressList});
   return res.data.result;
 }
 
