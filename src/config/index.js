@@ -31,7 +31,7 @@ const loadExtenders = async () => {
 
   return extenders.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`
-      
+
     const { default: info } = await import(`file:///${servicePath}/index.js`);
     const { default: requestTransformer } = await import(`file:///${servicePath}/requestTransformer.js`);
     const { default: responseTransformer } = await import(`file:///${servicePath}/responseTransformer.js`);
@@ -57,7 +57,7 @@ const loadReconciliators = async () => {
 
   return reconciliators.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`
-      
+
     const { default: info } = await import(`file:///${servicePath}/index.js`);
     const { default: requestTransformer } = await import(`file:///${servicePath}/requestTransformer.js`);
     const { default: responseTransformer } = await import(`file:///${servicePath}/responseTransformer.js`);
@@ -100,12 +100,12 @@ const loadConfig = async () => {
     log('db', 'Create tables DB')
     await safeWriteFileToPath(helpers.getTablesDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2))
   }
-  
+
   if (!existsSync(helpers.getDatasetDbPath())) {
     log('db', 'Create dataset DB')
-    await safeWriteFileToPath(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}, null, 2))
+    await safeWriteFileToPath(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2))
   }
-  
+
 
   return {
     ENV: process.env.ENV || 'dev',
@@ -115,7 +115,7 @@ const loadConfig = async () => {
     reconciliators,
     extenders,
     helpers,
-    mantisObjs: { 
+    mantisObjs: {
       cronsMap: {}
     }
   }
