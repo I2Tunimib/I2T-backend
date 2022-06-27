@@ -1,6 +1,7 @@
 export default {
   private: {
     endpoint: process.env.WD_HERE_GEOCOORDS,
+    access_token: process.env.WD_HERE_TOKEN,
     processRequest: true
   },
   public: {

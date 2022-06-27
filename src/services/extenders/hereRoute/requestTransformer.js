@@ -2,6 +2,7 @@ import config from './index';
 import axios from 'axios';
 
 const {endpoint} = config.private;
+const {access_token} = config.private;
 
 function cleanCoordinates(coordinates){
   if(coordinates !== undefined){
@@ -52,7 +53,7 @@ export default async (req) => {
         RowDict[row] = route;
       }
   })  
-  const res = await axios.post(endpoint, {'json': RouteList});
+  const res = await axios.post(endpoint+"?&token="+ access_token, {'json': RouteList});
   
   return {'data': res.data, 'dict':RowDict, 'start': Object.keys(items)[0], end:props.end[Object.keys(props.end)[0]][2]};
 }
