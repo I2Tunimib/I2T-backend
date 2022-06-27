@@ -55,11 +55,46 @@ function getResponseDict(res, items, colIndex, property) {
     return responseDict;
 }
 
+function getTypes(res, property) {
+    const typeDict = [];
+    let id_seen = [];
+    res = res[0];
+    res.forEach((message) => {
+        let instance = message["instance" + property]
+        let instanceLabel = message["instance" + property + "Label"]
+        if (instance != undefined && id_seen.includes(instance.value) == false) {
+            id_seen.push(instance.value);
+            typeDict.push({
+                "id": "wd:" + getElementCodeFromUrl(instance.value),
+                "obj": instanceLabel.value,
+                "match": true,
+                "name": instanceLabel.value,
+                "score": 100
+            });
+        }
+    });
+    if(typeDict === []){
+        
+    }
+
+
+    return typeDict
+}
+
 
 
 export default async (req, res) => {
     const { items, props } = req.processed;
     const inputColumns = Object.keys(items);
+
+    const colProperty = [{ 
+        id: 'wd:P144',
+        obj: inputColumns,
+        match: true,
+        name: 'based on',
+        score: 100
+      }];
+
 
     let response = {
         columns: {},
@@ -76,10 +111,10 @@ export default async (req, res) => {
                 return item.property === property;
             }).property_label);
 
-            const colId = inputColumns[colIndex] + "_" + propertyLabel;
+            const colId = propertyLabel;
 
             response.columns[colId] = {
-                label: colId,
+                label: colId+"_"+inputColumns[colIndex],
                 metadata: [],
                 cells: {}
             }
@@ -89,6 +124,12 @@ export default async (req, res) => {
                 [colId]: inputColumns[colIndex]
             }
 
+            response.columns[colId].metadata[0] = {
+                "id": "wd:" + property+ "_"+inputColumns[colIndex],
+                "name": propertyLabel+ "_"+inputColumns[colIndex],
+                "type": getTypes(res, property),
+                "property": colProperty
+            }
             const rows = req.original.items[inputColumns[colIndex]];
 
             Object.keys(rows).forEach((id) => {

@@ -9,6 +9,7 @@ function getAddressFormat(items){
 }
 
 export default async (req) => {
+  console.log(req)
   const addressList = [];
   const { items } = req.processed;
   Object.keys(items).forEach(item => {
