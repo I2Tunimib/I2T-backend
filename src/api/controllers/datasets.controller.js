@@ -60,7 +60,7 @@ const DatasetsController = {
     const { file } = req.files;
     const { name } = req.body;
     const { idDataset } = req.params;
-    
+
     try {
       const tables = await DatasetsService.addTable(idDataset, file.tempFilePath, name);
 
@@ -94,7 +94,7 @@ const DatasetsController = {
     const data = req.body;
     try {
       res.json(await DatasetsService.updateTable(data));
-    } catch(err) {
+    } catch (err) {
       next(err)
     }
   },
@@ -103,9 +103,9 @@ const DatasetsController = {
     const { format = 'w3c', keepMatching = false } = req.query
     try {
       const table = await DatasetsService.findTable(idDataset, idTable)
-      
-      res.json(await ExportService[format]({ ...table, keepMatching }));
-    } catch(err) {
+      const data = await ExportService[format]({ ...table, keepMatching });
+      res.send(data);
+    } catch (err) {
       next(err)
     }
   },
@@ -115,7 +115,7 @@ const DatasetsController = {
     try {
       const tables = await DatasetsService.findTablesByName(query);
       const datasets = await DatasetsService.findDatasetsByName(query);
-  
+
       res.json({
         tables: tables.slice(0, 5),
         datasets: datasets.slice(0, 5)
