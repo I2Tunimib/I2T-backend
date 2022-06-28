@@ -221,7 +221,7 @@ const FileSystemService = {
 
         // unzip and write each file
         for await (const entry of zip) {
-          const { path, type } = entry;          
+          const { path, type } = entry;
 
           const tableName = path.split('.')[0] || 'Unnamend';
 
