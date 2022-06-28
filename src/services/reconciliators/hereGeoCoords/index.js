@@ -9,7 +9,6 @@ export default {
     description: 'Get the coordinates from the address as a unique identifier.',
     relativeUrl: '/here',
     prefix: 'here',
-    //uri: 'http://www.google.com/maps/place/',
     uri: 'http://www.google.com/maps/place/',
     metaToView: {
       id: {

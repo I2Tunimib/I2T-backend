@@ -23,6 +23,9 @@ function getLatLongEnd(end_row){
   if(end_row[1][0] !== undefined){
     return cleanCoordinates(end_row[1][0].id);
   }
+  if(end_row[0] !== undefined){
+    return end_row[0];
+  }
   return undefined;
 }
 
@@ -42,7 +45,7 @@ export default async (req) => {
   
   const {items} = req. original;
   const { props } = req.original;
-
+  
   const start = items[Object.keys(items)[0]];
   const end = props.end;
 
@@ -52,6 +55,7 @@ export default async (req) => {
         RouteList.push(route);
         RowDict[row] = route;
       }
+      console.log(route);
   })  
   const res = await axios.post(endpoint+"?&token="+ access_token, {'json': RouteList});
   
