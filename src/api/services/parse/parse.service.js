@@ -5,6 +5,7 @@ import { parse } from 'JSONStream';
 import { PassThrough } from 'stream';
 import yaml from 'js-yaml';
 import ParseW3C from './parse-w3c.service';
+import { cloneStream } from '../../../utils/cloneStream';
 
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',
@@ -59,7 +60,7 @@ const ParseService = {
             break;
           }
           push(transformFn ? transformFn(obj) : obj)
-        } 
+        }
       } else {
         push(transformFn ? transformFn(obj) : obj)
       }
@@ -72,7 +73,7 @@ const ParseService = {
     destination,
     transformFn
   }) => {
-    const zip = createReadStream(filePath).pipe(unzipper.Parse({forceStream: true}))
+    const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
     let nFiles = 0;
 
     for await (const entry of zip) {
@@ -102,7 +103,7 @@ const ParseService = {
     transformFn,
     acc
   ) => {
-    const stream = entry.pipe(csv({ ...parserOptions }));
+    const stream = entry.clone().pipe(csv({ ...parserOptions }));
     let index = 0;
     for await (const row of stream) {
       acc = transformFn(acc, row, index);
@@ -162,20 +163,20 @@ const ParseService = {
       index++;
     }
     stream.end();
-    nCells = Object.keys(rows).length * Object.keys(columns).length 
+    nCells = Object.keys(rows).length * Object.keys(columns).length
     return { columns, rows, nCells, nCellsReconciliated }
   },
   parseJson: async (entry) => {
     let nCells = 0;
     let nCellsReconciliated = 0;
     const rows = await ParseService.readJsonWithTransform(
-      entry, 
+      entry,
       ParseService.transformRow,
       {}
     )
     const header = Object.keys(rows[Object.keys(rows)[0]].cells);
     const columns = ParseService.transformHeader({}, header);
-    nCells = Object.keys(rows).length * Object.keys(columns).length 
+    nCells = Object.keys(rows).length * Object.keys(columns).length
     return { columns, rows, nCells, nCellsReconciliated };
   },
   checkJsonFormat: async (entry) => {
@@ -195,46 +196,15 @@ const ParseService = {
     return format;
   },
   parse: async (entry) => {
-    const { path } = entry;
-    // console.log(entry);
-    const entryA = entry.pipe(new PassThrough())
-    const entryB = entry.pipe(new PassThrough())
-    // console.log(entry);
-    // const extension = path.split('.').pop()
     try {
-      return await ParseService.parseCsv(entry)
+      return await ParseService.parseCsv(cloneStream(entry));
+
     } catch (err) {
-
-      if (ParseService.checkJsonFormat(entryA) === 'raw') {
-        return ParseService.parseJson(entryB)
+      if (ParseService.checkJsonFormat(cloneStream(entry)) === 'raw') {
+        return ParseService.parseJson(cloneStream(entry))
       }
-      return ParseW3C.parse(entryB)
+      return ParseW3C.parse(cloneStream(entry))
     }
-
-    // try {
-    //   return ParseService.parseCsv(entry)
-    // } catch {
-    //   console.log('AAAAAAA');
-    //   const entryA = entry.pipe(new PassThrough())
-    //   const entryB = entry.pipe(new PassThrough())
-
-    //   if (ParseService.checkJsonFormat(entryA) === 'raw') {
-    //     return ParseService.parseJson(entryB)
-    //   }
-    //   return ParseW3C.parse(entryB)
-    // }
-
-    // if (extension === 'csv') {
-    //   return ParseService.parseCsv(entry)
-    // } else if (extension === 'json') {
-    //   const entryA = entry.pipe(new PassThrough())
-    //   const entryB = entry.pipe(new PassThrough())
-
-    //   if (await ParseService.checkJsonFormat(entryA) === 'raw') {
-    //     return ParseService.parseJson(entryB)
-    //   }
-    //   return ParseW3C.parse(entryB)
-    // }
   }
 };
 
