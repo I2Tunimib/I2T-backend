@@ -7,8 +7,8 @@ export default {
   public: {
     name: 'Here Geo Location',
     description: 'Get the coordinates from the address as a unique identifier.',
-    relativeUrl: '/here',
-    prefix: 'here',
+    relativeUrl: '/georss',
+    prefix: 'georss',
     uri: 'http://www.google.com/maps/place/',
     metaToView: {
       id: {
