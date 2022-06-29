@@ -19,12 +19,13 @@ function getDict(res) {
 
 function getMetaData(data) {
   return [{
-    'id': String("here:" + data.lat + "," + data.lng),
+    'id': String("georss:" + data.lat + "," + data.lng),
     'feature': [{ 'id': 'all_labels', 'value': 100 }],
     'name': data.name_eng,
     'score': data.score,
     'match': true,
-    'type': [{ 'id': "Q29934236", 'name': "GlobeCoordinate" }]
+    'type': [{ 'id': "wd:Q29934236", 'name': "GlobeCoordinate" },
+    { 'id': "georss:point", 'name': "point" }]
   }]
 }
 
@@ -35,6 +36,13 @@ function getColumnMetadata() {
     'score': 0,
     'match': true,
     'type': []
+  },
+  {
+    'id': "georss:point",
+    'name': "point",
+    'score': 0,
+    'match': true,
+    'type':[]
   }]
 }
 
@@ -53,8 +61,8 @@ export default async (req, res) => {
     response.push(header)
   }
   const dict = getDict(res);
- 
-  
+
+
 
   items.forEach(item => {
     let row = {};
@@ -66,5 +74,6 @@ export default async (req, res) => {
     }
     response.push(row);
   });
+  console.log(response[0])
   return response;
 }

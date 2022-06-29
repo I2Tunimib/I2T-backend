@@ -26,9 +26,12 @@ export default async (req, res) => {
   const { props } = req.original;
   const property = props.property;
 
-  const RowDict = editRowDict(res.dict);
+  
+
+  //const RowDict = editRowDict(res.dict);
   const start_label =res.start;
   const end_label =res.end;
+  const dict = res.dict
   res = res.data;
 
   let response = {
@@ -114,14 +117,9 @@ export default async (req, res) => {
     }
 
     
-    
-
-
-    
-
-    res.forEach(item_res => {
-      let row_id = RowDict[item_res.origin.toString() + item_res.destination.toString()];
-      let label_result = getPropRoute(item_res, prop)
+    Object.keys(dict).forEach(index => {
+      let row_id = dict[index];
+      let label_result = getPropRoute(res[index], prop)
       response.columns[prop].cells[row_id] = {
         label: label_result,
         metadata: []
