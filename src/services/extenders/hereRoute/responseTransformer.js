@@ -7,12 +7,16 @@ function editRowDict(RowDict) {
 }
 
 function getPropRoute(item, prop) {
+  console.log(item)
   if (item.routes.length) {
     if(prop === "duration"){
       return (item.routes[0].sections[0].summary[prop]/60).toFixed(2).toString();
     }
     if(prop === "length"){
       return (item.routes[0].sections[0].summary[prop]/1000).toFixed(2).toString();
+    }
+    if(prop == "polyline"){
+      return item.routes[0].sections[0].polyline.toString();
     }
     return item.routes[0].sections[0].summary[prop].toString();
   }
@@ -87,6 +91,7 @@ export default async (req, res) => {
         }
       ];
     }else{
+      if(prop === "length"){
       colType = [{ "id": "wd:Q29934271",
       "match" : true,
       "name" : "Quantity",
@@ -104,7 +109,10 @@ export default async (req, res) => {
           "score":100,
           "match": true
         }
-      ];
+      ];}else{
+        colType = [];
+      colEntity = []
+      }
     }
 
 

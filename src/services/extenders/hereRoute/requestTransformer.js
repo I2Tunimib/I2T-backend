@@ -62,9 +62,7 @@ export default async (req) => {
     }
   });
   const payload = { "json": RouteList };
+
   const res = await axios.post(endpoint + "?&token=" + access_token, payload);
   return { 'data': res.data, 'dict': RowDict, 'start': Object.keys(items)[0], end: props.end[Object.keys(props.end)[0]][2] };
 }
-
-
-
