@@ -33,6 +33,11 @@ export default {
             id: 'length',
             label: 'Route Length',
             value: 'length'
+          },
+          {
+            id: 'polyline',
+            label: 'Polyline',
+            value: 'polyline'
           }
         ]
       }
