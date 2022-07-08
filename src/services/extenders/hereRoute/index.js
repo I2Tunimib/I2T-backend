@@ -35,9 +35,9 @@ export default {
             value: 'length'
           },
           {
-            id: 'polyline',
-            label: 'Polyline',
-            value: 'polyline'
+            id: 'route',
+            label: 'Route',
+            value: 'route'
           }
         ]
       }
