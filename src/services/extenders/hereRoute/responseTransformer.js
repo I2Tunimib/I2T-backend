@@ -7,7 +7,6 @@ function editRowDict(RowDict) {
 }
 
 function getPropRoute(item, prop) {
-  console.log(item)
   if (item.routes.length) {
     if(prop === "duration"){
       return (item.routes[0].sections[0].summary[prop]/60).toFixed(2).toString();
@@ -15,10 +14,9 @@ function getPropRoute(item, prop) {
     if(prop === "length"){
       return (item.routes[0].sections[0].summary[prop]/1000).toFixed(2).toString();
     }
-    if(prop == "polyline"){
+    if(prop == "route"){
       return item.routes[0].sections[0].polyline.toString();
     }
-    return item.routes[0].sections[0].summary[prop].toString();
   }
   return "";
 }
@@ -72,10 +70,7 @@ export default async (req, res) => {
     let colType = "";
     let colEntity = "";
     if(prop === "duration"){
-      colType = [{ "id": "wd:Q29934271",
-      "match" : true,
-      "name" : "Quantity",
-      "score" : 100},
+      colType = [
       {
         "id": "wd:Q7727",
         "name": "minute",
@@ -92,10 +87,7 @@ export default async (req, res) => {
       ];
     }else{
       if(prop === "length"){
-      colType = [{ "id": "wd:Q29934271",
-      "match" : true,
-      "name" : "Quantity",
-      "score" : 100},
+      colType = [
       {
         "id": "wd:Q828224",
         "name": "kilometre",

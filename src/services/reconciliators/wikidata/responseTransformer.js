@@ -2,12 +2,18 @@ import config from './index';
 
 const { uri } = config.public;
 
-export default async (req, res) => {
+function cleanLabel(label){
+  return label.replaceAll('&', '').replaceAll('  ', ' ')
+}
 
+
+export default async (req, res) => {
+  
   const { items } = req.processed;
 
-  const response = Object.keys(res).flatMap((label) => {
-    const metadata = res[label].result.map(({ id, ...rest }) => ({
+
+  const response = Object.keys(items).flatMap((label) => {
+    const metadata = res[cleanLabel(label)].result.map(({ id, ...rest }) => ({
       id: `wd:${id}`,
       ...rest
     }))
