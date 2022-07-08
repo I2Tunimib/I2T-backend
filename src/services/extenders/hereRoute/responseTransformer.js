@@ -102,8 +102,20 @@ export default async (req, res) => {
           "match": true
         }
       ];}else{
-        colType = [];
-      colEntity = []
+        colType = [
+          {
+            "id": "wd:Q111226201",
+            "name": "MultiLineString",
+            "match": true,
+            "score": 100
+          }];
+          colEntity = [
+            {
+              "name":"itinerary",
+              "id":"wd:Q1322323",
+              "score":100,
+              "match": true
+            }];
       }
     }
 
