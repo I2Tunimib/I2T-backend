@@ -87,15 +87,6 @@ export default async (req, res) => {
     const { items, props } = req.processed;
     const inputColumns = Object.keys(items);
 
-    const colProperty = [{ 
-        id: 'wd:P144',
-        obj: inputColumns,
-        match: true,
-        name: 'based on',
-        score: 100
-      }];
-
-
     let response = {
         columns: {},
         meta: {}
@@ -111,12 +102,22 @@ export default async (req, res) => {
                 return item.property === property;
             }).property_label);
 
+
+            const colProperty = [{ 
+                id: 'wd:P144',
+                obj: inputColumns[colIndex],
+                match: true,
+                name: 'based on',
+                score: 100
+              }];
+
             const colId = propertyLabel;
 
             response.columns[colId] = {
                 label: colId+"_"+inputColumns[colIndex],
                 metadata: [],
-                cells: {}
+                cells: {},
+                kind : "literal",
             }
 
             response.meta = {
@@ -125,10 +126,11 @@ export default async (req, res) => {
             }
 
             response.columns[colId].metadata[0] = {
-                "id": "wd:" + property+ "_"+inputColumns[colIndex],
+                "id": "wd:" + property,
                 "name": propertyLabel+ "_"+inputColumns[colIndex],
-                "type": getTypes(res, property),
-                "property": colProperty
+                "entity": [],
+                "property": colProperty,
+                "type": []
             }
             const rows = req.original.items[inputColumns[colIndex]];
 
