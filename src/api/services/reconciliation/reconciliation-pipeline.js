@@ -12,13 +12,13 @@ const reconciliationPipeline = async (reqBody) => {
     throw new Error('Service not found');
   }
 
-  const { 
+  const {
     info,
     requestTransformer,
-    responseTransformer 
+    responseTransformer
   } = service;
 
-  
+
   if (!requestTransformer) {
     // get transform request function. If not found throw error (user probably didn't implement a transform function)
     throw new Error('No transformer request function found')
@@ -28,12 +28,12 @@ const reconciliationPipeline = async (reqBody) => {
     throw new Error('No transformer response function found')
   }
 
-  const { items } = rest;
+  const { items, contextColumns } = rest;
 
-  const req =  {
-    original: { items },
-    ...(info.private.processRequest && { 
-      processed: { items: mapToUnique(items) } 
+  const req = {
+    original: { items, contextColumns },
+    ...(info.private.processRequest && {
+      processed: { items: mapToUnique(items), contextColumns }
     })
   }
 
