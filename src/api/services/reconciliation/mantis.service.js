@@ -9,8 +9,80 @@ import axios from 'axios';
 import path from 'path';
 import config from '../../../config/index';
 import { log } from '../../../utils/log';
+import { table } from 'console';
 
 const __dirname = path.resolve();
+
+function getFormattedRow(tableRow){
+  let requestRow = {};
+  requestRow["idRow"] = tableRow.id;
+  requestRow["data"] = [];
+  Object.keys(tableRow.cells).forEach(element => {
+    requestRow["data"].push(tableRow.cells[element].label);
+  });
+  return requestRow;
+}
+
+function getSemanticAnnotation(columnsTable){
+  let type_column = [];
+  if(columnsTable.metadata.length === 0){
+    type_column = [];
+  }else{
+    if(columnsTable.metadata[0].type !==  undefined){
+      const id = columnsTable.metadata[0].type[0].id.split(":")[1]
+      type_column = [id];
+    }else{
+      type_column = [];
+    } 
+  }
+  return {"idColumn": columnsTable.id, "types": type_column}
+}
+
+function getMetadata(columnsTable){
+  
+  let tag_column = [];
+  if(columnsTable.kind === undefined){
+    tag_column = "";
+  }else{
+    tag_column = columnsTable.kind;
+  }
+  return {"idColumn": columnsTable.id, "tag": tag_column}
+}
+
+function getUploadRequest(table, datasetName){
+  let request = {json:[]};
+  const table_name = table.table.name;
+  const dataset_name = datasetName.name
+  const rows = [];
+  const semantic_annotations = {"cta": []};
+  const metadata = {"column": []};
+
+  Object.keys(table.rows).forEach(element => {
+    rows.push(getFormattedRow(table.rows[element]));
+  });
+
+  Object.keys(table.columns).forEach(element =>{
+    semantic_annotations.cta.push(getSemanticAnnotation(table.columns[element]));
+  });
+
+  Object.keys(table.columns).forEach(element =>{
+    metadata.column.push(getMetadata(table.columns[element]));
+  });
+
+  const table_request = {
+    "name" : table_name,
+    "dataset" : dataset_name,
+    "rows" : rows,
+    "semanticAnnotations": semantic_annotations,
+    "metadata": metadata,
+    "kgReference": "wikidata",
+    "candidateSize": 300
+  }
+  request.json.push(table_request);
+
+  console.log(table_request.metadata)
+
+}
 
 const { 
   MANTIS, 
@@ -221,12 +293,14 @@ const MantisService = {
       try {
         const localTable = await FileSystemService.findOneTable(localDatasetId, localTableId);
         const localDataset = await FileSystemService.findOneDataset(localDatasetId);
-  
+        
         if (!localTable) {
           throw new Error('Table not found');
         }
 
         const { mantisId, name } = localTable;
+
+        
 
         if (mantisId === undefined) {
 
@@ -236,6 +310,8 @@ const MantisService = {
 
           // convert to csv format
           const table = await FileSystemService.findTable(localDatasetId, localTableId)
+          //QUESTA E' LA TABELLA GREZZA
+          getUploadRequest(table, localDataset);
           await writeFile(`./tmp/${tableTmpId}.csv`, await ExportService.csv(table))
 
           // zip file to upload to mantis
