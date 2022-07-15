@@ -28,12 +28,12 @@ const reconciliationPipeline = async (reqBody) => {
     throw new Error('No transformer response function found')
   }
 
-  const { items, contextColumns } = rest;
+  const { items, ...props } = rest;
 
   const req = {
-    original: { items, contextColumns },
+    original: { items, props },
     ...(info.private.processRequest && {
-      processed: { items: mapToUnique(items), contextColumns }
+      processed: { items: mapToUnique(items), props }
     })
   }
 
