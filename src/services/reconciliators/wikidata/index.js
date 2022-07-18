@@ -31,17 +31,6 @@ export default {
         label: 'Match',
         type: 'tag'
       }
-    },
-    formParams: [
-      {
-        id: 'dates',
-        description: 'Select a column for <b>Dates</b> values:',
-        label: 'Dates',
-        infoText: 'Only date for the years between 2017 and 2019 and German regions are supported (ISO format yyyy-mm-dd)',
-        inputType: 'selectColumns',
-        rules: ['required']
-      },
-    ]
-
+    }
   }
 }
