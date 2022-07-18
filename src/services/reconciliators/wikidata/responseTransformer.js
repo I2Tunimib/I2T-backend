@@ -2,13 +2,13 @@ import config from './index';
 
 const { uri } = config.public;
 
-function cleanLabel(label){
-  return label.replaceAll('&', '').replaceAll('  ', ' ')
+function cleanLabel(label) {
+  return label.replace(/&/g, '').replace(/\s*/g, ' ')
 }
 
 
 export default async (req, res) => {
-  
+
   const { items } = req.processed;
 
 
@@ -32,7 +32,7 @@ export default async (req, res) => {
   //       uri: `${uri}${metaItem.id}`
   //     }
   //   }));
-    
+
   //   return {
   //     id,
   //     metadata
