@@ -1,6 +1,7 @@
 import config from './index';
 
 const { uri } = config.public;
+const {min_threshold} = config.private;
 
 
 function getColumnMetadata() {
@@ -14,19 +15,33 @@ function getColumnMetadata() {
 }
 
 export default async (req, res) => {
-  console.log(res)
-  
-
   let response = res.map(data => {
-    let doc = {'id': data.row+'$'+data.colName};
-    doc['metadata'] = data.items.map(item => {
-      return {'id': 'atoka:'+item['id'],
-      'name': item['base']['legalName'],
-      'type': [{'id': 'wd:Q783794', 'name': 'company'}], 
-      'score': item['confidence'],
-      'match': false
-      }
-    });
+    let doc = { 'id': data.row + '$' + data.colName };
+    if (data.items.length == 0) {
+      doc['metadata'] = [];
+    } else {
+      let first = true;
+      doc['metadata'] = data.items.map(item => {
+        if (item.confidence < min_threshold || first === false) {
+          return {
+            'id': 'atoka:' + item['id'],
+            'name': item['base']['legalName'],
+            'type': [{ 'id': 'wd:Q783794', 'name': 'company' }],
+            'score': item['confidence'],
+            'match': false
+          }
+        } else {
+          first = false;
+          return {
+            'id': 'atoka:' + item['id'],
+            'name': item['base']['legalName'],
+            'type': [{ 'id': 'wd:Q783794', 'name': 'company' }],
+            'score': item['confidence'],
+            'match': true
+          }
+        }
+      });
+    }
     return doc;
   });
 

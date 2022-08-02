@@ -5,26 +5,28 @@ const { endpoint } = config.private;
 const { access_token } = config.private;
 
 
-function preparePayload(name, regNumber, websitesDomain, phone, email, social, token, limit) {
+function preparePayloadNew(row, token, limit) {
   let payload = { 'token': token, 'fuzziness': 2, 'fields': 'items', 'packages': 'base', 'limit': limit };
-  if (name !== "") { payload["name"] = name; }
-  if (regNumber !== "") { payload["regNumbers"] = regNumber; }
-  if (websitesDomain !== "") { payload["websitesDomains"] = websitesDomain; }
-  if (phone !== "") { payload["phones"] = phone; }
-  if (email !== "") { payload["emails"] = email; }
-  if (social !== "") { payload["socials"] = social; }
+  Object.keys(row).forEach(field => {
+    payload[field] = row[field];
+  })
   return payload;
 }
 
 async function makeRequest(endpoint, payload, row, colName) {
-  const res = await axios({
-    method: 'get',
-    url: endpoint,
-    params: payload
-  });
-  res.data['row'] = row;
-  res.data['colName'] = colName;
-  return res.data;
+  try{
+    const res = await axios({
+      method: 'get',
+      url: endpoint,
+      params: payload
+    });
+    res.data['row'] = row;
+    res.data['colName'] = colName;
+    return res.data;
+  }catch(error){
+    return {'row': row, 'colName': colName, 'items': []};
+  }
+  
 }
 
 function prepareDict(items, props) {
@@ -40,25 +42,41 @@ function prepareDict(items, props) {
       })
     }
   });
-  return {'dict': dict, 'colName': colName};
+  return { 'dict': dict, 'colName': colName };
+}
+
+function fixOptionalField(props, column, name) {
+  if (props[name] !== undefined && props[column] !== undefined) {
+    props[props[name]] = props.opt1
+    delete props[name];
+    delete props[column];
+  }
+  return props
 }
 
 
 export default async (req) => {
   const { items } = req.original;
-  const { props } = req.original;
-  
-
-
+  let { props } = req.original;
+  delete props["atokaName"];
+  delete props["atokaRegNumber"];
+  delete props["atokaWebsitesDomains"];
+  delete props["atokaPhones"];
+  delete props["atokaEmails"];
+  delete props["atokaSocials"];
+  console.log(props);
+  props = fixOptionalField(props, "opt1", "optField1");
+  props = fixOptionalField(props, "opt2", "optField2");
 
   let dataRequest = prepareDict(items, props);
-
-  const {colName} = dataRequest;
+  const { colName } = dataRequest;
   dataRequest = dataRequest.dict;
 
   return Promise.all(Object.keys(dataRequest).map(async (data) => {
-    let payload = preparePayload(dataRequest[data].name, dataRequest[data].regNumber, dataRequest[data].websitesDomains, dataRequest[data].phones, dataRequest[data].emails, "", access_token, 2);
-    console.log(payload);
+    const payload = preparePayloadNew(dataRequest[data], access_token, 10);
+    /*let payload = preparePayload(dataRequest[data].name, dataRequest[data].regNumber, 
+      dataRequest[data].websitesDomains, dataRequest[data].phones, dataRequest[data].emails, "", access_token, 2);
+    console.log(payload);*/
     let res = makeRequest(endpoint, payload, data, colName);
     return res;
   }))
