@@ -47,24 +47,29 @@ function prepareDict(items, props) {
 
 function fixOptionalField(props, column, name) {
   if (props[name] !== undefined && props[column] !== undefined) {
-    props[props[name]] = props.opt1
+    props[props[name]] = props[column]
     delete props[name];
     delete props[column];
   }
   return props
 }
 
-
-export default async (req) => {
-  const { items } = req.original;
-  let { props } = req.original;
+function cleanProps(props){
   delete props["atokaName"];
   delete props["atokaRegNumber"];
   delete props["atokaWebsitesDomains"];
   delete props["atokaPhones"];
   delete props["atokaEmails"];
   delete props["atokaSocials"];
-  console.log(props);
+  return props;
+}
+
+
+export default async (req) => {
+  const { items } = req.original;
+  let { props } = req.original;
+
+  props = cleanProps(props);
   props = fixOptionalField(props, "opt1", "optField1");
   props = fixOptionalField(props, "opt2", "optField2");
 
@@ -74,9 +79,6 @@ export default async (req) => {
 
   return Promise.all(Object.keys(dataRequest).map(async (data) => {
     const payload = preparePayloadNew(dataRequest[data], access_token, 10);
-    /*let payload = preparePayload(dataRequest[data].name, dataRequest[data].regNumber, 
-      dataRequest[data].websitesDomains, dataRequest[data].phones, dataRequest[data].emails, "", access_token, 2);
-    console.log(payload);*/
     let res = makeRequest(endpoint, payload, data, colName);
     return res;
   }))
