@@ -25,7 +25,7 @@ export default async (req, res) => {
         if (item.confidence < min_threshold || first === false) {
           return {
             'id': 'atoka:' + item['id'],
-            'name': item['base']['legalName'],
+            'name': item['name'],
             'type': [{ 'id': 'wd:Q783794', 'name': 'company' }],
             'score': item['confidence'],
             'match': false
@@ -34,7 +34,7 @@ export default async (req, res) => {
           first = false;
           return {
             'id': 'atoka:' + item['id'],
-            'name': item['base']['legalName'],
+            'name': item['name'],
             'type': [{ 'id': 'wd:Q783794', 'name': 'company' }],
             'score': item['confidence'],
             'match': true
