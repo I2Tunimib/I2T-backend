@@ -8,6 +8,6 @@ services:
     volumes:
       - .:/usr/src/app/
       - /usr/src/app/node_modules
-    restarts: "always"
+    restart: "always"
     ports:
       - "3001:3002" 
