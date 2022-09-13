@@ -29,6 +29,24 @@ export default {
         label: 'Match',
         type: 'tag'
       }
-    }
+    },
+    formParams: [
+      {
+        id: 'secondPart',
+        description: "Possibilità di inserire un secondo pezzo per l'indirizzo.",
+        label: "Seconda parte dell'indirizzo",
+        infoText: "",
+        inputType: 'selectColumns',
+        rules: []
+      },
+      {
+        id: 'thirdPart',
+        description: "Possibilità di inserire un terzo pezzo per l'indirizzo.",
+        label: "Terzo parte dell'indirizzo",
+        infoText: "",
+        inputType: 'selectColumns',
+        rules: []
+      }
+    ]
   }
 }

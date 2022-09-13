@@ -4,7 +4,7 @@ export default {
     processRequest: true
   },
   public: {
-    name: 'HERE Column Extender',
+    name: 'Column Extender',
     relativeUrl: '',
     description: 'Select the Address column and extend the metadata in new columns',
     formParams: [
@@ -24,14 +24,14 @@ export default {
         rules: ['required'],
         options: [
           {
-            id: 'coordinates',
-            label: 'Geo Coordinates',
-            value: 'geocoordinates'
+            id: 'id',
+            label: 'ID',
+            value: 'id'
           },
           {
-            id: 'latinName',
-            label: 'English Name',
-            value: 'english_name'
+            id: 'name',
+            label: 'Name',
+            value: 'name'
           }
         ]
       }
