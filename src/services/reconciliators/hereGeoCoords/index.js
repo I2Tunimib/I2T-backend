@@ -46,6 +46,14 @@ export default {
         infoText: "",
         inputType: 'selectColumns',
         rules: []
+      },
+      {
+        id: 'fourthPart',
+        description: "Possibilità di inserire un quarto pezzo per l'indirizzo.",
+        label: "Quarta parte dell'indirizzo",
+        infoText: "",
+        inputType: 'selectColumns',
+        rules: []
       }
     ]
   }

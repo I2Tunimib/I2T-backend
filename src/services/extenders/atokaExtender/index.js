@@ -30,6 +30,11 @@ export default {
             id: 'assets',
             label: 'Assets',
             value: 'assets'
+          },
+          {
+            id: 'ateco',
+            label: 'Ateco',
+            value: 'ateco'
           }
         ]
       }

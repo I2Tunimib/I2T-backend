@@ -9,10 +9,10 @@ function editRowDict(RowDict) {
 function getPropRoute(item, prop) {
   if (item.routes.length) {
     if(prop === "duration"){
-      return (item.routes[0].sections[0].summary[prop]/60).toFixed(2).toString();
+      return (item.routes[0].sections[0].summary[prop]/60).toFixed(2);
     }
     if(prop === "length"){
-      return (item.routes[0].sections[0].summary[prop]/1000).toFixed(2).toString();
+      return (item.routes[0].sections[0].summary[prop]/1000).toFixed(2);
     }
     if(prop == "route"){
       return item.routes[0].sections[0].polyline.toString();
