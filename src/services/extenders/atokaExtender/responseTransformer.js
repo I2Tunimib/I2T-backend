@@ -6,6 +6,11 @@ function getTaxID(data) {
   return data["item"]["base"]["taxId"];
 }
 
+function getAteco(data) {
+  return data["item"]["base"]["ateco"][0]["code"];
+}
+
+
 function getAssets(data) {
   let assets = "";
   if (data["item"]["economics"]["balanceSheets"] === undefined) {
@@ -30,6 +35,7 @@ export default async (req, res) => {
   const property = props["property"];
 
   const column_to_extend = Object.keys(req.processed.items)[0];
+  console.log(column_to_extend)
 
   let response = {
     columns: {},
@@ -100,7 +106,28 @@ export default async (req, res) => {
             "match": true,
             "score": 100
           }];
-      } else {
+      } else {if (String(prop) === "ateco") {
+        colEntity = [{
+          "name": "ateco",
+          "id": "wd:Q21614754",
+          "score": 100,
+          "match": true
+        }];
+        colProperty = [{
+          id: 'wd:P144',
+          obj: column_to_extend,
+          match: true,
+          name: 'based on',
+          score: 100
+        }];
+        colType = [
+          {
+            "id": "wd:Q853614",
+            "name": "identifier",
+            "match": true,
+            "score": 100
+          }];
+      } else{
         colEntity = [{
           "name": "taxpayer identification number",
           "id": "wd:Q47159572",
@@ -149,7 +176,9 @@ export default async (req, res) => {
       } else {
         if (String(prop) === "assets") {
           label_result = getAssets(row);
-        } else {
+        } if (String(prop) === "ateco") {
+          label_result = getAteco(row);
+        }else {
           label_result = getTaxID(row);
         }
       }
@@ -160,7 +189,8 @@ export default async (req, res) => {
     });
 
 
-  })
+  }
+})
 
   console.log(column_to_extend)
 

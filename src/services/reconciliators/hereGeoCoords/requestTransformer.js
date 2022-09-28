@@ -22,6 +22,9 @@ export default async (req) => {
     if(req.original.props.thirdPart !== undefined && req.original.props.thirdPart[indice] !== undefined){
       newItem = newItem + " " + req.original.props.thirdPart[indice][0];
     }
+    if(req.original.props.fourthPart !== undefined && req.original.props.fourthPart[indice] !== undefined){
+      newItem = newItem + " " + req.original.props.fourthPart[indice][0];
+    }
     labelDict[item] = newItem;
     addressList.push(getAddressFormat(newItem));
   });

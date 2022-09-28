@@ -25,12 +25,12 @@ export default {
         options: [
           {
             id: 'id',
-            label: 'ID',
+            label: 'Reconciliation ID',
             value: 'id'
           },
           {
             id: 'name',
-            label: 'Name',
+            label: 'Reconciliation Name',
             value: 'name'
           }
         ]

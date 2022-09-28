@@ -3,9 +3,7 @@ import axios from 'axios';
 
 const { endpoint } = config.private;
 
-function cleanLabel(label) {
-  return label.replace(/&/g, '').replace(/\s*/g, ' ')
-}
+
 
 export default async (req) => {
   // const { items } = req;
@@ -18,7 +16,7 @@ export default async (req) => {
 
   const queries = Object.keys(items).reduce((acc, label) => ({
     ...acc,
-    [cleanLabel(label)]: { query: cleanLabel(label) }
+    [label]: { query: label }
   }), {});
 
   const formBody = 'queries=' + JSON.stringify(queries);
