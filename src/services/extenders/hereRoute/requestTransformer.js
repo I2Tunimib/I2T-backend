@@ -19,11 +19,11 @@ function getLatLongStart(start_row) {
   return undefined;
 }
 
-function getLatLongEnd(end_row) {
-  if (end_row[1][0] !== undefined) {
+function getLatLongEnd(end_row, POI) {
+  if (end_row[1][0] !== undefined && POI === false) {
     return cleanCoordinates(end_row[1][0].id);
   }
-  if (end_row[0] !== undefined) {
+  if (end_row[0] !== undefined && POI === true) {
     return end_row[0];
   }
   return undefined;
@@ -48,17 +48,24 @@ export default async (req) => {
   let RowDict = {}
 
   const { items } = req.original;
-  const { props } = req.original;
+  let { props } = req.original;
+  let POI = false;
+
+
+  if (props['property'].findIndex((element) => element === 'poi') !== -1) {
+    POI = true;
+  }
+
+
 
   const start = items[Object.keys(items)[0]];
   const end = props.end;
 
-
   Object.keys(start).forEach(row => {
-    let route = createRoute(getLatLongStart(start[row]), getLatLongEnd(end[row]));
+    let route = createRoute(getLatLongStart(start[row]), getLatLongEnd(end[row], POI));
     if (route !== undefined) {
       RouteList.push(route);
-      RowDict[RouteList.length-1] = row;
+      RowDict[RouteList.length - 1] = row;
     }
   });
   const payload = { "json": RouteList };
