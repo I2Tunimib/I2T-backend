@@ -38,6 +38,11 @@ export default {
             id: 'route',
             label: 'Route',
             value: 'route'
+          },
+          {
+            id: 'poi',
+            label: 'Allow POI',
+            value: 'poi'
           }
         ]
       }
