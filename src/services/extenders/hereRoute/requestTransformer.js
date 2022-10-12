@@ -52,7 +52,7 @@ export default async (req) => {
   let POI = false;
 
 
-  if (props['property'].findIndex((element) => element === 'poi') !== -1) {
+  if (props['poi_property'].findIndex((element) => element === 'poi') !== -1) {
     POI = true;
   }
 

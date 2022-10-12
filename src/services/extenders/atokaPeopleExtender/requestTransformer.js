@@ -29,7 +29,7 @@ export default async (req) => {
 
   return Promise.all(Object.keys(items).map(async (data) => {
     return Promise.all(Object.keys(items[data]).map(async (row) => {
-      let res = await makeRequest(endpoint +'/'+ cleanId(items[data][row]), {'token': access_token, 'packages':'companies'}, row);
+      let res = await makeRequest(endpoint +'/'+ cleanId(items[data][row]), {'token': access_token, 'packages':'base, companies'}, row);
       return res;
     }));
   }));
