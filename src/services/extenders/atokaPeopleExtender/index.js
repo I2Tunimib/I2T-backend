@@ -35,6 +35,16 @@ export default {
             id: 'id',
             label: 'Company Atoka id',
             value: 'id'
+          },
+          {
+            id: 'address',
+            label: 'Address',
+            value: 'address'
+          },
+          {
+            id: 'residenceAddress',
+            label: 'Residence Address',
+            value: 'residenceAddress'
           }
         ]
       }

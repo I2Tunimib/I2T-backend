@@ -48,6 +48,26 @@ function getId(data) {
 
 }
 
+function getResidenceAddress(data) {
+  if (data["item"]["base"]["residenceAddress"] !== undefined) {
+    return data["item"]["base"]["residenceAddress"]["fullAddress"];
+  } else {
+    return "";
+  }
+}
+
+
+function getAddress(data) {
+  console.log(data)
+
+  if (data["item"]["base"]["address"] !== undefined) {
+    return data["item"]["base"]["address"]["fullAddress"];
+  } else {
+    return "";
+  }
+}
+
+
 export default async (req, res) => {
 
 
@@ -148,26 +168,73 @@ export default async (req, res) => {
               "score": 100
             }];
         } else {
-          colEntity = [{
-            "name": "company",
-            "id": "wd:Q7837941",
-            "score": 100,
-            "match": true
-          }];
-          colProperty = [{
-            id: 'wd:P144',
-            obj: column_to_extend,
-            match: true,
-            name: 'based on',
-            score: 100
-          }];
-          colType = [
-            {
-              "id": "wd:Q7837941",
+          if(String(prop) === "id"){
+            colEntity = [{
               "name": "company",
-              "match": true,
-              "score": 100
+              "id": "wd:Q7837941",
+              "score": 100,
+              "match": true
             }];
+            colProperty = [{
+              id: 'wd:P144',
+              obj: column_to_extend,
+              match: true,
+              name: 'based on',
+              score: 100
+            }];
+            colType = [
+              {
+                "id": "wd:Q7837941",
+                "name": "company",
+                "match": true,
+                "score": 100
+              }];
+          }else{
+            if(String(prop) === "address"){
+              colEntity = [{
+                "name": "company",
+                "id": "wd:Q7837941",
+                "score": 100,
+                "match": true
+              }];
+              colProperty = [{
+                id: 'wd:P144',
+                obj: column_to_extend,
+                match: true,
+                name: 'based on',
+                score: 100
+              }];
+              colType = [
+                {
+                  "id": "wd:Q7837941",
+                  "name": "company",
+                  "match": true,
+                  "score": 100
+                }];
+
+            }else{
+              colEntity = [{
+                "name": "company",
+                "id": "wd:Q7837941",
+                "score": 100,
+                "match": true
+              }];
+              colProperty = [{
+                id: 'wd:P144',
+                obj: column_to_extend,
+                match: true,
+                name: 'based on',
+                score: 100
+              }];
+              colType = [
+                {
+                  "id": "wd:Q7837941",
+                  "name": "company",
+                  "match": true,
+                  "score": 100
+                }];
+            }
+          }
         }
       }
     };
@@ -184,7 +251,15 @@ export default async (req, res) => {
           if (String(prop) === "legalName") {
             label_result = getLegalName(row);
           } else {
-            label_result = getId(row);
+            if(String(prop) === "id"){
+              label_result = getId(row);
+            }else{
+              if(String(prop) === "address"){
+                label_result = getAddress(row);
+              }else{
+                label_result = getResidenceAddress(row);
+              }
+            }
           }
         }
       }
@@ -249,7 +324,6 @@ export default async (req, res) => {
   });
 
 
-  console.log(response.columns["legalName_Nome5"])
 
   return response;
 }
