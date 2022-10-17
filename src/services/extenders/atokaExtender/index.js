@@ -35,6 +35,11 @@ export default {
             id: 'ateco',
             label: 'Ateco',
             value: 'ateco'
+          },
+          {
+            id: 'ceo',
+            label: 'CEO Name',
+            value: 'ceo'
           }
         ]
       }

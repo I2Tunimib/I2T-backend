@@ -29,7 +29,12 @@ function getAssets(data) {
   }
 }
 
+function getNameCeo(data){
+  return data["item"]["people"]["items"][0]["name"]
+}
+
 export default async (req, res) => {
+  
 
   const { props } = req.processed;
   const property = props["property"];
@@ -128,26 +133,49 @@ export default async (req, res) => {
             "score": 100
           }];
       } else{
-        colEntity = [{
-          "name": "taxpayer identification number",
-          "id": "wd:Q47159572",
-          "score": 100,
-          "match": true
-        }];
-        colProperty = [{
-          id: 'wd:P144',
-          obj: column_to_extend,
-          match: true,
-          name: 'based on',
-          score: 100
-        }];
-        colType = [
-          {
-            "id": "wd:Q47159572",
-            "name": "taxpayer identification number",
-            "match": true,
-            "score": 100
+        if(String(prop) === "ceo"){
+          colEntity = [{
+            "name": "given name",
+            "id": "wd:Q202444",
+            "score": 100,
+            "match": true
           }];
+          colProperty = [{
+            id: 'wd:P144',
+            obj: column_to_extend,
+            match: true,
+            name: 'based on',
+            score: 100
+          }];
+          colType = [
+            {
+              "id": "wd:Q184754",
+              "name": "string",
+              "match": true,
+              "score": 100
+            }];
+        }else{
+          colEntity = [{
+            "name": "taxpayer identification number",
+            "id": "wd:Q47159572",
+            "score": 100,
+            "match": true
+          }];
+          colProperty = [{
+            id: 'wd:P144',
+            obj: column_to_extend,
+            match: true,
+            name: 'based on',
+            score: 100
+          }];
+          colType = [
+            {
+              "id": "wd:Q47159572",
+              "name": "taxpayer identification number",
+              "match": true,
+              "score": 100
+            }];
+        }
       }
     }
 
@@ -179,7 +207,11 @@ export default async (req, res) => {
         } if (String(prop) === "ateco") {
           label_result = getAteco(row);
         }else {
-          label_result = getTaxID(row);
+          if(String(prop) === "ceo"){
+            label_result = getNameCeo(row);
+          }else{
+            label_result = getTaxID(row);
+          }
         }
       }
       response.columns[label_column].cells[row["row"]] = {
