@@ -49,7 +49,6 @@ function getColumnMetadata() {
 
 
 export default async (req, res) => {
-
   const { items } = req.original;
   const response = [];
 
@@ -60,20 +59,19 @@ export default async (req, res) => {
     delete (items[0]);
     response.push(header)
   }
-  const dict = getDict(res);
+  const dict = getDict(res.result);
 
 
 
   items.forEach(item => {
     let row = {};
     row.id = item.id;
-    if (dict[item.label]) {
-      row.metadata = getMetaData(dict[item.label]);
+    if (dict[res.labelDict[item.label]]) {
+      row.metadata = getMetaData(dict[res.labelDict[item.label]]);
     } else {
       row.metadata = [];
     }
     response.push(row);
   });
-  console.log(response[0])
   return response;
 }
