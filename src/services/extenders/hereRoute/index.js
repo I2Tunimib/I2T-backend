@@ -40,6 +40,20 @@ export default {
             value: 'route'
           }
         ]
+      },
+      {
+        id: 'poi_property',
+        description: 'Select if you use a POI as a end point:',
+        label: 'poi_property',
+        inputType: 'checkbox',
+        rules: [],
+        options: [
+          {
+            id: 'poi',
+            label: 'Allow POI',
+            value: 'poi'
+          }
+        ]
       }
     ]
   }
