@@ -12,16 +12,12 @@ import { KG_INFO } from '../../../utils/constants'
 import config from '../../../config/index';
 import { log } from '../../../utils/log';
 import { table } from 'console';
-
-
 const __dirname = path.resolve();
-
 const TAGS = {
   LIT: 'literal',
   SUBJ: 'entity',
   NE: 'entity'
 }
-
 const getAnnotationRequest = (idDataset, idTable, { rows, columns, table }) => {
   const rowsData = Object.values(rows).flatMap((row, rowIndex) => {
     return {
@@ -29,7 +25,6 @@ const getAnnotationRequest = (idDataset, idTable, { rows, columns, table }) => {
       data: Object.values(row.cells).map((cell) => cell.label)
     }
   })
-
   return {
     json: [
       {
@@ -41,28 +36,21 @@ const getAnnotationRequest = (idDataset, idTable, { rows, columns, table }) => {
     ]
   }
 }
-
 const transformMetadata = (table, metadata) => {
   const columnKeys = Object.keys(table.columns);
-
   const { column } = metadata;
-
   column.forEach((item, index) => {
     const { idColumn, tag } = item;
-
     table.columns[columnKeys[idColumn]] = {
       ...table.columns[columnKeys[idColumn]],
       ...(tag === 'SUBJ' && { role: 'subject' }),
       kind: TAGS[tag]
     }
   });
-
   return table;
 }
-
 const transformCTA = (table, cta) => {
   const columnKeys = Object.keys(table.columns);
-
   cta.forEach((item, index) => {
     const types = item.types.map((type) => ({
       id: `wd:${type}`,
@@ -70,29 +58,23 @@ const transformCTA = (table, cta) => {
       name: `wd:${type}`,
       score: 1
     }))
-
     table.columns[columnKeys[item.idColumn]].metadata = [{
       type: types,
       property: []
     }]
   });
-
   return table;
 }
-
 const getCEAMetadata = (entities) => {
   let lowestScore = 0;
   let highestScore = 0;
-
   let match = entities.length > 0 ? {
     value: true,
     reason: 'reconciliator'
   } : { value: false };
-
   const meta = entities.map((entity, index) => {
     const { id: entityId, score, type, name, ...rest } = entity;
     const id = `wd:${entityId}`;
-
     if (index === 0) {
       lowestScore = score;
       highestScore = score;
@@ -108,6 +90,7 @@ const getCEAMetadata = (entities) => {
           id: `wd:${item.id}`
         }
       }),
+      score,
       ...rest,
       match: index === 0,
       name: {
@@ -116,7 +99,6 @@ const getCEAMetadata = (entities) => {
       }
     }
   })
-
   return {
     metadata: meta,
     highestScore,
@@ -124,10 +106,8 @@ const getCEAMetadata = (entities) => {
     match
   }
 }
-
 const transformCPA = (table, cpa) => {
   const columnKeys = Object.keys(table.columns);
-
   cpa.forEach((item, index) => {
     const { idSourceColumn, idTargetColumn, predicate } = item;
     const propertyItem = {
@@ -137,7 +117,6 @@ const transformCPA = (table, cpa) => {
       match: true,
       score: 1
     }
-
     table.columns[columnKeys[idSourceColumn]].metadata[0] = {
       ...table.columns[columnKeys[idSourceColumn]].metadata[0],
       property: [
@@ -146,13 +125,10 @@ const transformCPA = (table, cpa) => {
       ]
     }
   });
-
   return table;
 }
-
 const transformCEA = (table, cea) => {
   const columnKeys = Object.keys(table.columns);
-
   columnKeys.forEach((colId) => {
     table.columns[colId] = {
       ...table.columns[colId],
@@ -166,21 +142,16 @@ const transformCEA = (table, cea) => {
       }
     }
   });
-
   let minMetaScore = 0;
   let maxMetaScore = 0;
-
   cea.forEach((item) => {
     const { idRow, idColumn, entity } = item;
     const { metadata, highestScore, lowestScore, match } = getCEAMetadata(entity);
-
     if (match.value) {
       table.columns[columnKeys[idColumn]].context.wd.reconciliated += 1;
     }
-
     minMetaScore = lowestScore < minMetaScore ? lowestScore : minMetaScore;
     maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
-
     table.rows[`r${idRow}`].cells[columnKeys[idColumn]] = {
       ...table.rows[`r${idRow}`].cells[columnKeys[idColumn]],
       metadata,
@@ -194,12 +165,10 @@ const transformCEA = (table, cea) => {
       }
     }
   });
-
   const nCellsReconciliated = Object.values(table.columns).reduce((accTotal, col) => {
     const totalContext = Object.values(col.context).reduce((acc, ctx) => acc + ctx.reconciliated, 0);
     return accTotal + totalContext;
   }, 0);
-
   return {
     ...table,
     table: {
@@ -211,8 +180,6 @@ const transformCEA = (table, cea) => {
     }
   }
 }
-
-
 const {
   MANTIS,
   MANTIS_AUTH_TOKEN,
@@ -225,39 +192,31 @@ const {
     getDatasetFilesPath
   }
 } = config;
-
 // create queue so that writes to file are not lost or are conflicting
 const writeQueue = queue(async (task, completed) => {
   await task();
 }, 1);
-
 const handleAnnotationCompletion = async ({ idDataset, idTable }) => {
   // get table data
   const table = await FileSystemService.findTable(idDataset, idTable);
   // get mantis table data
   const mantisTable = await MantisService.getTable(idDataset, idTable);
-
   let data;
   // save table
   await writeQueue.push(async () => {
     try {
-
       const { metadata } = mantisTable;
       const { cea, cta, cpa } = mantisTable.semanticAnnotations;
-
       let tableData = table;
-
       tableData = transformMetadata(tableData, metadata);
       tableData = transformCTA(tableData, cta);
       tableData = transformCPA(tableData, cpa);
       tableData = transformCEA(tableData, cea);
-
       const {
         table: tableInfo,
         columns,
         rows
       } = tableData;
-
       ParseW3C.updateColumnsStatus(columns, rows);
       // update db entry
       const { meta, tables } = JSON.parse(await readFile(getTablesDbPath()))
@@ -265,11 +224,9 @@ const handleAnnotationCompletion = async ({ idDataset, idTable }) => {
         ...tableInfo,
         lastModifiedDate: new Date().toISOString()
       }
-
       await writeFile(getTablesDbPath(), JSON.stringify({ meta, tables }, null, 2));
       // update table data
       await writeFile(`${getDatasetFilesPath()}/${idDataset}/${idTable}.json`, JSON.stringify({ columns, rows }));
-
       data = {
         table: tables[idTable],
         columns,
@@ -280,17 +237,14 @@ const handleAnnotationCompletion = async ({ idDataset, idTable }) => {
       console.log(err);
     }
   })
-
   return data;
 }
-
 const clearCron = (cronId) => {
   const cron = cronsMap[cronId];
   clearInterval(cron);
   delete cronsMap[cronId];
   log('mantis', `Finished tracking for ${cronId}`)
 }
-
 const startCron = ({ idDataset, idTable, io }) => {
   log('mantis', `Started tracking for ${idDataset}_${idTable}`)
   // check every 30 seconds
@@ -311,24 +265,20 @@ const startCron = ({ idDataset, idTable, io }) => {
   }, 30000);
   cronsMap[`${idDataset}_${idTable}`] = intervalId;
 }
-
 const MantisService = {
   getTable: async (idDataset, idTable) => {
     const result = await axios.get(`${MANTIS}/table/${idDataset}/${idTable}?token=${MANTIS_AUTH_TOKEN}`)
     return result.data;
   },
   checkPendingTable: async (io) => {
-    // if there are table pending the server stopped while Mantis 
+    // if there are table pending the server stopped while Mantis
     // annotation processes were undergoing
     const pendingTables = await FileSystemService.findTables((table) => table.mantisStatus === 'PENDING');
     log('mantis', `There are ${pendingTables.length} pending tables`)
-
     for (const table of pendingTables) {
       const { id: idTable, idDataset } = table;
       // const { mantisId: mantisDatasetId } = await FileSystemService.findOneDataset(localDatasetId);
-
       const result = await MantisService.getTable(idDataset, idTable);
-
       if (result) {
         if (result.status === 'DONE') {
           const annotatedTable = await handleAnnotationCompletion({
@@ -364,5 +314,4 @@ const MantisService = {
     await writeFile(getTablesDbPath(), JSON.stringify({ meta, tables }, null, 2));
   },
 }
-
 export default MantisService;
