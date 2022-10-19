@@ -7,26 +7,53 @@ function getInformation(item) {
 }
 
 
+function getArrayInformation(items){
+  let result = [];
+  items.forEach(singleItem=>{
+    result.push(getInformation(singleItem));
+  });
+  return result;
+}
+
+
 function getDict(res) {
   let dict = {};
   res.forEach(item => {
     if (item.items[0] !== undefined) {
-      dict[item.address] = getInformation(item.items[0]);
+      dict[item.address] = getArrayInformation(item.items);
     }
   });
   return dict
 }
 
 function getMetaData(data) {
-  return [{
-    'id': String("georss:" + data.lat + "," + data.lng),
-    'feature': [{ 'id': 'all_labels', 'value': 100 }],
-    'name': data.name_eng,
-    'score': data.score,
-    'match': true,
-    'type': [{ 'id': "wd:Q29934236", 'name': "GlobeCoordinate" },
-    { 'id': "georss:point", 'name': "point" }]
-  }]
+  let result = [];
+  let metadata = {};
+  data.forEach(singleItem =>{
+    if(result.length < 1 && singleItem.score > 0.60){
+      metadata = {
+        'id': String("georss:" + singleItem.lat + "," + singleItem.lng),
+        'feature': [{ 'id': 'all_labels', 'value': 100 }],
+        'name': singleItem.name_eng,
+        'score': singleItem.score,
+        'match': true,
+        'type': [{ 'id': "wd:Q29934236", 'name': "GlobeCoordinate" },
+        { 'id': "georss:point", 'name': "point" }]
+      }
+    }else{
+      metadata = {
+        'id': String("georss:" + singleItem.lat + "," + singleItem.lng),
+        'feature': [{ 'id': 'all_labels', 'value': 100 }],
+        'name': singleItem.name_eng,
+        'score': singleItem.score,
+        'match': false,
+        'type': [{ 'id': "wd:Q29934236", 'name': "GlobeCoordinate" },
+        { 'id': "georss:point", 'name': "point" }]
+      }
+    }
+    result.push(metadata);
+  });
+  return result;
 }
 
 function getColumnMetadata() {
@@ -49,6 +76,7 @@ function getColumnMetadata() {
 
 
 export default async (req, res) => {
+  console.log(res.result[0]["items"])
   const { items } = req.original;
   const response = [];
 
