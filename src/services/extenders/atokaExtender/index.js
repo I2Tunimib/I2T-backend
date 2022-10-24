@@ -40,6 +40,11 @@ export default {
             id: 'ceo',
             label: 'CEO Name',
             value: 'ceo'
+          },
+          {
+            id: 'websites',
+            label: 'Website',
+            value: 'websites'
           }
         ]
       }

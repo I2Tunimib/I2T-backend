@@ -1,18 +1,30 @@
 function getName(row) {
-  if (row[1][0] !== undefined) {
-    return row[1][0].name.value;
+  let result = "";
+  if (row[1] !== []) {
+    row[1].forEach(element => {
+      if(element.match === true){
+        result = element.name.value;
+      }
+      console.log(result)
+    });
   } else {
     return "";
   }
+  return String(result);
 }
 
 function getId(row) {
-  if (row[1][0] !== undefined) {
-    console.log()
-    return row[1][0].id.split(":")[1];
+  let result = "";
+  if (row[1] !== []) {
+    row[1].forEach(element => {
+      if(element.match === true){
+        result = element.id.split(":")[1];
+      }      
+    });
   } else {
     return "";
   }
+  return String(result);
 }
 
 function getRowDict(column) {

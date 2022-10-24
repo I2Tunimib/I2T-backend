@@ -27,6 +27,10 @@ const location = [{ 'id': '', 'label': ' ', 'value': '' },
 { 'id': 'addressPostcodes', 'label': 'Atoka : addressPostcodes', 'value': 'addressPostcodes' },
 { 'id': 'addressStates', 'label': 'Atoka : addressStates', 'value': 'addressStates' }];
 
+
+const company = [{ 'id': '', 'label': ' ', 'value': '' },
+{ 'id': 'companies', 'label': 'Atoka : companies', 'value': 'companies' }]
+
 const servicesDescription = '<br>Questo servizio viene utilizzato per trovare la corrispondenza tra: <br> <b style="color: #3498db ; font-size: 25px;">Atoka</b> → persone presenti nella base di dati.<br><b style="color: #FF5733; font-size: 25px;">Source</b> → dati presenti nella tabella<br><br><hr style="width:108%; border:1px solid #e0e0e0;">';
 
 const firstDescription = '<h2>First</h2>La colonna selezionata nella tabella Source sarà confrontata con il filtro <b style="color: #3498db; font-size: 20px;">Atoka</b> selezionato:<br>';
@@ -34,6 +38,8 @@ const firstDescription = '<h2>First</h2>La colonna selezionata nella tabella Sou
 const relevantDescription = '<br>Di seguito è possibile configurare i filtri da utilizzare per la ricerca della persona desiderata. <br><br><b>N.B</b> La colonna selezionata in tabella contiene i dati da utilizzare con il filtro First. <br><br><hr style="width:105%; border:1px solid #e0e0e0;">';
 
 const locationDescription = '<br><hr style="width:105%; border:1px solid #e0e0e0;"><br> <h1>Location Filters</h1> <br> di seguito è possibile configurare i location filter, filtri che permettono di includere vincoli di location nella ricerca.<br><br>';
+
+const companyDescription = '<br><hr style="width:105%; border:1px solid #e0e0e0;"><br> <h1>Company Filters</h1> <br> di seguito è possibile configurare i company filter, filtri che permettono di includere vincoli di company nella ricerca.<br><br>';
 
 
 function sourceDescription(filterName) {
@@ -131,6 +137,10 @@ export default {
       atokaSelect('atokaSixRel', atokaDescription('Second'), location),
 
       sourceSelect('SixRel', sourceDescription('Second')),
+      
+      atokaSelect('atokaSevRel', companyDescription + atokaDescription('First'), company),
+
+      sourceSelect('SevRel', sourceDescription('First')),
 
 
     ]

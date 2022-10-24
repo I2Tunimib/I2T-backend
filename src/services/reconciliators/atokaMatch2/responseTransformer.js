@@ -21,8 +21,14 @@ export default async (req, res) => {
       doc['metadata'] = [];
     } else {
       let first = true;
+      let yellow = false;
+      if(data.items.length > 1){
+        if(data.items[1]['confidence'] >min_threshold){
+          yellow = true;
+        }
+      }
       doc['metadata'] = data.items.map(item => {
-        if (item.confidence < min_threshold || first === false) {
+        if (item.confidence < min_threshold || first === false || yellow === true) {
           return {
             'id': 'atoka:' + item['id'],
             'name': item['name'],
