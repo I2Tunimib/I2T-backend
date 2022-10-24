@@ -56,7 +56,6 @@ function getResidenceAddress(data) {
   }
 }
 
-
 function getAddress(data) {
   console.log(data)
 
@@ -168,7 +167,7 @@ export default async (req, res) => {
               "score": 100
             }];
         } else {
-          if(String(prop) === "id"){
+          if (String(prop) === "id") {
             colEntity = [{
               "name": "company",
               "id": "wd:Q7837941",
@@ -189,8 +188,8 @@ export default async (req, res) => {
                 "match": true,
                 "score": 100
               }];
-          }else{
-            if(String(prop) === "address"){
+          } else {
+            if (String(prop) === "address") {
               colEntity = [{
                 "name": "company",
                 "id": "wd:Q7837941",
@@ -212,7 +211,7 @@ export default async (req, res) => {
                   "score": 100
                 }];
 
-            }else{
+            } else {
               colEntity = [{
                 "name": "company",
                 "id": "wd:Q7837941",
@@ -233,6 +232,7 @@ export default async (req, res) => {
                   "match": true,
                   "score": 100
                 }];
+
             }
           }
         }
@@ -251,48 +251,48 @@ export default async (req, res) => {
           if (String(prop) === "legalName") {
             label_result = getLegalName(row);
           } else {
-            if(String(prop) === "id"){
+            if (String(prop) === "id") {
               label_result = getId(row);
-            }else{
-              if(String(prop) === "address"){
+            } else {
+              if (String(prop) === "address") {
                 label_result = getAddress(row);
-              }else{
+              } else {
                 label_result = getResidenceAddress(row);
               }
             }
           }
         }
       }
-    
 
-      
+
+
 
       let count = 0;
       if (label_result.length > 1) {
         label_result.forEach(single_result => {
-        if(response.columns[label_column + count] === undefined){
-          response.columns[label_column + count] = {
-            label: label_column + count,
-            kind: 'literal',
-            metadata: [],
-            cells: {}
-          };
-          response.columns[label_column + count].metadata.push({
-            "id": label_column + count,
-            "name": label_column + count,
-            "entity": colEntity,
-            "type": colType,
-            "property": colProperty
-          });
-        }
+          if (response.columns[label_column + count] === undefined) {
+            response.columns[label_column + count] = {
+              label: label_column + count,
+              kind: 'literal',
+              metadata: [],
+              cells: {}
+            };
+            response.columns[label_column + count].metadata.push({
+              "id": label_column + count,
+              "name": label_column + count,
+              "entity": colEntity,
+              "type": colType,
+              "property": colProperty
+            });
+          }
           response.columns[String(label_column + count)].cells[row["row"]] = {
-            label: single_result.toString().substr(1, single_result.lastIndexOf("]")-1),
+            label: single_result.toString().substr(1, single_result.lastIndexOf("]") - 1),
             metadata: []
           }
           count += 1;
         });
       } else {
-        if(response.columns[label_column + "0"] === undefined){
+        if (response.columns[label_column + "0"] === undefined) {
           response.columns[label_column + "0"] = {
             label: label_column + count,
             kind: 'literal',
@@ -307,18 +307,18 @@ export default async (req, res) => {
             "property": colProperty
           });
         }
-        if(label_result.toString().indexOf("[")!==-1){
+        if (label_result.toString().indexOf("[") !== -1) {
           response.columns[label_column + "0"].cells[row["row"]] = {
-            label: label_result.toString().substr(label_result.toString().indexOf("[")+1, label_result.toString().lastIndexOf("]")-1),
+            label: label_result.toString().substr(label_result.toString().indexOf("[") + 1, label_result.toString().lastIndexOf("]") - 1),
             metadata: []
           }
-        }else{
+        } else {
           response.columns[label_column + "0"].cells[row["row"]] = {
             label: label_result.toString(),
             metadata: []
           }
         }
-        
+
       }
     });
   });
