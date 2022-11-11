@@ -2,13 +2,22 @@ import config from './index';
 
 const { uri } = config.public;
 
+function replaceAll(str, find, replace) {
+  return str.replace(new RegExp(find, 'g'), replace);
+}
+
+function cleanLabel(label){
+  return replaceAll(label, /[*+?^$&{}()|[\]\\]/g, '');
+}
+
+
 export default async (req, res) => {
 
   const { items } = req.processed;
-
+  console.log(res)
 
   const response = Object.keys(items).flatMap((label) => {
-    const metadata = res[label].result.map(({ id, ...rest }) => ({
+    const metadata = res[cleanLabel(label)].result.map(({ id, ...rest }) => ({
       id: `wd:${id}`,
       ...rest
     }))
