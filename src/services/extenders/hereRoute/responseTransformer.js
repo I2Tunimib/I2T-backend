@@ -28,9 +28,6 @@ export default async (req, res) => {
   const { props } = req.original;
   const property = props.property;
 
-
-
-
   //const RowDict = editRowDict(res.dict);
   const start_label = res.start;
   const end_label = res.end;
@@ -45,13 +42,36 @@ export default async (req, res) => {
 
 
   property.forEach(prop => {
-    response.columns[prop] = {
-      label: prop,
-      kind: 'literal',
-      entity: [],
-      metadata: [],
-      cells: {}
+    if(prop !== "route"){
+      response.columns[prop] = {
+        label: prop,
+        kind: 'literal',
+        entity: [],
+        metadata: [],
+        cells: {}
+      }
+    }else{
+      response.columns[prop] = {
+        label: prop,
+        kind: 'entity',
+        entity: [
+          {
+            "name": "itinerary",
+            "id": "wd:Q1322323",
+            "score": 100,
+            "match": true,
+            'type': [{
+              "id": "wd:Q111226201",
+              "name": "MultiLineString",
+              "score": 100,
+              "match": true
+            }]
+          }],
+        metadata: [],
+        cells: {}
+      }
     }
+    
 
     const colProperty = [{
       id: 'P1427',
@@ -70,6 +90,7 @@ export default async (req, res) => {
 
     let colType = "";
     let colEntity = "";
+
     if (prop === "duration") {
       colType = [
         {
@@ -118,26 +139,6 @@ export default async (req, res) => {
             "score": 100,
             "match": true
           }];
-
-          response.columns[prop] = {
-            label: prop,
-            kind: 'entity',
-            entity: [
-              {
-                "name": "itinerary",
-                "id": "wd:Q1322323",
-                "score": 100,
-                "match": true,
-                'type': [{
-                  "id": "wd:Q111226201",
-                  "name": "MultiLineString",
-                  "score": 100,
-                  "match": true
-                }]
-              }],
-            metadata: [],
-            cells: {}
-          }
       }
     }
 
@@ -154,17 +155,25 @@ export default async (req, res) => {
     Object.keys(dict).forEach(index => {
       let row_id = dict[index];
       let label_result = getPropRoute(res[index], prop)
-      response.columns[prop].cells[row_id] = {
-        label: label_result,
-        metadata: [{
-          'id': String("georss:" + label_result),
-          'feature': [{ 'id': 'all_labels', 'value': 100 }],
-          'name': label_result,
-          'score': 1,
-          'match': true,
-          'type': [{'id': "wd:Q111226201", 'name': "MultiLineString" }]
-        }]
+      if(prop !== "route"){
+        response.columns[prop].cells[row_id] = {
+          label: label_result,
+          metadata: []
+        }
+      }else{
+        response.columns[prop].cells[row_id] = {
+          label: label_result,
+          metadata: [{
+            'id': String("georss:" + label_result),
+            'feature': [{ 'id': 'all_labels', 'value': 100 }],
+            'name': label_result,
+            'score': 1,
+            'match': true,
+            'type': [{'id': "wd:Q111226201", 'name': "MultiLineString" }]
+          }]
+        }
       }
+
     });
 
   });
