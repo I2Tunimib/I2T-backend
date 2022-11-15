@@ -9,20 +9,24 @@ const optionalOpt = [{ 'id': '', 'label': ' ', 'value': '' }, { 'id': 'countries
 { 'id': 'postcodes', 'label': 'Atoka : postcodes', 'value': 'postcodes' }, { 'id': 'address', 'label': 'Atoka : address', 'value': 'address' },
 { 'id': 'useFullAddress', 'label': 'Atoka : useFullAddress', 'value': 'useFullAddress' }];
 
-const servicesDescription = '<br>Questo servizio viene utilizzato per trovare la corrispondenza tra: <br> <b style="color: #3498db ; font-size: 25px;">Atoka</b> → aziende presenti nella base di dati.<br><b style="color: #FF5733; font-size: 25px;">Source</b> → dati presenti nella tabella<br><br><hr style="width:108%; border:1px solid #e0e0e0;">';
 
-const firstDescription = '<h2>First</h2>La colonna selezionata nella tabella Source sarà confrontata con il filtro <b style="color: #3498db; font-size: 20px;">Atoka</b> selezionato:<br>';
 
-const relevantDescription = '<br><h1>Relevant Filters</h1>  di seguito è possibile configurare i relevant filter, filtri importanti all\'interno del servizio che ne richiede l\'utilizzo di almeno uno. <br><br><b>N.B</b> La colonna selezionata in tabella contiene i dati da utilizzare con il filtro First della classe Relevant. <br><br><hr style="width:105%; border:1px solid #e0e0e0;">';
+const servicesDescription = '<br>This external service is used to find the match between: <br> <b style="color: #3498db ; font-size: 25px;">Atoka</b> → companies in the knowledge graph.<br><b style="color: #FF5733; font-size: 25px;">Source</b> → data contained in the table<br><br><hr style="width:108%; border:1px solid #e0e0e0;">';
 
-const optionalDescription = '<br><hr style="width:105%; border:1px solid #e0e0e0;"><br> <h1>Optional Filters</h1> <br> di seguito è possibile configurare gli optional filter, filtri che permettono di essere più precisi nella ricerca, ma che non hanno vincoli di utilizzo. <br><br>';
+
+const firstDescription = '<h2>First</h2>The selected column in the Source table will be compared with the selected <b style="color: #3498db; font-size: 20px;">Atoka</b> filter:<br>';
+
+const relevantDescription = '<br><h1>Relevant Filters</h1>  in this section is possible to set up the relevant filter, important filter in the Atoka service which requires the use of at least one.<br><br><b>N.B</b> The selected column in the table contains data to use with the relevant filter. <br><br><hr style="width:105%; border:1px solid #e0e0e0;">';
+
+
+const optionalDescription = '<br><hr style="width:105%; border:1px solid #e0e0e0;"><br> <h1>Optional Filters</h1> <br> in this section is possible to set up the optional filters, filters used for a greater precision in the match operation, but without usage costraints. <br><br>';
 
 function sourceDescription(filterName) {
-  return  'dopo aver scelto il '+ filterName + ' filtro selezionare la colonna <b style="color: #FF5733; font-size: 20px;">Source</b> che contiene i dati:';
+  return  'after the choice of '+ filterName + ' filter, you can select the <b style="color: #FF5733; font-size: 20px;">Source</b> column with the data:';
 }
 
 function atokaDescription(filterName) {
-  return '<hr style="width:105%; border:1px solid #e0e0e0;"> <h2>' + filterName + '</h2> Selezionare il filtro <b style="color: #3498db; font-size: 20px;">Atoka</b> che si vuole utilizzare:';
+  return '<hr style="width:105%; border:1px solid #e0e0e0;"> <h2>' + filterName + '</h2> Select the <b style="color: #3498db; font-size: 20px;">Atoka</b> filter to use in the match:';
 }
 
 function atokaSelect(id, description, options) {
