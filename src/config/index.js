@@ -107,6 +107,11 @@ const loadConfig = async () => {
     await safeWriteFileToPath(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2))
   }
 
+  if (!existsSync(helpers.getUsersPath())) {
+    log('db', 'Create users DB')
+    await safeWriteFileToPath(helpers.getUsersPath(), JSON.stringify({ meta: { lastIndex: -1 }, users: {} }, null, 2))
+  }
+
 
   return {
     ENV: process.env.ENV || 'dev',
