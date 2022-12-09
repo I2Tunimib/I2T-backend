@@ -75,12 +75,13 @@ const loadReconciliators = async () => {
  * Load helper functions in memory
  */
 const loadHelperFunctions = async () => {
-  const { datasetDbPath, datasetFilesPath, tablesDbPath, tmpPath } = CONFIG;
+  const { datasetDbPath, datasetFilesPath, tablesDbPath, tmpPath, usersPath } = CONFIG;
   return {
     getDatasetFilesPath: () => `${process.env.PWD}${datasetFilesPath}`,
     getDatasetDbPath: () => `${process.env.PWD}${datasetDbPath}`,
     getTablesDbPath: () => `${process.env.PWD}${tablesDbPath}`,
-    getTmpPath: () => `${process.env.PWD}${tmpPath}`
+    getTmpPath: () => `${process.env.PWD}${tmpPath}`,
+    getUsersPath: () => `${process.env.PWD}${usersPath}`
   }
 }
 
@@ -112,6 +113,8 @@ const loadConfig = async () => {
     PORT: process.env.PORT || '3002',
     MANTIS: process.env.MANTIS,
     MANTIS_AUTH_TOKEN: process.env.MANTIS_AUTH_TOKEN,
+    JWT_SECRET: process.env.JWT_SECRET,
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     reconciliators,
     extenders,
     helpers,

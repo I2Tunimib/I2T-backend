@@ -128,6 +128,18 @@ const FileSystemService = {
       collection: datasets
     }
   },
+  findDatasetsByUser: async (id) => {
+    const datasets = await ParseService.readJsonFile({
+      path: getDatasetDbPath(),
+      pattern: 'datasets.*',
+      acc: [],
+      condition: ({ userId }) => userId === id
+    });
+    return {
+      meta: COLLECTION_DATASETS_MAP,
+      collection: datasets
+    }
+  },
   findAllTablesByDataset: async (idDataset) => {
     const tables = await ParseService.readJsonFile({
       path: getTablesDbPath(),
@@ -192,6 +204,17 @@ const FileSystemService = {
       condition: (obj) => { return regex.test(obj.name.toLowerCase()); }
     });
   },
+  findTablesByNameAndUser: async (query, userId) => {
+    const regex = new RegExp(query.toLowerCase());
+    return ParseService.readJsonFile({
+      path: getTablesDbPath(),
+      pattern: 'tables.*',
+      condition: async (obj) => {
+        const dataset = await FileSystemService.findOneDataset(obj.idDataset);
+        return dataset.userId === userId && regex.test(obj.name.toLowerCase());
+      }
+    });
+  },
   findDatasetsByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
     return ParseService.readJsonFile({
@@ -200,7 +223,15 @@ const FileSystemService = {
       condition: (obj) => regex.test(obj.name.toLowerCase())
     });
   },
-  addDataset: async (filePath, datasetName) => {
+  findDatasetsByNameAndUser: async (query, userId) => {
+    const regex = new RegExp(query.toLowerCase());
+    return ParseService.readJsonFile({
+      path: getDatasetDbPath(),
+      pattern: 'datasets.*',
+      condition: (obj) => userId === obj.userId && regex.test(obj.name.toLowerCase())
+    });
+  },
+  addDataset: async (filePath, datasetName, userId) => {
     let newDatasets = {}
     let newTables = {}
 
@@ -250,6 +281,7 @@ const FileSystemService = {
         // add dataset entry
         newDatasets[`${metaDatasets.lastIndex}`] = {
           id: `${metaDatasets.lastIndex}`,
+          userId,
           name: datasetName,
           nTables: nFiles,
           lastModifiedDate: new Date().toISOString()

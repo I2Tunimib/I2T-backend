@@ -54,7 +54,7 @@ const ParseService = {
     const push = ParseService.getPushFunction(acc);
     for await (const obj of stream) {
       if (condition) {
-        if (condition(obj)) {
+        if (await condition(obj)) {
           if (stopAtFirst) {
             acc = transformFn ? transformFn(obj) : obj;
             break;
@@ -67,6 +67,23 @@ const ParseService = {
     }
     stream.end();
     return acc;
+  },
+  findOneInJson: async ({
+    path,
+    pattern,
+    condition,
+    transformFn
+  }) => {
+    let value = undefined;
+    const stream = ParseService.createJsonStreamReader(path, pattern);
+    for await (const obj of stream) {
+      if (condition(obj)) {
+        value = transformFn ? transformFn(obj) : obj;
+        break;
+      }
+    }
+    stream.end();
+    return value;
   },
   unzip: async ({
     filePath,
