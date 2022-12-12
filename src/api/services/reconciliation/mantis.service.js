@@ -28,8 +28,8 @@ const getAnnotationRequest = (idDataset, idTable, { rows, columns, table }) => {
   return {
     json: [
       {
-        name: idTable,
-        dataset: idDataset,
+        datasetName: idDataset,
+        tableName: idTable,
         rows: rowsData,
         kgReference: 'wikidata'
       }
@@ -267,7 +267,7 @@ const startCron = ({ idDataset, idTable, io }) => {
 }
 const MantisService = {
   getTable: async (idDataset, idTable) => {
-    const result = await axios.get(`${MANTIS}/table/${idDataset}/${idTable}?token=${MANTIS_AUTH_TOKEN}`)
+    const result = await axios.get(`${MANTIS}/datasets/${idDataset}/tables/${idTable}?stringId=true&token=${MANTIS_AUTH_TOKEN}`)
     return result.data;
   },
   checkPendingTable: async (io) => {
@@ -295,7 +295,7 @@ const MantisService = {
   },
   annotate: async (idDataset, idTable, data) => {
     const req = getAnnotationRequest(idDataset, idTable, data);
-    const result = await axios.post(`${MANTIS}/upload-table?token=${MANTIS_AUTH_TOKEN}`, req)
+    const result = await axios.post(`${MANTIS}/datasets/uploadJSON?token=${MANTIS_AUTH_TOKEN}`, req)
     return result.data;
   },
   trackAnnotationStatus: async ({
