@@ -45,7 +45,27 @@ export default {
             id: 'websites',
             label: 'Website',
             value: 'websites'
-          }
+          },
+          {
+            id: 'revenue',
+            label: 'Revenue',
+            value: 'revenue'
+          },
+          {
+            id: 'profit',
+            label: 'Profit',
+            value: 'profit'
+          },
+          {
+            id: 'employees',
+            label: 'Employees',
+            value: 'employees'
+          },
+          {
+            id: 'purchases',
+            label: 'Purchases',
+            value: 'purchases'
+          },
         ]
       }
     ]

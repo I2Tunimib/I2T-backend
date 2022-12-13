@@ -85,7 +85,7 @@ export default {
     description: '',
     relativeUrl: '/atokaPeople',
     prefix: 'atokaPeople',
-    uri: 'https://atoka.io/public/en/people/-/',
+    uri: 'https://atoka.io/it/people/',
     metaToView: {
       id: {
         label: 'ID',
