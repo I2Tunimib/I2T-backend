@@ -6,7 +6,7 @@ const { access_token } = config.private;
 
 
 function preparePayloadNew(row, token, limit) {
-  let payload = { 'token': token, 'fuzziness': 0, 'fields': 'items', 'limit': limit };
+  let payload = { 'token': token, 'fuzziness': 0, 'active': '*', 'fields': 'items', 'limit': limit };
   Object.keys(row).forEach(field => {
     payload[field] = row[field];
   })
