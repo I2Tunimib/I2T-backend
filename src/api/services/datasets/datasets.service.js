@@ -1,5 +1,5 @@
 import { readFile, mkdir, writeFile, rm, readdir } from 'fs/promises';
-import { createReadStream, existsSync, lstatSync } from 'fs';
+import { createReadStream, createWriteStream, existsSync, lstatSync } from 'fs';
 import { queue } from 'async';
 import unzipper from 'unzipper';
 import { spawn } from 'child_process';
@@ -10,7 +10,7 @@ import path from "path"
 import { KG_INFO } from '../../../utils/constants'
 import { log } from '../../../utils/log';
 import ParseW3C from '../parse/parse-w3c.service';
-import { PassThrough } from 'stream';
+import { nanoid } from 'nanoid';
 const __dirname = path.resolve();
 
 const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } = config.helpers;
@@ -235,6 +235,21 @@ const FileSystemService = {
     let newDatasets = {}
     let newTables = {}
 
+    const writeTempFile = async (readStream) => {
+      const id = nanoid();
+      const ws = createWriteStream(`tmp/${id}`, { flags: 'a' })
+      readStream.pipe(ws);
+
+      return new Promise((resolve, reject) => {
+        readStream.on('end', () => {
+          resolve(id);
+        })
+        readStream.on('error', () => {
+          reject('Error writing temp file');
+        })
+      })
+    }
+
     await writeQueue.push(async () => {
       try {
         // read db datasets
@@ -256,26 +271,30 @@ const FileSystemService = {
 
           const tableName = path.split('.')[0] || 'Unnamend';
 
-          if (type === 'File' && path.split('/').length === 1) {
-            metaTables.lastIndex += 1;
-            nFiles += 1;
-            // transform to app format and write to file
-            const data = await ParseService.parse(entry);
-            await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
-
-            newTables[`${metaTables.lastIndex}`] = {
-              id: `${metaTables.lastIndex}`,
-              idDataset: `${metaDatasets.lastIndex}`,
-              name: tableName,
-              nCols: Object.keys(data.columns).length,
-              nRows: Object.keys(data.rows).length,
-              nCells: data.nCells,
-              nCellsReconciliated: data.nCellsReconciliated,
-              lastModifiedDate: new Date().toISOString()
-            }
-          } else {
+          if (type !== 'File' || path.split('/').length !== 1) {
             entry.autodrain();
           }
+
+          const tmpEntryId = await writeTempFile(entry);
+
+          metaTables.lastIndex += 1;
+          nFiles += 1;
+          // transform to app format and write to file
+          const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+          await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
+
+          newTables[`${metaTables.lastIndex}`] = {
+            id: `${metaTables.lastIndex}`,
+            idDataset: `${metaDatasets.lastIndex}`,
+            name: tableName,
+            nCols: Object.keys(data.columns).length,
+            nRows: Object.keys(data.rows).length,
+            nCells: data.nCells,
+            nCellsReconciliated: data.nCellsReconciliated,
+            lastModifiedDate: new Date().toISOString()
+          }
+
+          await rm(`tmp/${tmpEntryId}`);
         }
 
         // add dataset entry
@@ -384,43 +403,64 @@ const FileSystemService = {
 
         const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
 
+        const writeTempFile = async (readStream) => {
+          const id = nanoid();
+          const ws = createWriteStream(`tmp/${id}`, { flags: 'a' })
+          readStream.pipe(ws);
+
+          return new Promise((resolve, reject) => {
+            readStream.on('end', () => {
+              resolve(id);
+            })
+            readStream.on('error', () => {
+              reject('Error writing temp file');
+            })
+          })
+        }
+
         // unzip and write each file
         for await (const entry of zip) {
 
           const { type } = entry;
 
-          if (type === 'File') {
-            metaTables.lastIndex += 1;
-            // transform to app format and write to file
-            const data = await ParseService.parse(entry);
-
-            await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
-
-            newTables[`${metaTables.lastIndex}`] = {
-              id: `${metaTables.lastIndex}`,
-              idDataset,
-              name: tableName,
-              nCols: Object.keys(data.columns).length,
-              nRows: Object.keys(data.rows).length,
-              nCells: data.nCells,
-              nCellsReconciliated: data.nCellsReconciliated,
-              lastModifiedDate: new Date().toISOString()
-            }
-
-            datasets[idDataset] = {
-              ...datasets[idDataset],
-              nTables: datasets[idDataset].nTables + 1
-            }
-          } else {
+          if (type !== 'File') {
             entry.autodrain();
           }
+
+          const tmpEntryId = await writeTempFile(entry);
+
+
+          metaTables.lastIndex += 1;
+          // transform to app format and write to file
+          const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+
+          await writeFile(`${datasetFolderPath}/${metaTables.lastIndex}.json`, JSON.stringify(data))
+
+          newTables[`${metaTables.lastIndex}`] = {
+            id: `${metaTables.lastIndex}`,
+            idDataset,
+            name: tableName,
+            nCols: Object.keys(data.columns).length,
+            nRows: Object.keys(data.rows).length,
+            nCells: data.nCells,
+            nCellsReconciliated: data.nCellsReconciliated,
+            lastModifiedDate: new Date().toISOString()
+          }
+
+          datasets[idDataset] = {
+            ...datasets[idDataset],
+            nTables: datasets[idDataset].nTables + 1
+          }
+
+          await rm(`tmp/${tmpEntryId}`);
+
         }
 
         // add dataset entry
         await writeFile(getDatasetDbPath(), JSON.stringify({ meta: metaDatasets, datasets: { ...datasets, ...newDatasets } }, null, 2));
         // add table entries
         await writeFile(getTablesDbPath(), JSON.stringify({ meta: metaTables, tables: { ...tables, ...newTables } }, null, 2));
-        // delete temp file
+        // delete temp files
         await rm(filePath)
       } catch (err) {
         console.log(err)
