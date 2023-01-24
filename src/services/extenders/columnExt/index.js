@@ -5,7 +5,7 @@ export default {
   },
   public: {
     name: 'Column Extender',
-    relativeUrl: '',
+    relativeUrl: '/column',
     description: 'Select the Address column and extend the metadata in new columns',
     formParams: [
       {

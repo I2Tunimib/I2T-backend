@@ -101,5 +101,7 @@ export default async (req, res) => {
     }
     response.push(row);
   });
+  console.log(response[0]["metadata"][0]["feature"]);
+  console.log(response[0]["metadata"][0]["type"]);
   return response;
 }

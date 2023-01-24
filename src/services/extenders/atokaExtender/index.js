@@ -6,7 +6,7 @@ export default {
   },
   public: {
     name: 'Atoka Extender',
-    relativeUrl: '',
+    relativeUrl: '/atoka/company',
     description: 'Select the companies column and extend the field in another column',
     formParams: [
       {
