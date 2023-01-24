@@ -84,6 +84,7 @@ export default async (req, res) => {
       }
     });
   });
+  print(response['columns']['duration'])
   return response;
 }
 

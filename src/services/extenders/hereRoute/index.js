@@ -6,7 +6,7 @@ export default {
   },
   public: {
     name: 'HERE Route',
-    relativeUrl: '',
+    relativeUrl: '/here/route',
     description: 'Select two point and return the travel time',
     formParams: [
       {

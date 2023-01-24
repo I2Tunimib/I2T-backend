@@ -177,7 +177,7 @@ export default async (req, res) => {
     });
 
   });
-  console.log(response)
+  console.log(response['columns']['duration']['metadata'][0])
   return response;
 }
 

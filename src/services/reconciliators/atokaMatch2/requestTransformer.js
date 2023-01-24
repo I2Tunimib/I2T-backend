@@ -80,6 +80,7 @@ export default async (req) => {
   return Promise.all(Object.keys(dataRequest).map(async (data) => {
     const payload = preparePayloadNew(dataRequest[data], access_token, 10);
     let res = makeRequest(endpoint, payload, data, colName);
+    console.log(res)
     return res;
   }))
 }

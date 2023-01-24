@@ -15,6 +15,8 @@ function getColumnMetadata() {
 }
 
 export default async (req, res) => {
+  console.log(res[0]['items'])
+  console.log(res[1]['items'])
   let response = res.map(data => {
     let doc = { 'id': data.row + '$' + data.colName };
     if (data.items.length == 0) {
@@ -55,7 +57,8 @@ export default async (req, res) => {
   header.id = res[0].colName
   header.metadata = getColumnMetadata();
   response.push(header)
-
-
+  console.log(response[0]['metadata'])
+  console.log(response[1]['metadata'])
+  console.log(response[2]['metadata'])
   return response;
 }

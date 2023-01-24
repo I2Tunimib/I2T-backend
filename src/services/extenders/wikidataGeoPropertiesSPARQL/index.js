@@ -5,7 +5,7 @@ export default {
     },
     public: {
       name: 'Wikidata Geo Properties SPARQL',
-      relativeUrl: '/wikidata/entities',
+      relativeUrl: '/wikidata/geosparql',
       description: 'Geo property extension service: add properties associated with wikidata entities',
       formParams: [
         {
