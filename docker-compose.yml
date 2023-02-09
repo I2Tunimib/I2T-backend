@@ -10,4 +10,4 @@ services:
       - /usr/src/app/node_modules
     restart: "always"
     ports:
-      - "3001:3002" 
+      - "${PORT}:3002" 
