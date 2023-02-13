@@ -1,13 +1,11 @@
 version: "3.6"
 services:
   server:
-    build:
-      context: .
-      dockerfile: dev.dockerfile
+    build: .
     env_file: .env
     volumes:
       - .:/usr/src/app/
       - /usr/src/app/node_modules
     restart: "always"
     ports:
-      - "${PORT}:3002" 
+      - "${API_PORT}:3003" 

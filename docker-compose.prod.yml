@@ -1,9 +1,0 @@
-version: "3.6"
-services:
-  release:
-    image: "ghcr.io/i2tunimib/tui:latest"
-    env_file: .env
-    volumes:
-      - /home/asia/semtui/public:/usr/src/app/public
-    ports:
-      - "3003:3002"
