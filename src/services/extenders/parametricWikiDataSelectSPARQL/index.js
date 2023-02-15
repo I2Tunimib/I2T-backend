@@ -38,13 +38,13 @@ export default {
   public: {
     name: 'Wikidata Select SPARQL',
     relativeUrl: '/wikidata/entities',
-    description: "Scegliendo il nome della proprietà tra le seguenti verrà estesa la tabella.",
+    description: "Extension service that is based on the Wikidata KG and allows you to select and extend the Wikidata property you want from those available..",
     formParams: [
       {
         id: 'prop',
-        description: "Selezionare <b>il nome della proprietà</b>:",
-        label: "Nome Proprietà",
-        infoText: "Per estendere la tabella scegliere il nome della proprietà come riportato in Wikidata",
+        description: "Select <b>the Wikidata's property name</b>:",
+        label: "Property Name",
+        infoText: "To extend a new column, select on of the following properties.",
         inputType: 'select',
         rules: ['required'],
         options: await getPropertyDict()

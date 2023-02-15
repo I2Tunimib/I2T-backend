@@ -6,13 +6,13 @@ export default {
   public: {
     name: 'Parametric Wikidata SPARQL',
     relativeUrl: '/wikidata/entities',
-    description: "Inserendo il nome della proprietà da ricercare viene estesa la tabella",
+    description: "Generic extension service that is based on Wikidata's KG, which allows you to specify the property to be extended in the form of text.",
     formParams: [
       {
         id: 'prop',
-        description: "Inserire <b>il nome della proprietà</b>:",
-        label: "Nome Proprietà",
-        infoText: "Per estendere la tabella inserire il nome della proprietà come riportato in Wikidata",
+        description: "Enter <b>the Wikidata's property name</b>:",
+        label: "Property Name",
+        infoText: "To extend a new column, enter the property name as given in Wikidata.",
         inputType: 'text',
         defaultValue: '',
         rules: ['required']
