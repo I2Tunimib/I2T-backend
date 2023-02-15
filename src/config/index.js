@@ -115,7 +115,7 @@ const loadConfig = async () => {
 
   return {
     ENV: process.env.ENV || 'dev',
-    PORT: process.env.PORT || '3002',
+    PORT: process.env.PORT || '3003',
     MANTIS: process.env.MANTIS,
     MANTIS_AUTH_TOKEN: process.env.MANTIS_AUTH_TOKEN,
     JWT_SECRET: process.env.JWT_SECRET,
