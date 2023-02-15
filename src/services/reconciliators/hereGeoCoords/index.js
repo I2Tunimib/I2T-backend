@@ -33,24 +33,24 @@ export default {
     formParams: [
       {
         id: 'secondPart',
-        description: "Possibilità di inserire un secondo pezzo per l'indirizzo.",
-        label: "Seconda parte dell'indirizzo",
+        description: "Possibility of using a second column that contains data about the full address.",
+        label: "Column contains the second part of address",
         infoText: "",
         inputType: 'selectColumns',
         rules: []
       },
       {
         id: 'thirdPart',
-        description: "Possibilità di inserire un terzo pezzo per l'indirizzo.",
-        label: "Terzo parte dell'indirizzo",
+        description: "Possibility of using a third column that contains data about the full address.",
+        label: "Column contains the third part of address",
         infoText: "",
         inputType: 'selectColumns',
         rules: []
       },
       {
         id: 'fourthPart',
-        description: "Possibilità di inserire un quarto pezzo per l'indirizzo.",
-        label: "Quarta parte dell'indirizzo",
+        description: "Possibility of using a fourth column that contains data about the full address.",
+        label: "Column contains the fourth part of address",
         infoText: "",
         inputType: 'selectColumns',
         rules: []
