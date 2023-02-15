@@ -8,7 +8,7 @@ const program = new Command();
 
 const prompts = {
   reconciliator: [
-    { type: 'input', name: 'prefix', message: `Prefix used for the conciled resources (e.g., geo, dbp, wkd)` },
+    { type: 'input', name: 'prefix', message: `Prefix used for the reconciled resources (e.g., geo, dbp, wkd)` },
     { type: 'input', name: 'uri', message: `Resources URI (e.g., https://www.wikidata.org/wiki/)` },
   ],
   extender: []
@@ -32,12 +32,14 @@ program.command('new')
     inquirer
       .prompt(prompts[commonAnswers.type])
       .then((options) => {
+        console.log(options);
         const resolvedOptions = {
           ...commonAnswers,
           ...options,
-          relativeUrl: options.relativeUrl ? options.relativeUrl : `/${options.name}`
+          relativeUrl: resolvedOptions.relativeUrl ? resolvedOptions.relativeUrl : `/${resolvedOptions.name}`
         }
         newCmd(resolvedOptions)
+        console.log(`\n ${resolvedOptions.type} ${resolvedOptions.name} has been created.`)
         // Use user feedback for... whatever!!
       })
       .catch((error) => {
