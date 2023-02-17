@@ -1,23 +1,13 @@
 import CONFIG from '../../config';
 import dotenv from 'dotenv';
 import { readdirSync, existsSync } from 'fs';
-import { writeFile, mkdir } from 'fs/promises';
+import { mkdir } from 'fs/promises';
 import { log } from '../utils/log';
 import { safeWriteFileToPath } from '../utils/safeWriteFile';
-const env = dotenv.config();
+import chalk from 'chalk';
+import { createExtender, createReconciliator } from './utils';
 
-if (process.env.ENV === 'DEV' && env.error) {
-  throw new Error("⚠️  Couldn't find '.env' file  ⚠️");
-}
-if (!CONFIG.datasetFilesPath) {
-  throw new Error("⚠️  You must provide a path to the dataset files in config.js ⚠️");
-}
-if (!CONFIG.datasetDbPath) {
-  throw new Error("⚠️  You must provide a path to the dataset db in config.js ⚠️");
-}
-if (!CONFIG.tablesDbPath) {
-  throw new Error("⚠️  You must provide a path to the tables db in config.js ⚠️");
-}
+const env = dotenv.config();
 
 /**
  * Load extenders services in memory
@@ -32,17 +22,25 @@ const loadExtenders = async () => {
   return extenders.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`
 
-    const { default: info } = await import(`file:///${servicePath}/index.js`);
+    const { default: schema } = await import(`file:///${servicePath}/index.js`);
+    const serviceSchema = createExtender(schema);
+    if (!serviceSchema.success) {
+      acc.errors[serviceKey] = {
+        issues: serviceSchema.error.issues
+      }
+      return acc;
+    }
+
     const { default: requestTransformer } = await import(`file:///${servicePath}/requestTransformer.js`);
     const { default: responseTransformer } = await import(`file:///${servicePath}/responseTransformer.js`);
 
-    (await acc)[serviceKey] = {
-      info,
+    (await acc).available[serviceKey] = {
+      info: serviceSchema.data,
       requestTransformer,
       responseTransformer
     }
     return acc;
-  }, {});
+  }, { available: {}, errors: {} });
 }
 
 /**
@@ -58,17 +56,25 @@ const loadReconciliators = async () => {
   return reconciliators.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`
 
-    const { default: info } = await import(`file:///${servicePath}/index.js`);
+    const { default: schema } = await import(`file:///${servicePath}/index.js`);
+    const serviceSchema = createReconciliator(schema);
+    if (!serviceSchema.success) {
+      acc.errors[serviceKey] = {
+        issues: serviceSchema.error.issues
+      }
+      return acc;
+    }
+
     const { default: requestTransformer } = await import(`file:///${servicePath}/requestTransformer.js`);
     const { default: responseTransformer } = await import(`file:///${servicePath}/responseTransformer.js`);
 
-    (await acc)[serviceKey] = {
-      info,
+    (await acc).available[serviceKey] = {
+      info: serviceSchema.data,
       requestTransformer,
       responseTransformer
     }
     return acc;
-  }, {});
+  }, { available: {}, errors: {} });
 }
 
 /**
@@ -89,8 +95,28 @@ const loadHelperFunctions = async () => {
  * Load initial configuration
  */
 const loadConfig = async () => {
+  console.log(chalk.bold('\nInitializing configuration...\n'));
+
+  if (process.env.ENV === 'DEV' && env.error) {
+    throw new Error("⚠️  Couldn't find '.env' file  ⚠️");
+  }
+  if (!CONFIG.datasetFilesPath) {
+    throw new Error("⚠️  You must provide a path to the dataset files in config.js ⚠️");
+  }
+  if (!CONFIG.datasetDbPath) {
+    throw new Error("⚠️  You must provide a path to the dataset db in config.js ⚠️");
+  }
+  if (!CONFIG.tablesDbPath) {
+    throw new Error("⚠️  You must provide a path to the tables db in config.js ⚠️");
+  }
+
   const reconciliators = await loadReconciliators();
   const extenders = await loadExtenders();
+
+  printAvailableServices('Reconciliators', reconciliators);
+  printAvailableServices('Extenders', extenders);
+
+
   const helpers = await loadHelperFunctions();
 
   if (!existsSync(helpers.getTmpPath())) {
@@ -120,8 +146,8 @@ const loadConfig = async () => {
     MANTIS_AUTH_TOKEN: process.env.MANTIS_AUTH_TOKEN,
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
-    reconciliators,
-    extenders,
+    reconciliators: reconciliators.available,
+    extenders: extenders.available,
     helpers,
     mantisObjs: {
       cronsMap: {}

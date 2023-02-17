@@ -1,3 +1,6 @@
+import { MetaToViewComponents } from "../../../schemas/constants";
+
+
 export default {
   private: {
     endpoint: process.env.ASIA_RECONCILIATION,
@@ -15,19 +18,19 @@ export default {
       },
       name: {
         label: 'Name',
-        type: 'link'
+        type: MetaToViewComponents.link
       },
       score: {
         label: 'Score'
       },
       type: {
         label: 'Types',
-        type: 'subList'
+        type: MetaToViewComponents.sublist
       },
       match: {
         label: 'Match',
-        type: 'tag'
+        type: MetaToViewComponents.tag
       }
     }
   }
-}
+};
