@@ -73,7 +73,7 @@ app.use(function (err, req, res, next) {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 App running on http://localhost:${PORT} - ${ENV}`);
+  console.log(`\n🚀 App running on http://localhost:${PORT} - ${ENV}\n`);
 });
 
 export default server;

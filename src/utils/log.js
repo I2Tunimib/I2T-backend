@@ -4,7 +4,8 @@ const colors = {
   api: '\x1b[35m',
   db: '\x1b[31m',
   mantis: '\x1b[32m',
-  socketio: '\x1b[34m'
+  socketio: '\x1b[34m',
+  error: '\x1b[31m'
 }
 
 export const colorString = (type) => {
