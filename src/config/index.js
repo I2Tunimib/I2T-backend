@@ -5,7 +5,7 @@ import { mkdir } from 'fs/promises';
 import { log } from '../utils/log';
 import { safeWriteFileToPath } from '../utils/safeWriteFile';
 import chalk from 'chalk';
-import { createExtender, createReconciliator } from './utils';
+import { createExtender, createReconciliator, printAvailableServices } from './utils';
 
 const env = dotenv.config();
 
@@ -25,7 +25,7 @@ const loadExtenders = async () => {
     const { default: schema } = await import(`file:///${servicePath}/index.js`);
     const serviceSchema = createExtender(schema);
     if (!serviceSchema.success) {
-      acc.errors[serviceKey] = {
+      (await acc).errors[serviceKey] = {
         issues: serviceSchema.error.issues
       }
       return acc;
@@ -59,7 +59,7 @@ const loadReconciliators = async () => {
     const { default: schema } = await import(`file:///${servicePath}/index.js`);
     const serviceSchema = createReconciliator(schema);
     if (!serviceSchema.success) {
-      acc.errors[serviceKey] = {
+      (await acc).errors[serviceKey] = {
         issues: serviceSchema.error.issues
       }
       return acc;

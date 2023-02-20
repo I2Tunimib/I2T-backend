@@ -20,8 +20,9 @@ const FormFieldBaseSchema = z.object({
   id: z.string(),
   description: z.string(),
   label: z.string(),
+  infoText: z.string().optional(),
   rules: FormFieldRuleSchema.array(),
-})
+}).strict()
 
 // Invidual form components
 
@@ -31,7 +32,7 @@ const CheckboxSchema = FormFieldBaseSchema.extend({
     id: z.string(),
     label: z.string(),
     value: z.string()
-  }).array()
+  }).array().nonempty()
 })
 
 const InputTextSchema = FormFieldBaseSchema.extend({
