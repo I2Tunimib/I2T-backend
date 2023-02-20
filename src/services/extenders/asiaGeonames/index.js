@@ -1,3 +1,5 @@
+import { FormComponents, FormFieldRules } from "../../../schemas/constants";
+
 export default {
   private: {
     endpoint: process.env.ASIA_EXTENSION,
@@ -12,8 +14,8 @@ export default {
         id: 'property',
         description: 'Select on or more <b>Property</b> values:',
         label: 'Property',
-        inputType: 'checkbox',
-        rules: ['required'],
+        inputType: FormComponents.checkbox,
+        rules: [FormFieldRules.required],
         options: [
           {
             id: 'adm1',
