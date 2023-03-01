@@ -7,12 +7,11 @@ export default {
     name: 'Wikidata Geo Properties',
     relativeUrl: '/wikidata/entities',
     description: 'Geo property extension service: add properties associated with wikidata entities',
-    formParams: [
-      {
-        id: 'property',
+    formSchema: {
+      property: {
         description: 'Select on or more <b>Property</b> values:',
         label: 'Property',
-        inputType: 'checkbox',
+        component: 'checkbox',
         rules: ['required'],
         options: [
           {
@@ -32,6 +31,6 @@ export default {
           }
         ]
       }
-    ]
+    }
   }
 }

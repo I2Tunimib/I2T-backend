@@ -16,6 +16,8 @@ export const FormComponents = {
    */
   selectColumns: 'selectColumns',
 
+  group: 'group'
+
 }
 
 export const FormFieldRules = {

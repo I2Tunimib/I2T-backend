@@ -30,31 +30,28 @@ export default {
         type: 'tag'
       }
     },
-    formParams: [
-      {
-        id: 'secondPart',
+    formSchema: {
+      secondPart: {
         description: "Possibility of using a second column that contains data about the full address.",
         label: "Column contains the second part of address",
         infoText: "",
-        inputType: 'selectColumns',
+        component: 'selectColumns',
         rules: []
       },
-      {
-        id: 'thirdPart',
+      thirdPart: {
         description: "Possibility of using a third column that contains data about the full address.",
         label: "Column contains the third part of address",
         infoText: "",
-        inputType: 'selectColumns',
+        component: 'selectColumns',
         rules: []
       },
-      {
-        id: 'fourthPart',
+      fourthParth: {
         description: "Possibility of using a fourth column that contains data about the full address.",
         label: "Column contains the fourth part of address",
         infoText: "",
-        inputType: 'selectColumns',
+        component: 'selectColumns',
         rules: []
       }
-    ]
+    }
   }
 }

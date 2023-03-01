@@ -8,12 +8,11 @@ export default {
     name: 'Atoka People Extender',
     relativeUrl: '',
     description: 'Select the companies column and extend the field in another column',
-    formParams: [
-      {
-        id: 'property',
+    formSchema: {
+      property: {
         description: 'Select one or more <b>Property</b> values:',
         label: 'Property',
-        inputType: 'checkbox',
+        component: 'checkbox',
         rules: ['required'],
         options: [
           {
@@ -48,6 +47,6 @@ export default {
           }
         ]
       }
-    ]
+    }
   }
 }

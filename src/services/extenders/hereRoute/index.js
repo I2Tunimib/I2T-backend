@@ -8,20 +8,18 @@ export default {
     name: 'HERE Route',
     relativeUrl: '',
     description: 'Select two point and return the travel time',
-    formParams: [
-      {
-        id: 'end',
+    formSchema: {
+      end: {
         description: 'Select a <b>end</b> place column:',
         label: 'End point',
         infoText: 'Select one column as a end point',
-        inputType: 'selectColumns',
+        component: 'selectColumns',
         rules: ['required']
       },
-      {
-        id: 'property',
+      property: {
         description: 'Select on or more <b>Property</b> values:',
         label: 'Property',
-        inputType: 'checkbox',
+        component: 'checkbox',
         rules: ['required'],
         options: [
           {
@@ -41,11 +39,10 @@ export default {
           }
         ]
       },
-      {
-        id: 'poi_property',
+      poi_property: {
         description: 'Select if you use a POI as a end point:',
         label: 'poi_property',
-        inputType: 'checkbox',
+        component: 'checkbox',
         rules: [],
         options: [
           {
@@ -55,6 +52,6 @@ export default {
           }
         ]
       }
-    ]
+    }
   }
 }

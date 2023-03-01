@@ -32,5 +32,35 @@ export const printAvailableServices = (title, services) => {
  * Show path and value error
  */
 export const getFormattedZodError = (errors) => {
-  return errors.reduce((acc, error, index) => `${acc}${index + 1}. ${error.path.join('.')}: ${error.message}\n`, 'Errors:\n')
+  const title = 'Errors:\n';
+
+  const errorsArray = errors.map((error, index) => {
+    const errorPath = error.path.join('.');
+    // intelligently show union errors
+    if (error.code === 'invalid_union') {
+      const allIssues = error.unionErrors.flatMap((unionError) => {
+        return unionError.issues;
+      })
+      const pathMinLen = Math.min(...allIssues.map((issue) => issue.path.length));
+      const pathMaxLen = Math.max(...allIssues.map((issue) => issue.path.length));
+
+      const filteredIssues = allIssues.filter((issue) => {
+        if (issue.path.join('.').startsWith(errorPath)) {
+          if (pathMinLen === pathMaxLen) {
+            return true;
+          }
+        }
+        return issue.path.length > pathMinLen
+      })
+      const unionErrors = filteredIssues
+        .map((issue) => ` ${issue.path.join('.')}: ${issue.message}`)
+        .join('\n')
+
+      return unionErrors;
+    }
+
+    return ` ${errorPath}: ${error.message}`
+  });
+
+  return `${title}${errorsArray.join('\n')}`
 }

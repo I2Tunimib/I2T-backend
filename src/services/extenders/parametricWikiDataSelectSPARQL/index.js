@@ -39,16 +39,15 @@ export default {
     name: 'Wikidata Select SPARQL',
     relativeUrl: '/wikidata/entities',
     description: "Extension service that is based on the Wikidata KG and allows you to select and extend the Wikidata property you want from those available..",
-    formParams: [
-      {
-        id: 'prop',
+    formSchema: {
+      prop: {
         description: "Select <b>the Wikidata's property name</b>:",
         label: "Property Name",
         infoText: "To extend a new column, select on of the following properties.",
-        inputType: 'select',
+        component: 'select',
         rules: ['required'],
         options: await getPropertyDict()
       }
-    ]
+    }
   }
 }
