@@ -1,4 +1,4 @@
-const relevantOpt = [{ 'id': '', 'label': ' ', 'value': '' },{ 'id': 'name', 'label': 'Atoka : name', 'value': 'name' }, { 'id': 'regNumbers', 'label': 'Atoka : regNumbers', 'value': 'regNumbers' },
+const relevantOpt = [{ 'id': '', 'label': ' ', 'value': '' }, { 'id': 'name', 'label': 'Atoka : name', 'value': 'name' }, { 'id': 'regNumbers', 'label': 'Atoka : regNumbers', 'value': 'regNumbers' },
 { 'id': 'websitesDomains', 'label': 'Atoka : websitesDomains', 'value': 'websitesDomains' }, { 'id': 'phones', 'label': 'Atoka : phones', 'value': 'phones' },
 { 'id': 'emails', 'label': 'Atoka : emails', 'value': 'emails' }, { 'id': 'socials', 'label': 'Atoka : socials', 'value': 'socials' }];
 
@@ -22,7 +22,7 @@ const relevantDescription = '<br><h1>Relevant Filters</h1>  in this section is p
 const optionalDescription = '<br><hr style="width:105%; border:1px solid #e0e0e0;"><br> <h1>Optional Filters</h1> <br> in this section is possible to set up the optional filters, filters used for a greater precision in the match operation, but without usage costraints. <br><br>';
 
 function sourceDescription(filterName) {
-  return  'after the choice of '+ filterName + ' filter, you can select the <b style="color: #FF5733; font-size: 20px;">Source</b> column with the data:';
+  return 'after the choice of ' + filterName + ' filter, you can select the <b style="color: #FF5733; font-size: 20px;">Source</b> column with the data:';
 }
 
 function atokaDescription(filterName) {
