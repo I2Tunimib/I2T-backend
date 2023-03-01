@@ -98,7 +98,7 @@ export const ReconciliatorSchema = z.object({
     uri: z.string(),
     metaToView: MetaToViewSchema,
     formSchema: FormSchema.optional()
-  })
+  }).strict()
 })
 
 /**
