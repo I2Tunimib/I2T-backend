@@ -9,12 +9,11 @@ export default {
     name: 'ASIA (geonames)',
     relativeUrl: '/asia/geonames',
     description: 'ASIA extension service based on geonames allows to extend a column with data on locations of a certain administrative order. The input column has to be reconciliated against geonames entities.',
-    formParams: [
-      {
-        id: 'property',
+    formSchema: {
+      property: {
         description: 'Select on or more <b>Property</b> values:',
         label: 'Property',
-        inputType: FormComponents.checkbox,
+        component: FormComponents.checkbox,
         rules: [FormFieldRules.required],
         options: [
           {
@@ -39,7 +38,7 @@ export default {
           }
         ]
       }
-    ]
+    }
   }
 
 }

@@ -7,20 +7,18 @@ export default {
     name: 'Column Extender',
     relativeUrl: '',
     description: 'Select the Address column and extend the metadata in new columns',
-    formParams: [
-      {
-        id: 'column',
+    formSchema: {
+      column: {
         description: 'To be sure, reselect the column to extend:',
         label: 'Column to extend',
         infoText: 'Check that is the right column',
-        inputType: 'selectColumns',
+        component: 'selectColumns',
         rules: ['required']
       },
-      {
-        id: 'property',
+      property: {
         description: 'Select one or more <b>Property</b> values:',
         label: 'Property',
-        inputType: 'checkbox',
+        component: 'checkbox',
         rules: ['required'],
         options: [
           {
@@ -35,6 +33,6 @@ export default {
           }
         ]
       }
-    ]
+    }
   }
 }

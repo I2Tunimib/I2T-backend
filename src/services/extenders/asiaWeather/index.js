@@ -7,21 +7,19 @@ export default {
     name: 'Weather',
     relativeUrl: '/asia/weather',
     description: "ASIA weather-based extension service allows to extend a column with meteorological data for given locations and dates. The selected locations needs to be <b>regions</b> reconciliated against geonames. If regions aren't directly available, you can use the ASIA (geonames) extension service to extend cities with their regions.",
-    formParams: [
-      {
-        id: 'dates',
+    formSchema: {
+      dates: {
         description: 'Select a column for <b>Dates</b> values:',
         label: 'Dates',
         infoText: 'Only date for the years between 2017 and 2019 and German regions are supported (ISO format yyyy-mm-dd)',
-        inputType: 'selectColumns',
+        component: 'selectColumns',
         rules: ['required']
       },
-      {
-        id: 'weatherParams',
+      weatherParams: {
         description: 'Select one or more <b>Weather</b> parameters:',
         label: 'Weather parameters',
         infoText: 'Meteorological parameter with which you want to extend the table',
-        inputType: 'checkbox',
+        component: 'checkbox',
         rules: ['required'],
         options: [
           {
@@ -46,15 +44,14 @@ export default {
           }
         ]
       },
-      {
-        id: 'offsets',
+      offsets: {
         description: "Enter desired <b>Offsets</b>:",
         label: "Offset",
         infoText: "The offset is the difference in days for which we want to retrieve the data with respect to the input dates. You can add multiple offsets separated by a COMMA. Offset 0 means the same day of the corresponding date.",
-        inputType: 'text',
+        component: 'text',
         defaultValue: '0',
         rules: ['required']
       }
-    ]
+    }
   }
 }

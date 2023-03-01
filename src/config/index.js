@@ -25,6 +25,7 @@ const loadExtenders = async () => {
     const { default: schema } = await import(`file:///${servicePath}/index.js`);
     const serviceSchema = createExtender(schema);
     if (!serviceSchema.success) {
+      // serviceSchema.error.issues.forEach((issue) => console.log(issue))
       (await acc).errors[serviceKey] = {
         issues: serviceSchema.error.issues
       }
@@ -58,6 +59,7 @@ const loadReconciliators = async () => {
 
     const { default: schema } = await import(`file:///${servicePath}/index.js`);
     const serviceSchema = createReconciliator(schema);
+
     if (!serviceSchema.success) {
       (await acc).errors[serviceKey] = {
         issues: serviceSchema.error.issues
