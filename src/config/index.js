@@ -6,6 +6,7 @@ import { log } from '../utils/log';
 import { safeWriteFileToPath } from '../utils/safeWriteFile';
 import chalk from 'chalk';
 import { createExtender, createReconciliator, printAvailableServices } from './utils';
+import { EnvSchema } from '../schemas/env';
 
 const env = dotenv.config();
 
@@ -99,9 +100,18 @@ const loadHelperFunctions = async () => {
 const loadConfig = async () => {
   console.log(chalk.bold('\nInitializing configuration...\n'));
 
-  if (process.env.ENV === 'DEV' && env.error) {
-    throw new Error("⚠️  Couldn't find '.env' file  ⚠️");
+  const parsed = EnvSchema.safeParse(process.env);
+
+  if (parsed.success === false) {
+    console.error(
+      "❌ Invalid environment variables:\n",
+      parsed.error.flatten().fieldErrors,
+      "\n"
+    );
+    throw new Error("Invalid environment variables");
   }
+
+
   if (!CONFIG.datasetFilesPath) {
     throw new Error("⚠️  You must provide a path to the dataset files in config.js ⚠️");
   }
