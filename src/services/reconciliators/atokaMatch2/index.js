@@ -9,59 +9,16 @@ const optionalOpt = [{ 'id': '', 'label': ' ', 'value': '' }, { 'id': 'countries
 { 'id': 'postcodes', 'label': 'Atoka : postcodes', 'value': 'postcodes' }, { 'id': 'address', 'label': 'Atoka : address', 'value': 'address' },
 { 'id': 'useFullAddress', 'label': 'Atoka : useFullAddress', 'value': 'useFullAddress' }];
 
-
-
-const servicesDescription = '<br>This external service is used to find the match between: <br> <b style="color: #3498db ; font-size: 25px;">Atoka</b> → companies in the knowledge graph.<br><b style="color: #FF5733; font-size: 25px;">Source</b> → data contained in the table<br><br><hr style="width:108%; border:1px solid #e0e0e0;">';
-
-
-const firstDescription = '<h2>First</h2>The selected column in the Source table will be compared with the selected <b style="color: #3498db; font-size: 20px;">Atoka</b> filter:<br>';
-
-const relevantDescription = '<br><h1>Relevant Filters</h1>  in this section is possible to set up the relevant filter, important filter in the Atoka service which requires the use of at least one.<br><br><b>N.B</b> The selected column in the table contains data to use with the relevant filter. <br><br><hr style="width:105%; border:1px solid #e0e0e0;">';
-
-
-const optionalDescription = '<br><hr style="width:105%; border:1px solid #e0e0e0;"><br> <h1>Optional Filters</h1> <br> in this section is possible to set up the optional filters, filters used for a greater precision in the match operation, but without usage costraints. <br><br>';
-
-function sourceDescription(filterName) {
-  return 'after the choice of ' + filterName + ' filter, you can select the <b style="color: #FF5733; font-size: 20px;">Source</b> column with the data:';
-}
-
-function atokaDescription(filterName) {
-  return '<hr style="width:105%; border:1px solid #e0e0e0;"> <h2>' + filterName + '</h2> Select the <b style="color: #3498db; font-size: 20px;">Atoka</b> filter to use in the match:';
-}
-
-function atokaSelect(id, description, options) {
-  return {
-    id: id,
-    description: description,
-    label: "Atoka",
-    infoText: "",
-    inputType: 'select',
-    rules: [],
-    options: options
-  }
-}
-
-function sourceSelect(id, description) {
-  return {
-    id: id,
-    description: description,
-    label: 'Source',
-    infoText: '',
-    inputType: 'selectColumns',
-    rules: []
-  }
-}
-
 export default {
   private: {
     endpoint: process.env.ATOKA_MATCH,
     access_token: process.env.ATOKA_TOKEN,
-    processRequest: true,
+    processRequest: false,
     min_threshold: 0.6
   },
   public: {
-    name: 'Atoka Match',
-    description: '',
+    name: 'Atoka Company Match',
+    description: 'Atoka is a platform that allows people to know everything about Italian companies. This service allows reconciliation of the entity corresponding to the company contained in the Table  within the Atoka knowledge graph.',
     relativeUrl: '/atoka',
     prefix: 'atoka',
     uri: 'https://atoka.io/public/en/company/-/',
@@ -85,37 +42,59 @@ export default {
         type: 'tag'
       }
     },
-    formParams: [
-      {
-        id: 'atokaFirstRel',
-        description: servicesDescription + relevantDescription + firstDescription,
-        label: "Atoka",
-        infoText: "",
-        inputType: 'select',
-        rules: ['required'],
-        options: relevantOpt
+    formSchema:{
+      firstFilter: {
+        title: "<h2>First Filter</h2>",
+        description: "Input pair allowing to specify the table <b style='color: #FF5733; font-size: 20px;'>column</b> to be used and the <b style='color: #3498db ; font-size: 20px;'>type</b> of data it contains.",
+        component: "group",
+        dynamic: false,
+        fields : {
+          column: {
+            label : "Table Column",
+            component: "select",
+            rules: ['required'],
+            options: [{ 'id': 'colonnaSpec', 'label': 'Column selected in table', 'value': 'Column selected in table' }]
+          },
+          type: {
+            label: "Data Type",
+            component: "select",
+            rules: ['required'],
+            options: relevantOpt
+          }
+        }
       },
-
-
-      atokaSelect('atokaSecondRel', atokaDescription('Second'), relevantOpt),
-
-      sourceSelect('SecondRel', sourceDescription('Second')),
-
-      atokaSelect('atokaThirdRel', atokaDescription('Third'), relevantOpt),
-
-      sourceSelect('ThirdRel', sourceDescription('Third')),
-
-      atokaSelect('atokaFourthRel', atokaDescription('Fourth'), relevantOpt),
-
-      sourceSelect('FourthRel', sourceDescription('Fourth')),
-
-      atokaSelect('atokaFirstOpt', optionalDescription + atokaDescription('First Opt'), optionalOpt),
-
-      sourceSelect('FirstOpt', sourceDescription('First Opt')),
-
-      atokaSelect('atokaSecondOpt', atokaDescription('Second Opt'), optionalOpt),
-
-      sourceSelect('SecondOpt', sourceDescription('Second Opt'))
-    ]
+      relevantFilter: {
+        title: "<h2>Relevant Filter</h2>",
+        component: "group",
+        dynamic: true,
+        fields : {
+          column: {
+            label : "Table Column",
+            component: "selectColumns"
+          },
+          type: {
+            label: "Data Type",
+            component: "select",
+            options: relevantOpt
+          }
+        }
+      },
+      optionalFilter: {
+        title: "<h2>Optional Filter</h2>",
+        component: "group",
+        dynamic: true,
+        fields : {
+          column: {
+            label : "Table Column",
+            component: "selectColumns"
+          },
+          type: {
+            label: "Data Type",
+            component: "select",
+            options: optionalOpt
+          }
+        }
+      }
+    }
   }
 }
