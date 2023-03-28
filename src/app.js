@@ -28,7 +28,7 @@ app.use(zipTmpFileMiddleware)
 
 const isProd = (req, res, next) => {
   if (ENV === 'DEV') {
-    res.redirect('/api'); 
+    res.redirect('/api');
   } else {
     next();
   }
@@ -69,7 +69,7 @@ app.use(function (req, res, next) {
 // error handler
 app.use(function (err, req, res, next) {
   console.log(err);
-  res.status(500).json({error: err.message});
+  res.status(500).json({ error: err.message });
 });
 
 const server = app.listen(PORT, () => {
