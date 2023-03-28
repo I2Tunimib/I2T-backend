@@ -17,7 +17,7 @@ export default {
     // excluded services won't be loaded during app startup
     exclude: {
       extenders: [],
-      reconciliators: ['lamapi']
+      reconciliators: []
     }
   }
 }
