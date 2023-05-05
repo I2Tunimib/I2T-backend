@@ -65,12 +65,21 @@ const transformCTA = (table, cta) => {
 const getCEAMetadata = (entities) => {
   let lowestScore = 0;
   let highestScore = 0;
-  let match = entities.length > 0 ? {
-    value: true,
-    reason: 'reconciliator'
-  } : { value: false };
+  let match = null;
+  if (entities.length > 0) {
+    match = entities[0]["match"] ? {
+      value: true,
+      reason: 'reconciliator'
+    } : {
+      value: false,
+      reason: 'reconciliator'
+    };
+  } 
+  else {
+    match = { value: false };
+  }
   const meta = entities.map((entity, index) => {
-    const { id: entityId, score, type, name, ...rest } = entity;
+    const { id: entityId, score, type, name, match, ...rest } = entity;
     const id = `wd:${entityId}`;
     if (index === 0) {
       lowestScore = score;
@@ -89,7 +98,7 @@ const getCEAMetadata = (entities) => {
       }),
       score,
       ...rest,
-      match: index === 0,
+      match: match,
       name: {
         value: name,
         uri: `${KG_INFO.wd.uri}${entityId}`
