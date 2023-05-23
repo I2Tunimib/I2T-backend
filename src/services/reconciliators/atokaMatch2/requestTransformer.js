@@ -59,12 +59,13 @@ function fixOptionalField(props, column, name) {
 
 
 export default async (req) => {
-  const { items } = req.original;
-  let { props } = req.original;
-  
+  const items = req.original['props']['data']['items'];
+  const firstRelevantProp = req.original['props']['data']['firstFilter']['name'];
+  console.log(req.original['props']['data']['relevantFilter'])
 
-  const firstRelevantProp = props["atokaFirstRel"];
-  delete props["atokaFirstRel"];
+
+  //const firstRelevantProp = req.original['props']['data']['firstFilter']['name'];
+
   
   Object.keys(props).forEach(prop => {
     if(prop.includes("atoka") === false){

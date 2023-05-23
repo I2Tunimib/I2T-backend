@@ -44,8 +44,8 @@ export default {
     },
     formSchema:{
       firstFilter: {
-        title: "<h2>First Filter</h2>",
-        description: "Input pair allowing to specify the table <b style='color: #FF5733; font-size: 20px;'>column</b> to be used and the <b style='color: #3498db ; font-size: 20px;'>type</b> of data it contains.",
+        title: "<h2>Starting Filter</h2>",
+        description: "Select the <b style='color: #3498db ; font-size: 20px;'>type</b> of data in the table column.",
         component: "group",
         dynamic: false,
         fields : {
@@ -53,7 +53,7 @@ export default {
             label : "Table Column",
             component: "select",
             rules: ['required'],
-            options: [{ 'id': 'colonnaSpec', 'label': 'Column selected in table', 'value': 'Column selected in table' }]
+            options: [{ 'id': 'colonnaSpec', 'label': 'company_name', 'value': 'company_name' }]
           },
           type: {
             label: "Data Type",
@@ -65,6 +65,7 @@ export default {
       },
       relevantFilter: {
         title: "<h2>Relevant Filter</h2>",
+        description: "The filter requires the table <b style='color: #FF5733; font-size: 20px;'>column</b> to be used and the <b style='color: #3498db ; font-size: 20px;'>type</b> of data it contains.",
         component: "group",
         dynamic: true,
         fields : {
@@ -82,6 +83,7 @@ export default {
       optionalFilter: {
         title: "<h2>Optional Filter</h2>",
         component: "group",
+        description: "The filter requires the table <b style='color: #FF5733; font-size: 20px;'>column</b> to be used and the <b style='color: #3498db ; font-size: 20px;'>type</b> of data it contains.",
         dynamic: true,
         fields : {
           column: {
