@@ -29,51 +29,47 @@ async function makeRequest(endpoint, payload, row, colName) {
   
 }
 
-function prepareDict(itemProp, items, props) {
-  let dict = {};
-  let colName = "";
+function prepareDict(itemProp, items, relevantFilters, optionalFilters){
+  let dict = {}
+  let colName = ""
+  let type = ""
   items.forEach(item => {
     let splitted = item.id.split('$');
     if (splitted[1] !== undefined) {
-      colName = splitted[1];
-      dict[splitted[0]]={};
-      dict[splitted[0]][itemProp] = item.label; 
-      Object.keys(props).forEach(prop => {
-        dict[splitted[0]][prop] = props[prop][item.id.split('$')[0]][0];
-      })
+      colName = splitted[1]
+      dict[splitted[0]] = {}
+      dict[splitted[0]][itemProp] = item.label
     }
-  });
+    relevantFilters.forEach(relevantFilter=>{
+      type = relevantFilter.type
+      if(relevantFilter["column"][splitted[0]] !== undefined){
+        dict[splitted[0]][type] = relevantFilter["column"][splitted[0]][0]
+      }
+    })
+    optionalFilters.forEach(optionalFilter=>{
+      type = optionalFilter.type
+      if(optionalFilter["column"][splitted[0]] !== undefined){
+        dict[splitted[0]][type] = optionalFilter["column"][splitted[0]][0]
+      }
+    })
+  })
   return { 'dict': dict, 'colName': colName };
 }
-
-function fixOptionalField(props, column, name) {
-  if (props[name] !== undefined && props[column] !== undefined) {
-    props[props[name]] = props[column]
-    delete props[name];
-    delete props[column];
-  }
-  return props
-}
-
-
 
 
 export default async (req) => {
   const items = req.original['props']['data']['items'];
-  const firstRelevantProp = req.original['props']['data']['firstFilter']['name'];
-  console.log(req.original['props']['data']['relevantFilter'])
-
-
-  //const firstRelevantProp = req.original['props']['data']['firstFilter']['name'];
-
   
-  Object.keys(props).forEach(prop => {
-    if(prop.includes("atoka") === false){
-      props = fixOptionalField(props, prop, "atoka"+prop);
-    }
-  });
 
-  let dataRequest = prepareDict(firstRelevantProp, items, props);
+
+  const firstRelevantProp = req.original['props']['data']['firstFilter']['type'];
+  let relevantFilters = req.original['props']['data']['relevantFilter']
+  let optionalFilters = req.original['props']['data']['optionalFilter']
+  
+  
+ 
+
+  let dataRequest = prepareDict(firstRelevantProp, items, relevantFilters, optionalFilters);
   const { colName } = dataRequest;
   dataRequest = dataRequest.dict;
   
