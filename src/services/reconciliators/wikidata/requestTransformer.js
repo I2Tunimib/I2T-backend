@@ -3,6 +3,15 @@ import axios from 'axios';
 
 const { endpoint } = config.private;
 
+
+function replaceAll(str, find, replace) {
+  return str.replace(new RegExp(find, 'g'), replace);
+}
+
+function cleanLabel(label){
+  return replaceAll(label, /[*+?^$&{}()|[\]\\]/g, '');
+}
+
 export default async (req) => {
   // const { items } = req;
   // const queries = items.reduce((acc, { id, label }) => ({
@@ -12,9 +21,13 @@ export default async (req) => {
 
   const { items } = req.processed;
 
+  console.log(items)
+
+
   const queries = Object.keys(items).reduce((acc, label) => ({
     ...acc,
-    [label]: { query: encodeURIComponent(label || '') }
+    [cleanLabel(label)]: { query: cleanLabel(label) }
+
   }), {});
 
   const formBody = 'queries=' + JSON.stringify(queries);

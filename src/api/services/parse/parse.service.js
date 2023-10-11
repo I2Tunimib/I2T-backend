@@ -5,6 +5,7 @@ import { parse } from 'JSONStream';
 import { PassThrough } from 'stream';
 import yaml from 'js-yaml';
 import ParseW3C from './parse-w3c.service';
+import { cloneStream } from '../../../utils/cloneStream';
 
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',
@@ -53,13 +54,13 @@ const ParseService = {
     const push = ParseService.getPushFunction(acc);
     for await (const obj of stream) {
       if (condition) {
-        if (condition(obj)) {
+        if (await condition(obj)) {
           if (stopAtFirst) {
             acc = transformFn ? transformFn(obj) : obj;
             break;
           }
           push(transformFn ? transformFn(obj) : obj)
-        } 
+        }
       } else {
         push(transformFn ? transformFn(obj) : obj)
       }
@@ -67,12 +68,29 @@ const ParseService = {
     stream.end();
     return acc;
   },
+  findOneInJson: async ({
+    path,
+    pattern,
+    condition,
+    transformFn
+  }) => {
+    let value = undefined;
+    const stream = ParseService.createJsonStreamReader(path, pattern);
+    for await (const obj of stream) {
+      if (condition(obj)) {
+        value = transformFn ? transformFn(obj) : obj;
+        break;
+      }
+    }
+    stream.end();
+    return value;
+  },
   unzip: async ({
     filePath,
     destination,
     transformFn
   }) => {
-    const zip = createReadStream(filePath).pipe(unzipper.Parse({forceStream: true}))
+    const zip = createReadStream(filePath).pipe(unzipper.Parse({ forceStream: true }))
     let nFiles = 0;
 
     for await (const entry of zip) {
@@ -102,7 +120,7 @@ const ParseService = {
     transformFn,
     acc
   ) => {
-    const stream = entry.pipe(csv({ ...parserOptions }));
+    const stream = entry.clone().pipe(csv({ ...parserOptions }));
     let index = 0;
     for await (const row of stream) {
       acc = transformFn(acc, row, index);
@@ -126,6 +144,9 @@ const ParseService = {
   },
   transformRow: (acc, row, index) => {
     const id = `r${index}`;
+    if (Object.keys(row).some((key) => typeof row[key] !== 'string')) {
+      throw Error('Invalid data');
+    }
     const cells = Object.keys(row).reduce((acc, column) => {
       acc[column] = {
         id: `${id}$${column}`,
@@ -149,34 +170,48 @@ const ParseService = {
   },
   parseCsv: async (entry) => {
     const stream = entry.pipe(csv({ columns: true }));
-    let index = 0;
-    let columns = {}
-    let rows = {}
-    let nCells = 0;
-    let nCellsReconciliated = 0;
-    for await (const row of stream) {
-      if (index === 0) {
-        columns = ParseService.transformHeader(columns, Object.keys(row));
+    try {
+      let index = 0;
+      let columns = {}
+      let rows = {}
+      let nCells = 0;
+      let nCellsReconciliated = 0;
+      for await (const row of stream) {
+        if (index === 0) {
+          columns = ParseService.transformHeader(columns, Object.keys(row));
+        }
+        rows = ParseService.transformRow(rows, row, index);
+        index++;
       }
-      rows = ParseService.transformRow(rows, row, index);
-      index++;
+      nCells = Object.keys(rows).length * Object.keys(columns).length
+      const data = { columns, rows, nCells, nCellsReconciliated }
+      stream.end();
+      return { status: 'success', data };
+    } catch (err) {
+      entry.destroy();
+      return { status: 'error' }
     }
-    stream.end();
-    nCells = Object.keys(rows).length * Object.keys(columns).length 
-    return { columns, rows, nCells, nCellsReconciliated }
+
   },
   parseJson: async (entry) => {
-    let nCells = 0;
-    let nCellsReconciliated = 0;
-    const rows = await ParseService.readJsonWithTransform(
-      entry, 
-      ParseService.transformRow,
-      {}
-    )
-    const header = Object.keys(rows[Object.keys(rows)[0]].cells);
-    const columns = ParseService.transformHeader({}, header);
-    nCells = Object.keys(rows).length * Object.keys(columns).length 
-    return { columns, rows, nCells, nCellsReconciliated };
+    try {
+      let nCells = 0;
+      let nCellsReconciliated = 0;
+      const rows = await ParseService.readJsonWithTransform(
+        entry,
+        ParseService.transformRow,
+        {}
+      )
+      const header = Object.keys(rows[Object.keys(rows)[0]].cells);
+      const columns = ParseService.transformHeader({}, header);
+      nCells = Object.keys(rows).length * Object.keys(columns).length
+      const data = { columns, rows, nCells, nCellsReconciliated };
+      return { status: 'success', data };
+    } catch (err) {
+      entry.destroy();
+      return { status: 'error' }
+    }
+
   },
   checkJsonFormat: async (entry) => {
     const passThrough = new PassThrough({
@@ -194,47 +229,31 @@ const ParseService = {
     stream.end();
     return format;
   },
-  parse: async (entry) => {
-    const { path } = entry;
-    // console.log(entry);
-    const entryA = entry.pipe(new PassThrough())
-    const entryB = entry.pipe(new PassThrough())
-    // console.log(entry);
-    // const extension = path.split('.').pop()
-    try {
-      return await ParseService.parseCsv(entry)
-    } catch (err) {
+  parse: async (entryPath) => {
 
-      if (ParseService.checkJsonFormat(entryA) === 'raw') {
-        return ParseService.parseJson(entryB)
-      }
-      return ParseW3C.parse(entryB)
+    const getStream = () => {
+      return fs.createReadStream(entryPath);
     }
 
-    // try {
-    //   return ParseService.parseCsv(entry)
-    // } catch {
-    //   console.log('AAAAAAA');
-    //   const entryA = entry.pipe(new PassThrough())
-    //   const entryB = entry.pipe(new PassThrough())
+    const parsedCsvResult = await ParseService.parseCsv(getStream());
 
-    //   if (ParseService.checkJsonFormat(entryA) === 'raw') {
-    //     return ParseService.parseJson(entryB)
-    //   }
-    //   return ParseW3C.parse(entryB)
-    // }
+    if (parsedCsvResult.status === 'success') {
+      return parsedCsvResult.data;
+    }
 
-    // if (extension === 'csv') {
-    //   return ParseService.parseCsv(entry)
-    // } else if (extension === 'json') {
-    //   const entryA = entry.pipe(new PassThrough())
-    //   const entryB = entry.pipe(new PassThrough())
+    const parseJsonResult = await ParseService.parseJson(getStream());
 
-    //   if (await ParseService.checkJsonFormat(entryA) === 'raw') {
-    //     return ParseService.parseJson(entryB)
-    //   }
-    //   return ParseW3C.parse(entryB)
-    // }
+    if (parseJsonResult.status === 'success') {
+      return parseJsonResult.data;
+    }
+
+    const parseW3CResult = await ParseW3C.parse(getStream());
+
+    if (parseW3CResult.status === 'success') {
+      return parseW3CResult.data;
+    }
+
+    throw Error('Invalid file format');
   }
 };
 

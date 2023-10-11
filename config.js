@@ -7,6 +7,8 @@ export default {
   tablesDbPath: '/public/tables.info.json',
   // path to folder with temporary files
   tmpPath: '/tmp',
+  // path to users db relative to root folder
+  usersPath: '/public/users.info.json',
 
   services: {
     // path to services relative to src folder
@@ -15,7 +17,7 @@ export default {
     // excluded services won't be loaded during app startup
     exclude: {
       extenders: [],
-      reconciliators: ['lamapi']
+      reconciliators: []
     }
   }
 }
