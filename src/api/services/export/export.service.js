@@ -48,7 +48,7 @@ const ExportService = {
         const { uri } = context[prefix];
         return [...accCtx, { prefix: `${prefix}:`, uri }];
       }, []);
-      
+
       acc[`th${index}`] = {
         ...propsToKeep,
         metadata: metadata.length > 0 ? [{

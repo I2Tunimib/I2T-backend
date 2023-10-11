@@ -38,7 +38,7 @@ const ParseW3C = {
       const totalReconciliated = Object.keys(context)
         .reduce((acc, key) => acc + context[key].reconciliated, 0);
       const hasMetadata = Object.keys(context).some((key) => context[key].total > 0);
-      
+
       if (totalReconciliated === Object.keys(rows).length) {
         columns[colId].status = 'reconciliated';
       } else if (hasMetadata) {
@@ -68,19 +68,19 @@ const ParseW3C = {
 
 
     return Object.keys(header).reduce((columns, key) => {
-      const { 
+      const {
         label,
         context = [],
         metadata: metaRaw,
-        ...rest 
+        ...rest
       } = header[key];
 
 
-      const { 
-        annotated, 
-        data: { lowestScore, highestScore, match, metadata }  = { lowestScore: 0, highestScore: 0, match: false , metadata: [] }
+      const {
+        annotated,
+        data: { lowestScore, highestScore, match, metadata } = { lowestScore: 0, highestScore: 0, match: false, metadata: [] }
       } = getEntityMetadata(metaRaw);
-      
+
 
       columns[label] = {
         id: label,
@@ -144,7 +144,7 @@ const ParseW3C = {
   //         },
   //         metadata
   //       }
-  
+
   //       return {
   //         id,
   //         name: { value: name, uri: `${kgUrl}${resourceId}` },
@@ -160,7 +160,7 @@ const ParseW3C = {
     if (metadata.length > 0) {
       const [prefix, _] = metadata[0].id.split(':');
       const { total, reconciliated } = columns[column].context[prefix];
-      
+
       columns[column].context[prefix] = {
         ...columns[column].context[prefix],
         total: total + 1,
@@ -203,42 +203,50 @@ const ParseW3C = {
     return { id, cells, nReconciliated }
   },
   parse: async (entry) => {
-    const { reconciliators } = await ParseService.readYaml('./config.yml');
-    // const stream = ParseService.createJsonStreamReader(filePath);
-    const passThrough = new PassThrough({
-      objectMode: true
-    });
-    // const stream = ParseService.createJsonStreamReader(path);
-    const stream = entry.pipe(parse('*')).pipe(passThrough);
+    try {
+      const { reconciliators } = await ParseService.readYaml('./config.yml');
+      // const stream = ParseService.createJsonStreamReader(filePath);
+      const passThrough = new PassThrough({
+        objectMode: true
+      });
+      // const stream = ParseService.createJsonStreamReader(path);
+      const stream = entry.pipe(parse('*')).pipe(passThrough);
 
-    let columns = {};
-    let rows = {};
-    let nCells = 0;
-    let nCellsReconciliated = 0;
-    let minMetaScore = 0
-    let maxMetaScore = 0
-    
-    let rowIndex = -1;
+      let columns = {};
+      let rows = {};
+      let nCells = 0;
+      let nCellsReconciliated = 0;
+      let minMetaScore = 0
+      let maxMetaScore = 0
 
-    for await (const row of stream) {
-      if (rowIndex === -1) {
-        // to parse header and transform to initial state.
-        // we need to add information after rows are parsed.
-        columns = ParseW3C.parseHeader(row, reconciliators);
-        // pass to next iteration
+      let rowIndex = -1;
+
+      for await (const row of stream) {
+        if (rowIndex === -1) {
+          // to parse header and transform to initial state.
+          // we need to add information after rows are parsed.
+          columns = ParseW3C.parseHeader(row, reconciliators);
+          // pass to next iteration
+          rowIndex += 1;
+          continue;
+        }
+        // parse row and update reconciliators count
+        const { nReconciliated, ...rest } = ParseW3C.parseRow(row, rowIndex, columns, minMetaScore, maxMetaScore);
+        ParseW3C.addRow(rows, rest);
+        nCellsReconciliated += nReconciliated;
         rowIndex += 1;
-        continue;
       }
-      // parse row and update reconciliators count
-      const { nReconciliated, ...rest } = ParseW3C.parseRow(row, rowIndex, columns, minMetaScore, maxMetaScore);
-      ParseW3C.addRow(rows, rest);
-      nCellsReconciliated += nReconciliated;
-      rowIndex += 1;
+      // update columns reconciliated status
+      ParseW3C.updateColumnsStatus(columns, rows);
+      nCells = Object.keys(rows).length * Object.keys(columns).length;
+      stream.end();
+      const data = { columns, rows, nCells, nCellsReconciliated };
+      return { status: 'success', data };
+    } catch (err) {
+      entry.destroy();
+      return { status: 'error' }
     }
-    // update columns reconciliated status
-    ParseW3C.updateColumnsStatus(columns, rows);
-    nCells = Object.keys(rows).length * Object.keys(columns).length 
-    return { columns, rows, nCells, nCellsReconciliated };
+
   }
 };
 

@@ -31,7 +31,7 @@ const loadExtenders = async () => {
 
   return extenders.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`
-      
+
     const { default: info } = await import(`file:///${servicePath}/index.js`);
     const { default: requestTransformer } = await import(`file:///${servicePath}/requestTransformer.js`);
     const { default: responseTransformer } = await import(`file:///${servicePath}/responseTransformer.js`);
@@ -57,7 +57,7 @@ const loadReconciliators = async () => {
 
   return reconciliators.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`
-      
+
     const { default: info } = await import(`file:///${servicePath}/index.js`);
     const { default: requestTransformer } = await import(`file:///${servicePath}/requestTransformer.js`);
     const { default: responseTransformer } = await import(`file:///${servicePath}/responseTransformer.js`);
@@ -75,12 +75,13 @@ const loadReconciliators = async () => {
  * Load helper functions in memory
  */
 const loadHelperFunctions = async () => {
-  const { datasetDbPath, datasetFilesPath, tablesDbPath, tmpPath } = CONFIG;
+  const { datasetDbPath, datasetFilesPath, tablesDbPath, tmpPath, usersPath } = CONFIG;
   return {
     getDatasetFilesPath: () => `${process.env.PWD}${datasetFilesPath}`,
     getDatasetDbPath: () => `${process.env.PWD}${datasetDbPath}`,
     getTablesDbPath: () => `${process.env.PWD}${tablesDbPath}`,
-    getTmpPath: () => `${process.env.PWD}${tmpPath}`
+    getTmpPath: () => `${process.env.PWD}${tmpPath}`,
+    getUsersPath: () => `${process.env.PWD}${usersPath}`
   }
 }
 
@@ -100,22 +101,29 @@ const loadConfig = async () => {
     log('db', 'Create tables DB')
     await safeWriteFileToPath(helpers.getTablesDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2))
   }
-  
+
   if (!existsSync(helpers.getDatasetDbPath())) {
     log('db', 'Create dataset DB')
-    await safeWriteFileToPath(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {}}, null, 2))
+    await safeWriteFileToPath(helpers.getDatasetDbPath(), JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2))
   }
-  
+
+  if (!existsSync(helpers.getUsersPath())) {
+    log('db', 'Create users DB')
+    await safeWriteFileToPath(helpers.getUsersPath(), JSON.stringify({ meta: { lastIndex: -1 }, users: {} }, null, 2))
+  }
+
 
   return {
     ENV: process.env.ENV || 'dev',
-    PORT: process.env.PORT || '3002',
+    PORT: process.env.PORT || '3003',
     MANTIS: process.env.MANTIS,
     MANTIS_AUTH_TOKEN: process.env.MANTIS_AUTH_TOKEN,
+    JWT_SECRET: process.env.JWT_SECRET,
+    JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     reconciliators,
     extenders,
     helpers,
-    mantisObjs: { 
+    mantisObjs: {
       cronsMap: {}
     }
   }
