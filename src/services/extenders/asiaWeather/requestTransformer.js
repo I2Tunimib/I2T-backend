@@ -1,10 +1,17 @@
 import config from './index';
 import axios from 'axios';
 import { stringify } from 'qs';
+import fs from "fs";
 
 const { endpoint } = config.private;
 
 export default async (req) => {
+
+  fs.writeFile('/Users/flaviodepaoli/fileSemTUI/requestEXT-asiaWeather.json', JSON.stringify(req), function (err) {
+    if (err) throw err;
+    console.log('File /Users/flaviodepaoli/fileSemTUI/requestEXT-asiaWeather.json saved!');
+  });
+
   const { items, props } = req.processed;
   const { offsets, dates: datesInput, weatherParams: weatherParamsInput } = props;
 

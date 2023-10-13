@@ -16,8 +16,8 @@ export default {
     // specify services to exclude during config initialization
     // excluded services won't be loaded during app startup
     exclude: {
-      extenders: [],
-      reconciliators: []
+      extenders: [".DS_Store"],
+      reconciliators: [".DS_Store", "lamapi"]
     }
   }
 }
