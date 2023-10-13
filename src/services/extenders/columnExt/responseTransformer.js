@@ -5,7 +5,7 @@ function getName(row) {
       if(element.match === true){
         result = element.name.value;
       }
-      console.log(result)
+//      console.log(result)
     });
   } else {
     return "";
@@ -51,20 +51,15 @@ function getLabel(dict, prop, row) {
 export default async (req, res) => {
   const { column } = res;
   const property = res.property;
-
   const column_to_extend = column[Object.keys(column)[0]][2];
-
-
   const dictRow = getRowDict(column);
-  console.log(property)
+//  console.log(property)
 
 
   let response = {
     columns: {},
     meta: {}
   }
-
-
 
   property.forEach(prop => {
     let label_column = prop +"_"+column_to_extend;

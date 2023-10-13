@@ -6,7 +6,7 @@ export default {
   public: {
     name: 'Wikidata Geo Properties',
     relativeUrl: '/wikidata/entities',
-    description: 'Geo property extension service: add properties associated with wikidata entities',
+    description: 'Geo property extension service: add properties associated with wikidata entities. Note that info may be missing in Wikidata.',
     formParams: [
       {
         id: 'property',

@@ -7,7 +7,7 @@ export default {
     name: 'Wikidata',
     prefix: 'wd',
     relativeUrl: '/wikidata',
-    description: 'Provides a general-purpose reconciliation against Wikidata using OpenRefine. This service might be slower than others.',
+    description: 'A general-purpose reconciliation service based on OpenRefine API. Add IDs, labels and descriptions from Wikidata. This service might be slower than others.',
     uri: 'https://www.wikidata.org/wiki/',
     metaToView: {
       id: {

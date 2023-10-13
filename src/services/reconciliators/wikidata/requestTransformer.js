@@ -21,7 +21,7 @@ export default async (req) => {
 
   const { items } = req.processed;
 
-  console.log(items)
+ // console.log(JSON.stringify(items));
 
 
   const queries = Object.keys(items).reduce((acc, label) => ({
