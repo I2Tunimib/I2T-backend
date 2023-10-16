@@ -14,8 +14,7 @@ function cleanLabel(label){
 export default async (req, res) => {
 
   const { items } = req.processed;
-  console.log(res)
-
+  // console.log('*** res: ' + JSON.stringify(res));
   const response = Object.keys(items).flatMap((label) => {
     const metadata = res[cleanLabel(label)].result.map(({ id, ...rest }) => ({
       id: `wd:${id}`,
