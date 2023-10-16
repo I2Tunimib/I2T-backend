@@ -76,7 +76,7 @@ function getColumnMetadata() {
 
 
 export default async (req, res) => {
-  console.log(res.result[0]["items"])
+//  console.log(res.result[0]["items"])
   const { items } = req.original;
   const response = [];
 
