@@ -16,7 +16,7 @@ export default {
     // specify services to exclude during config initialization
     // excluded services won't be loaded during app startup
     exclude: {
-      extenders: [".DS_Store", "asiaGeonames", "asiaWheater", "atokaExtender", "atokaPeopleExtender"],
+      extenders: [".DS_Store", "asiaGeonames", "asiaWeather", "atokaExtender", "atokaPeopleExtender"],
       reconciliators: [".DS_Store", "lamapi", "asiaGeonames", "asiaWikifier", "asiaKeywordsMatcher", "atokaMatch2", "atokaPeople"]
     }
   }
