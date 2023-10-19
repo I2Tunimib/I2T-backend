@@ -218,6 +218,7 @@ const handleAnnotationCompletion = async ({ idDataset, idTable }) => {
       tableData = transformCTA(tableData, cta);
       tableData = transformCPA(tableData, cpa);
       tableData = transformCEA(tableData, cea);
+      
       const {
         table: tableInfo,
         columns,
@@ -268,12 +269,12 @@ const startCron = ({ idDataset, idTable, io }) => {
       // emit to client annotated table
       io.emit('done', annotatedTable);
     }
-  }, 30000);
+  }, 10000);
   cronsMap[`${idDataset}_${idTable}`] = intervalId;
 }
 const MantisService = {
   getTable: async (idDataset, idTable) => {
-    const result = await axios.get(`${MANTIS}/dataset/${idDataset}/table/${idTable}?stringId=true&token=${MANTIS_AUTH_TOKEN}`)
+    const result = await axios.get(`${MANTIS}/dataset/${idDataset}/table/${idTable}?token=${MANTIS_AUTH_TOKEN}`)
     return result.data;
   },
   checkPendingTable: async (io) => {
