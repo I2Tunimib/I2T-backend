@@ -269,7 +269,7 @@ const startCron = ({ idDataset, idTable, io }) => {
       // emit to client annotated table
       io.emit('done', annotatedTable);
     }
-  }, 11000);
+  }, 10000);
   cronsMap[`${idDataset}_${idTable}`] = intervalId;
 }
 const MantisService = {
