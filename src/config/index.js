@@ -4,6 +4,7 @@ import { readdirSync, existsSync } from 'fs';
 import { writeFile, mkdir } from 'fs/promises';
 import { log } from '../utils/log';
 import { safeWriteFileToPath } from '../utils/safeWriteFile';
+
 const env = dotenv.config();
 
 if (process.env.ENV === 'DEV' && env.error) {
@@ -25,7 +26,7 @@ if (!CONFIG.tablesDbPath) {
 const loadExtenders = async () => {
   const { services } = CONFIG;
 
-  const basePath = `${process.env.PWD}/src${services.path}/extenders`;
+  const basePath = `${process.cwd()}/src${services.path}/extenders`;
 
   const extenders = readdirSync(basePath).filter((extender) => !services.exclude.extenders.includes(extender));
 
@@ -51,7 +52,7 @@ const loadExtenders = async () => {
 const loadReconciliators = async () => {
   const { services } = CONFIG;
 
-  const basePath = `${process.env.PWD}/src${services.path}/reconciliators`;
+  const basePath = `${process.cwd()}/src${services.path}/reconciliators`;
 
   const reconciliators = readdirSync(basePath).filter((reconciliator) => !services.exclude.reconciliators.includes(reconciliator));
 
@@ -77,11 +78,11 @@ const loadReconciliators = async () => {
 const loadHelperFunctions = async () => {
   const { datasetDbPath, datasetFilesPath, tablesDbPath, tmpPath, usersPath } = CONFIG;
   return {
-    getDatasetFilesPath: () => `${process.env.PWD}${datasetFilesPath}`,
-    getDatasetDbPath: () => `${process.env.PWD}${datasetDbPath}`,
-    getTablesDbPath: () => `${process.env.PWD}${tablesDbPath}`,
-    getTmpPath: () => `${process.env.PWD}${tmpPath}`,
-    getUsersPath: () => `${process.env.PWD}${usersPath}`
+    getDatasetFilesPath: () => `${process.cwd()}${datasetFilesPath}`,
+    getDatasetDbPath: () => `${process.cwd()}${datasetDbPath}`,
+    getTablesDbPath: () => `${process.cwd()}${tablesDbPath}`,
+    getTmpPath: () => `${process.cwd()}${tmpPath}`,
+    getUsersPath: () => `${process.cwd()}${usersPath}`
   }
 }
 
