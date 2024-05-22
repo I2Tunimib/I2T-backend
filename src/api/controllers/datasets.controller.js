@@ -3,6 +3,7 @@ import ExportService from '../services/export/export.service';
 import jwt from 'jsonwebtoken';
 import config from '../../config/index';
 import AuthService from '../services/auth/auth.service';
+import fs from "fs";
 
 const {
   JWT_SECRET,
@@ -101,6 +102,12 @@ const DatasetsController = {
     const { file } = req.files;
     const { name } = req.body;
     const { idDataset } = req.params;
+    // Flavio
+    const addTableData = [idDataset, name, file];
+    fs.writeFile('../../fileSemTUI/addTable.json', JSON.stringify(addTableData), function (err) {
+      if (err) throw err;
+      console.log('File ../../fileSemTUI/addTable.json saved!');
+    });
 
     try {
       const user = AuthService.verifyToken(req);
@@ -147,6 +154,12 @@ const DatasetsController = {
   },
   updateTable: async (req, res, next) => {
     const data = req.body;
+    // Flavio
+    fs.writeFile('../../fileSemTUI/updateTable.json', JSON.stringify(data), function (err) {
+      if (err) throw err;
+      console.log('File ../../fileSemTUI/updateTable.json saved!');
+    });
+
     try {
       res.json(await DatasetsService.updateTable(data));
     } catch (err) {

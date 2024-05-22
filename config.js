@@ -1,3 +1,5 @@
+import atokaPeopleExtender from "./src/services/extenders/atokaPeopleExtender/index.js";
+
 export default {
   // path to dataset files relative to root folder
   datasetFilesPath: '/public/datasets',
@@ -16,8 +18,9 @@ export default {
     // specify services to exclude during config initialization
     // excluded services won't be loaded during app startup
     exclude: {
-      extenders: [".DS_Store", "asiaGeonames", "asiaWeather", "atokaExtender", "atokaPeopleExtender"],
-      reconciliators: [".DS_Store", "lamapi", "asiaGeonames", "asiaWikifier", "asiaKeywordsMatcher", "atokaMatch2", "atokaPeople"]
+      extenders: [".DS_Store", "asiaGeonames", "asiaWeather", "atokaExtender", "atokaPeopleExtender",
+        "parametricWikiDataSelectSPARQL", "parametricWikiDataSPARQL", "wikidataGeoPropertiesSPARQL"],
+      reconciliators: [".DS_Store", "asiaKeywordsMatcher", "asiaWikifier", "atokaMatch2", "atokaPeople"]
     }
   }
 }
