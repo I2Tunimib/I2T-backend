@@ -53,10 +53,10 @@ const PROPS = {
 
 export default async (req, res) => {
 
-  fs.writeFile('/Users/flaviodepaoli/fileSemTUI/wikidataEXT-responseTransformers.json', JSON.stringify(res), function (err) {
-    if (err) throw err;
-    console.log('File /Users/flaviodepaoli/fileSemTUI/wikidataEXT-responseTransformers.json saved!');
-  });
+  // fs.writeFile('../../fileSemTUI/wikidataEXT-responseTransformers.json', JSON.stringify(res), function (err) {
+  //   if (err) throw err;
+  //   console.log('File ../../fileSemTUI/wikidataEXT-responseTransformers.json saved!');
+  // });
 
   const { items, props } = req.processed;
   const inputColumns = Object.keys(items);

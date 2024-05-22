@@ -12,10 +12,10 @@ function extractIdRow(inputString) {
 }
 
 export default async (req, res) => {
-    fs.writeFile('../../fileSemTUI/response-Alligator.json', JSON.stringify(res), function (err) {
-        if (err) throw err;
-        console.log('File /Users/flaviodepaoli/fileSemTUI/response-Alligator.json saved!');
-    });
+    // fs.writeFile('../../fileSemTUI/response-Alligator.json', JSON.stringify(res), function (err) {
+    //     if (err) throw err;
+    //     console.log('File ../../fileSemTUI/response-Alligator.json saved!');
+    // });
     const { items } = req.original;
     const prefix = config.public.prefix;
     const { cea, cta, cpa } = res.semanticAnnotations;
@@ -72,7 +72,7 @@ export default async (req, res) => {
     }
     // fs.writeFile('../../fileSemTUI/responseREC-SemTUI-Alligator.json', JSON.stringify(response), function (err) {
     //     if (err) throw err;
-    //     console.log('File /Users/flaviodepaoli/fileSemTUI/responseREC-SemTUI-Alligator.json saved!');
+    //     console.log('File ../../fileSemTUI/responseREC-SemTUI-Alligator.json saved!');
     // });
 
     return response;

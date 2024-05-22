@@ -7,9 +7,9 @@ const { token } = config.private;
 const { relativeUrl } = config.public;
 
 export default async (req) => {
-    // fs.writeFile('/Users/flaviodepaoli/fileSemTUI/requestEXT-UI-labels.json', JSON.stringify(req), function (err) {
+    // fs.writeFile('/../../fileSemTUI/requestEXT-UI-labels.json', JSON.stringify(req), function (err) {
     //     if (err) throw err;
-    //     console.log('File /Users/flaviodepaoli/fileSemTUI/requestEXT-UI-labels.json saved!');
+    //     console.log('File ../../fileSemTUI/requestEXT-UI-labels.json saved!');
     // });
     const { items, props } = req.processed;
     const idArray = Object.keys(items.buyer).map(key => key.replace("wd:", ""));
@@ -27,10 +27,10 @@ export default async (req) => {
         return {};
     } else {
         console.log (`*** request labels ### status code returned by LamAPI is: ${res.status} `);
-        // fs.writeFile('/Users/flaviodepaoli/fileSemTUI/responseEXT-LamAPI-labels.json',
+        // fs.writeFile('../../fileSemTUI/responseEXT-LamAPI-labels.json',
         //     JSON.stringify(res.data), function (err) {
         //     if (err) throw err;
-        //     console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-LamAPI-labels.json saved!');
+        //     console.log('File ../../fileSemTUI/responseEXT-LamAPI-labels.json saved!');
         // });
         return res.data;
     }

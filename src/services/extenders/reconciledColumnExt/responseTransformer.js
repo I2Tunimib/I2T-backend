@@ -47,11 +47,11 @@ function getLabel(dict, prop, row) {
 }
 
 export default async (req, res) => {
-  fs.writeFile('/Users/flaviodepaoli/fileSemTUI/requestEXT-UI-columnExt.json',
-      JSON.stringify(req), function (err) {
-        if (err) throw err;
-        console.log('File /Users/flaviodepaoli/fileSemTUI/requestEXT-UI-columnExt.json saved!');
-      });
+  // fs.writeFile('../../fileSemTUI/requestEXT-UI-columnExt.json',
+  //     JSON.stringify(req), function (err) {
+  //       if (err) throw err;
+  //       console.log('File ../../fileSemTUI/requestEXT-UI-columnExt.json saved!');
+  //     });
 
   const { column } = res;
   const property = res.property;
@@ -83,10 +83,10 @@ export default async (req, res) => {
       }
     });
   });
-  // fs.writeFile('/Users/flaviodepaoli/fileSemTUI/responseEXT-UI-columnExt.json',
+  // fs.writeFile('../../fileSemTUI/responseEXT-UI-columnExt.json',
   //     JSON.stringify(response), function (err) {
   //       if (err) throw err;
-  //       console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-UI-columnExt.json saved!');
+  //       console.log('File ../../fileSemTUI/responseEXT-UI-columnExt.json saved!');
   //     });
 
   return response;
