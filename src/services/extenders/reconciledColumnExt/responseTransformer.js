@@ -1,3 +1,5 @@
+import fs from "fs";
+
 function getName(row) {
   let result = "";
   if (row[1] !== []) {
@@ -44,11 +46,13 @@ function getLabel(dict, prop, row) {
   return dict[row][prop];
 }
 
-
-
-
-
 export default async (req, res) => {
+  fs.writeFile('/Users/flaviodepaoli/fileSemTUI/requestEXT-UI-columnExt.json',
+      JSON.stringify(req), function (err) {
+        if (err) throw err;
+        console.log('File /Users/flaviodepaoli/fileSemTUI/requestEXT-UI-columnExt.json saved!');
+      });
+
   const { column } = res;
   const property = res.property;
   const column_to_extend = column[Object.keys(column)[0]][2];
@@ -66,7 +70,7 @@ export default async (req, res) => {
  
       response.columns[label_column] = {
       label: label_column,
-      kind: 'literal',
+      // kind: 'literal',
       metadata: [],
       cells: {}
     };
@@ -79,6 +83,12 @@ export default async (req, res) => {
       }
     });
   });
+  // fs.writeFile('/Users/flaviodepaoli/fileSemTUI/responseEXT-UI-columnExt.json',
+  //     JSON.stringify(response), function (err) {
+  //       if (err) throw err;
+  //       console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-UI-columnExt.json saved!');
+  //     });
+
   return response;
 }
 

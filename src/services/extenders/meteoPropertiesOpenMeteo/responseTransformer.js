@@ -1,5 +1,9 @@
+import fs from "fs";
+
 export default async (req, res) => {
+
   const inputColumns = Object.keys(req.processed.items);
+  const decimalFormat = req.processed.props.decimalFormat; // "decimalFormat": ["comma"] or empty []
 
   let response = {
     columns: {},
@@ -29,7 +33,8 @@ export default async (req, res) => {
           response.meta[colId] = inputColumns[colIndex];
           // add column cells
           let fixedValue = data.daily[param];
-          fixedValue = fixedValue.toString().replace('.',',');
+          if (decimalFormat[0] === 'comma')
+             fixedValue = fixedValue.toString().replace('.',',');
           response.columns[colId].cells = {
             ...response.columns[colId].cells,
             [rowId]: { // we may check if data.daily[param] is a valid value
@@ -40,6 +45,11 @@ export default async (req, res) => {
         });
       }
     });
+  });
+
+  fs.writeFile('../../fileSemTUI/responseEXT-UI-meteo.json', JSON.stringify(req), function (err) {
+    if (err) throw err;
+    console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-UI-meteo.json saved!');
   });
 
   return response;

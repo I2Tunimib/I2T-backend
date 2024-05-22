@@ -6,11 +6,15 @@ export default {
   public: {
     name: 'ASIA (geonames)',
     relativeUrl: '/asia/geonames',
-    description: 'ASIA extension service based on geonames allows to extend a column with data on locations of a certain administrative order. The input column has to be reconciliated against geonames entities.',
+    description: 'ASIA extension service based on geonames allows to extend a column with data on locations of a ' +
+        'certain administrative order. <br>' +
+        '<br><strong>Input</strong>A column reconciled against geonames.' +
+        '<br><strong>Input format</strong> geonames ID, like "geo:2643741' +
+        '<br><strong>Output</strong> A new column for every desired property.',
     formParams: [
       {
         id: 'property',
-        description: 'Select on or more <b>Property</b> values:',
+        description: 'Select on or more <b>property</b> values:',
         label: 'Property',
         inputType: 'checkbox',
         rules: ['required'],

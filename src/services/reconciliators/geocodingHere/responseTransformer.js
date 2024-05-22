@@ -1,4 +1,5 @@
 import config from './index';
+import fs from "fs";
 
 const { uri } = config.public;
 
@@ -89,8 +90,6 @@ export default async (req, res) => {
   }
   const dict = getDict(res.result);
 
-
-
   items.forEach(item => {
     let row = {};
     row.id = item.id;
@@ -101,5 +100,11 @@ export default async (req, res) => {
     }
     response.push(row);
   });
+
+  // fs.writeFile('../../fileSemTUI/response-HERE-riconciler-to-UI.json', JSON.stringify(response), function (err) {
+  //   if (err) throw err;
+  //   console.log('File ../../fileSemTUI/response-HERE-riconciler-to-UI.json saved!');
+  // });
+
   return response;
 }

@@ -4,9 +4,9 @@ export default {
     processRequest: true
   },
   public: {
-    name: 'Wikidata Geo Properties',
+    name: 'Geo Properties (Wikidata)',
     relativeUrl: '/wikidata/entities',
-    description: 'Geo property extension service: add properties associated with wikidata entities. Note that info may be missing in Wikidata.',
+    description: 'Add properties associated with wikidata entities. Note that some required properties may be missing in Wikidata.',
     formParams: [
       {
         id: 'property',

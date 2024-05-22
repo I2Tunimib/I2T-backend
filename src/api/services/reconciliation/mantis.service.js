@@ -18,6 +18,27 @@ const TAGS = {
   SUBJ: 'entity',
   NE: 'entity'
 }
+
+function getCurrentTime() {
+    // Create a new Date object
+    const currentDate = new Date();
+
+    // Get the current time components
+    let currentHours = currentDate.getHours();
+    let currentMinutes = currentDate.getMinutes();
+    let currentSeconds = currentDate.getSeconds();
+    let currentMilliseconds = currentDate.getMilliseconds();
+
+    // Format the time components with leading zeros if necessary
+    currentHours = currentHours < 10 ? "0" + currentHours : currentHours;
+    currentMinutes = currentMinutes < 10 ? "0" + currentMinutes : currentMinutes;
+    currentSeconds = currentSeconds < 10 ? "0" + currentSeconds : currentSeconds;
+    currentMilliseconds = currentMilliseconds < 10 ? "00" + currentMilliseconds : currentMilliseconds < 100 ? "0" + currentMilliseconds : currentMilliseconds;
+
+    // Return the current time in the format "hh:mm:ss:ms"
+    return `${currentHours}:${currentMinutes}:${currentSeconds}:${currentMilliseconds}`;
+}
+
 const getAnnotationRequest = (idDataset, idTable, { rows, columns, table }) => {
   const rowsData = Object.values(rows).flatMap((row, rowIndex) => {
     return {
@@ -249,10 +270,10 @@ const clearCron = (cronId) => {
   const cron = cronsMap[cronId];
   clearInterval(cron);
   delete cronsMap[cronId];
-  log('mantis', `Finished tracking for ${cronId}`)
+  log('mantis', `Finished tracking for ${cronId} - current time: ${getCurrentTime()}`)
 }
 const startCron = ({ idDataset, idTable, io }) => {
-  log('mantis', `Started tracking for ${idDataset}_${idTable}`)
+  log('mantis', `Started tracking for ${idDataset}_${idTable} - current time: ${getCurrentTime()}`)
   // check every 30 seconds
   const intervalId = setInterval(async () => {
     const result = await MantisService.getTable(idDataset, idTable);
