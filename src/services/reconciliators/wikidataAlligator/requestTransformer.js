@@ -9,7 +9,7 @@ const { relativeUrl } = config.public; // /dataset
 export default async (req) => {
     // fs.writeFile('../../fileSemTUI/requestREC-UI-Alligator.json', JSON.stringify(req), function (err) {
     //     if (err) throw err;
-    //     console.log('File /Users/flaviodepaoli/fileSemTUI/requestREC-UI-Alligator.json saved!');
+    //     console.log('File ../../fileSemTUI/requestREC-UI-Alligator.json saved!');
     // });
     const timestamp = new Date().getTime(); // Get the current timestamp
     const randomId = Math.floor(Math.random() * 1000); // Generate a random number
@@ -69,11 +69,11 @@ export default async (req) => {
     const postUrl = endpoint + relativeUrl + "/createWithArray";
     // https://alligator.hel.sintef.cloud/dataset/createWithArray?token=alligator_demo_2023
     console.log(`*** request alligator *** postUrl to alligator: ${postUrl}?token=${access_token} *** tableName: ${tableName}`);
-    fs.writeFile('/Users/flaviodepaoli/fileSemTUI/bodyAlligatorRequest.json',
-        JSON.stringify(bodyAlligatorRequestTemplate), function (err) {
-        if (err) throw err;
-        console.log('File /Users/flaviodepaoli/fileSemTUI/bodyAlligatorRequest.json saved!');
-    });
+    // fs.writeFile('../../fileSemTUI/bodyAlligatorRequest.json',
+    //     JSON.stringify(bodyAlligatorRequestTemplate), function (err) {
+    //     if (err) throw err;
+    //     console.log('File ../../fileSemTUI/bodyAlligatorRequest.json saved!');
+    // });
 
     const res = await axios.post(postUrl + "?token=" + access_token, bodyAlligatorRequestTemplate);
     function delay(ms) {

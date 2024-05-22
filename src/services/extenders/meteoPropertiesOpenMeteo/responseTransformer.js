@@ -47,10 +47,10 @@ export default async (req, res) => {
     });
   });
 
-  fs.writeFile('../../fileSemTUI/responseEXT-UI-meteo.json', JSON.stringify(req), function (err) {
-    if (err) throw err;
-    console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-UI-meteo.json saved!');
-  });
+  // fs.writeFile('../../fileSemTUI/responseEXT-UI-meteo.json', JSON.stringify(req), function (err) {
+  //   if (err) throw err;
+  //   console.log('File ../../fileSemTUI/responseEXT-UI-meteo.json saved!');
+  // });
 
   return response;
 }

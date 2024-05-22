@@ -1,10 +1,10 @@
 import fs from "fs";
 
 export default async (req, res) => {
-  // fs.writeFile('/Users/flaviodepaoli/fileSemTUI/responseEXT-labels.json',
+  // fs.writeFile('../../fileSemTUI/responseEXT-labels.json',
   //     JSON.stringify(res), function (err) {
   //       if (err) throw err;
-  //       console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-labels.json saved!');
+  //       console.log('File ../../fileSemTUI/responseEXT-labels.json saved!');
   //     });
 
   const { items, props } = req.processed;
@@ -119,11 +119,11 @@ export default async (req, res) => {
     "meta": {}
   };
 
-  fs.writeFile('/Users/flaviodepaoli/fileSemTUI/responseEXT-UI-labels.json',
-      JSON.stringify(response), function (err) {
-        if (err) throw err;
-        // console.log('File /Users/flaviodepaoli/fileSemTUI/responseEXT-UI-labels.json saved!');
-      });
+  // fs.writeFile('../../fileSemTUI/responseEXT-UI-labels.json',
+  //     JSON.stringify(response), function (err) {
+  //       if (err) throw err;
+  //       // console.log('File ../../fileSemTUI/responseEXT-UI-labels.json saved!');
+  //     });
 
   return response;
 }

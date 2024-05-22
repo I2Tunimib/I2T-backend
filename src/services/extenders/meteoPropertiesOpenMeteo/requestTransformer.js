@@ -6,10 +6,10 @@ import fs from "fs";
 const { endpoint } = config.private;
 
 export default async (req) => {
-    fs.writeFile('../../fileSemTUI/requestEXT-UI-meteo.json', JSON.stringify(req), function (err) {
-        if (err) throw err;
-        console.log('File /Users/flaviodepaoli/fileSemTUI/requestEXT-UI-meteo.json saved!');
-    });
+    // fs.writeFile('../../fileSemTUI/requestEXT-UI-meteo.json', JSON.stringify(req), function (err) {
+    //     if (err) throw err;
+    //     console.log('File ../../fileSemTUI/requestEXT-UI-meteo.json saved!');
+    // });
 //    console.log(`*** endpoint: ${endpoint}`);
 
     const { items, props } = req.processed;
