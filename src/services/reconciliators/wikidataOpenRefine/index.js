@@ -4,11 +4,13 @@ export default {
     processRequest: true
   },
   public: {
-    name: 'Wikidata linking service (OpenRefine)',
+    name: 'Linking: Wikidata (OpenRefine)',
     prefix: 'wd',
     relativeUrl: '/wikidata',
-    description: 'A general-purpose reconciliation service based on OpenRefine API. Add IDs, labels and descriptions ' +
-        'from Wikidata. This service might be slow.',
+    description: 'A general-purpose reconciliation service based on OpenRefine API. Add Wikidata IDs, labels and ' +
+        'descriptions.' +
+        '*** Input: A column with mentions (strings) to reconcile. ' +
+        '*** Output: Metadata associated with body cells and schema cells in W3C compliant format.',
     uri: 'https://www.wikidata.org/wiki/',
     metaToView: {
       id: {

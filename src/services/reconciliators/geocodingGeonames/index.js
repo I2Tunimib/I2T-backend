@@ -5,11 +5,10 @@ export default {
         processRequest: true
     },
     public: {
-        name: 'Geocoding linking service (Geonames)',
-        description: 'A geographic reconciliation and linking service that adds IDs as geographical coordinates ' +
-            '(lat,lng), labels, and descriptions from Geonames. ' +
-            '*** Input: A column with mentions (strings) strings to reconcile, and possibly ' +
-            'more columns to set a context for more accurate results. ' +
+        name: 'Geocoding: geo coordinates (GeoNames)',
+        description: 'A geographic reconciliation and linking service of locations at city or grater granularity. ' +
+            'Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from GeoNames. ' +
+            '*** Input: the content of the selected column, plus optional information taken from other columns. ' +
             '*** Output: Annotations associated with column cells cells in W3C compliant format.',
         relativeUrl: '/dataset',
         prefix: 'geoCoord',
