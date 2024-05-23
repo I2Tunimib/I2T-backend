@@ -5,7 +5,7 @@ export default {
         processRequest: true
     },
     public: {
-        name: 'Reconciled Column Extender (Wikidata)',
+        name: 'Annotation properties (Wikidata)',
         relativeUrl: '/entity/labels',
         description: 'Consolidate wikidata ID, URI, name or descriptions of entities in the selected column.' +
             '<br><strong>Input</strong>: A column reconciled against Wikidata + a selection of properties.' +

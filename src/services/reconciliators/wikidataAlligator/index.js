@@ -5,10 +5,11 @@ export default {
         processRequest: true
     },
     public: {
-        name: 'Wikidata linking service (Alligator)',
-        description: 'A general purpose reconciliation and linking service that adds IDs, labels, descriptions and ' +
-            'types to body cells (mentions), and types and properties to header cells (schema) from Wikidata. ' +
-            '*** Input: A column with mentions (strings) strings to reconcile, and possibly ' +
+        name: 'Linking: Wikidata (Alligator)',
+        description: 'A general purpose reconciliation and linking service that use Alligator to add Wikidata IDs, ' +
+            'labels, descriptions and types to body cells (mentions), and types and properties ' +
+            'to header cells (schema). ' +
+            '*** Input: A column with mentions (strings) to reconcile, and possibly ' +
             'more columns to set a context for more accurate results. ' +
             '*** Output: Metadata associated with body cells and schema cells in W3C compliant format.',
         relativeUrl: '/dataset',

@@ -5,10 +5,10 @@ export default {
         processRequest: true
     },
     public: {
-        name: 'Geonames linking service',
-        description: 'A geographic reconciliation and linking service that adds IDs, labels, and descriptions ' +
-            'from Geonames. ' +
-            '*** Input: A column with mentions (strings) strings to reconcile, and possibly ' +
+        name: 'Linking: GeoNames (GeoNames)',
+        description: 'A geographic reconciliation and linking service that adds GeoNames IDs, labels, and ' +
+            'descriptions. ' +
+            '*** Input: A column with mentions (strings) to reconcile, and possibly ' +
             'more columns to set a context for more accurate results. ' +
             '*** Output: Annotations associated with column cells cells in W3C compliant format.',
         relativeUrl: '/dataset',

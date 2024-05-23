@@ -104,10 +104,6 @@ const DatasetsController = {
     const { idDataset } = req.params;
     // Flavio
     const addTableData = [idDataset, name, file];
-    fs.writeFile('../../fileSemTUI/addTable.json', JSON.stringify(addTableData), function (err) {
-      if (err) throw err;
-      console.log('File ../../fileSemTUI/addTable.json saved!');
-    });
 
     try {
       const user = AuthService.verifyToken(req);
