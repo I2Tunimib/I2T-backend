@@ -8,7 +8,7 @@ export default {
         relativeUrl: '',
         description: 'Add properties for the geo points in the selected reconclied column ' +
             '(latitude,longitude) in a given day in another column (yyyy-mm-dd).' +
-            '<br>Only dates prior to 10 days of the current date are covered. <br>All dates in CET timezone.<br>' +
+            '<br>Only dates prior to 5 days of the current date are covered. <br>All dates in CET timezone.<br>' +
             '<br><strong>Input</strong>: A column reconciled with latitute and longitude + a second ' +
             'column with dates.' +
             '<br><strong>Input format</strong>: geo coordinates IDs (lat,lon), like "georss:52.51604,13.37691", ' +
@@ -33,13 +33,23 @@ export default {
                 rules: ['required'],
                 options: [
                     {
+                        id: 'daylight_duration',
+                        label: 'Number of seconds of daylight',
+                        value: 'daylight_duration'
+                    },
+                    {
+                        id: 'light_hours',
+                        label: 'Sun rise and set times UTC in ISO8601',
+                        value: 'light_hours'
+                    },
+                    {
                         id: 'apparent_temperature_max',
-                        label: 'Maximum daily apparent temperature in °C',
+                        label: 'Maximum daily temperature in °C',
                         value: 'apparent_temperature_max'
                     },
                     {
                         id: 'apparent_temperature_min',
-                        label: 'Minimum daily apparent temperature in °C',
+                        label: 'Minimum daily temperature in °C',
                         value: 'apparent_temperature_min'
                     },
                     {
