@@ -16,8 +16,12 @@ export default async (req) => {
     const { dates: datesInput, weatherParams: weatherParamsInput } = props;
 
     // process weather params
-    const weatherParams = weatherParamsInput.join(',');
-//    console.log(`*** weather params: ${weatherParams}`); // apparent_temperature_max,apparent_temperature_min
+    let weatherParams = weatherParamsInput.join(',');
+   // console.log(`*** weather params: ${weatherParams}`); // apparent_temperature_max,apparent_temperature_min
+    if (weatherParams.includes('light_hours')) {
+        // Replace 'light_hours' with 'sunset,sunrise'
+        weatherParams = weatherParams.replace('light_hours', 'sunset,sunrise');
+    }
 
     // for each column to extend
     const allResponses = await Promise.all(Object.keys(items).map(async (colId) => {
@@ -25,7 +29,6 @@ export default async (req) => {
 //        console.log(`*** columnItems: ${JSON.stringify(columnItems)}`); // {"georss:52.51604,13.37691":["r0","r1"], }
 
         let requests = [];
-
         Object.keys(columnItems).forEach((metaId) => {
             const [prefix, coord] = metaId.split(':');
             const [lat, lon] = coord.split(',');

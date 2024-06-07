@@ -21,7 +21,17 @@ export default async (req, res) => {
         // for each combination offest_weatherParam build a column
         weatherParameters.forEach((param) => {
           // for each item in weatherParameters build a column
-          const colId = `${inputColumns[colIndex]}_${param}`;
+          const columNames = { // to cahnge the default names of the new columns
+            'apparent_temperature_max': 'temperature_max',
+            'apparent_temperature_min': 'temperature_min'
+          };
+          let columnName = param;
+          Object.keys(columNames).forEach(key => {
+            if (columnName.includes(key)) {
+              columnName = columnName.replace(key, columNames[key]);
+            }
+          });
+          const colId = `${inputColumns[colIndex]}_${columnName}`;
 //          console.log(`***  param: ${param} --- daily: ${JSON.stringify(data.daily[param])} --- colId: ${colId}`);
           if (!(colId in response.columns)) {
             response.columns[colId] = {
