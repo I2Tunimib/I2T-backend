@@ -7,10 +7,10 @@ export default {
     public: {
         name: 'Linking: GeoNames (GeoNames)',
         description: 'A geographic reconciliation and linking service that adds GeoNames IDs, labels, and ' +
-            'descriptions. ' +
-            '*** Input: A column with mentions (strings) to reconcile, and possibly ' +
+            'descriptions. <br>' +
+            '<br><strong>Input</strong>: A column with mentions (strings) to reconcile, and possibly ' +
             'more columns to set a context for more accurate results. ' +
-            '*** Output: Annotations associated with column cells cells in W3C compliant format.',
+            '<br><strong>Output</strong>: Annotations associated with column cells in W3C compliant format.',
         relativeUrl: '/dataset',
         prefix: 'geo',
         uri: 'http://www.geonames.org/',

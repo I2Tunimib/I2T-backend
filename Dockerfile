@@ -16,5 +16,5 @@ COPY . .
 # explicitly tell docker to copy .env file or it won't be copied to image
 # COPY .env .
 
-EXPOSE 3003
+EXPOSE 3004
 CMD [ "npm", "run", "start-prod" ]

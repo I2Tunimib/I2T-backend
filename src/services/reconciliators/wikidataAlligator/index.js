@@ -8,10 +8,10 @@ export default {
         name: 'Linking: Wikidata (Alligator)',
         description: 'A general purpose reconciliation and linking service that use Alligator to add Wikidata IDs, ' +
             'labels, descriptions and types to body cells (mentions), and types and properties ' +
-            'to header cells (schema). ' +
-            '*** Input: A column with mentions (strings) to reconcile, and possibly ' +
+            'to header cells (schema). <br>' +
+            '<br><strong>Input</strong>: A column with mentions (strings) to reconcile, and possibly ' +
             'more columns to set a context for more accurate results. ' +
-            '*** Output: Metadata associated with body cells and schema cells in W3C compliant format.',
+            '<br><strong>Output</strong>: Metadata associated with body cells and schema cells in W3C compliant format.',
         relativeUrl: '/dataset',
         prefix: 'wdA',
         uri: 'https://www.wikidata.org/wiki/',

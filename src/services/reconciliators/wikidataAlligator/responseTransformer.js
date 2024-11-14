@@ -12,9 +12,9 @@ function extractIdRow(inputString) {
 }
 
 export default async (req, res) => {
-    // fs.writeFile('../../fileSemTUI/response-Alligator.json', JSON.stringify(res), function (err) {
-    //     if (err) throw err;
-    //     console.log('File ../../fileSemTUI/response-Alligator.json saved!');
+    // fs.writeFile('/home/semtui/fileSemTUI/response-Alligator.json', JSON.stringify(res), function (err) {
+    //    if (err) throw err;
+    //     console.log('File /home/semtui/fileSemTUI/response-Alligator.json saved!');
     // });
     const { items } = req.original;
     const prefix = config.public.prefix;
@@ -45,7 +45,7 @@ export default async (req, res) => {
             }
         ]
     }
-    console.log(`*** response alligator *** header: ${JSON.stringify(header)}`)
+    // console.log(`*** response alligator *** header: ${JSON.stringify(header)}`)
     response.push(header);
 
     for (let mention of items) {
@@ -55,7 +55,7 @@ export default async (req, res) => {
             const foundObj = cea.find((obj) => obj.idRow === (idRow+1) && obj.idColumn === 0);
             // console.log(`*** response alligator *** foundObj: ${JSON.stringify(foundObj)}`);
             if (foundObj !== undefined) {
-                const metadata = foundObj.entity;
+                const metadata = foundObj.entities;
                 const semTUIMetadata = metadata.map(({ delta, ...rest }) => ({
                     ...rest,
                     // type: [], // Add the "type" field with an empty array
@@ -65,7 +65,7 @@ export default async (req, res) => {
                     id: mention.id,
                     metadata: semTUIMetadata
                 };
-                // console.log(`*** response alligator *** foundObj.entity: ${JSON.stringify(foundObj.entity)}`);
+                // console.log(`*** response alligator *** foundObj.entities: ${JSON.stringify(foundObj.entities)}`);
                 response.push(cellAnnotation);
             }
         }

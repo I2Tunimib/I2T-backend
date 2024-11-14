@@ -7,9 +7,9 @@ export default {
     public: {
         name: 'Geocoding: geo coordinates (GeoNames)',
         description: 'A geographic reconciliation and linking service of locations at city or grater granularity. ' +
-            'Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from GeoNames. ' +
-            '*** Input: the content of the selected column, plus optional information taken from other columns. ' +
-            '*** Output: Annotations associated with column cells cells in W3C compliant format.',
+            'Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from GeoNames. <br>' +
+            '<br><strong>Input</strong>: the content of the selected column, plus optional information taken from other columns. ' +
+            '<br><strong>Output</strong>: Annotations associated with column cells in W3C compliant format.',
         relativeUrl: '/dataset',
         prefix: 'geoCoord',
         uri: 'http://www.google.com/maps/place/',

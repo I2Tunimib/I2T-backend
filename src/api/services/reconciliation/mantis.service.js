@@ -69,18 +69,24 @@ const transformMetadata = (table, metadata) => {
     return table;
 }
 const transformCTA = (table, cta) => {
+// 	console.log("**** mantis transformCTA: table", JSON.stringify(table));
+//	console.log("**** mantis transformCTA: cta", JSON.stringify(cta));
     const columnKeys = Object.keys(table.columns);
     cta.forEach((item, index) => {
-        const types = item.types.map((type) => ({
-            id: `wd:${type}`,
-            match: index === 0,
-            name: `wd:${type}`,
-            score: 1
-        }))
+//	    console.log("**** mantis transformCTA: item", JSON.stringify(item));
+        const types = item.types.map((type) => { 
+//	    console.log("**** mantis transformCTA: type", JSON.stringify(type));
+	    return {
+                id: `wd:${type.id}`,
+                match: index === 0,
+                name: `${type.name}`,
+                score: `${type.score}`
+            }
+	});
         table.columns[columnKeys[item.idColumn]].metadata = [{
             type: types,
             property: []
-        }]
+        }];
     });
     return table;
 }
@@ -100,7 +106,8 @@ const getCEAMetadata = (entities) => {
         match = {value: false};
     }
     const meta = entities.map((entity, index) => {
-        const {id: entityId, score, type, name, match, ...rest} = entity;
+	//  console.log("**** mantis service: entity, index ", entity, index);
+        const {id: entityId, score, types, name, match, ...rest} = entity;
         const id = `wd:${entityId}`;
         if (index === 0) {
             lowestScore = score;
@@ -109,9 +116,10 @@ const getCEAMetadata = (entities) => {
             lowestScore = score < lowestScore ? score : lowestScore;
             highestScore = score > highestScore ? score : highestScore;
         }
+	    // console.log("**** mantis service: types ", types);
         return {
             id,
-            type: type.map((item) => {
+            type: types.map((item) => {
                 return {
                     ...item,
                     id: `wd:${item.id}`
@@ -134,15 +142,17 @@ const getCEAMetadata = (entities) => {
     }
 }
 const transformCPA = (table, cpa) => {
+//	console.log("**** mantis transformCPA: cpa", JSON.stringify(cpa));
     const columnKeys = Object.keys(table.columns);
     cpa.forEach((item, index) => {
-        const {idSourceColumn, idTargetColumn, predicate} = item;
+//	    console.log("**** mantis transformCPA: item", JSON.stringify(item));
+        const {idSourceColumn, idTargetColumn, predicates} = item;
         const propertyItem = {
-            id: `wd:${predicate}`,
+            id: `wd:${predicates[0].id}`,
             obj: columnKeys[idTargetColumn],
-            name: `wd:${predicate}`,
+            name: `${predicates[0].name}`,
             match: true,
-            score: 1
+            score: `${predicates[0].score}`
         }
         table.columns[columnKeys[idSourceColumn]].metadata[0] = {
             ...table.columns[columnKeys[idSourceColumn]].metadata[0],
@@ -172,8 +182,8 @@ const transformCEA = (table, cea) => {
     let minMetaScore = 0;
     let maxMetaScore = 0;
     cea.forEach((item) => {
-        const {idRow, idColumn, entity} = item;
-        const {metadata, highestScore, lowestScore, match} = getCEAMetadata(entity);
+        const {idRow, idColumn, entities} = item;
+        const {metadata, highestScore, lowestScore, match} = getCEAMetadata(entities);
         if (match.value) {
             table.columns[columnKeys[idColumn]].context.wd.reconciliated += 1;
         }
@@ -234,6 +244,7 @@ const handleAnnotationCompletion = async ({idDataset, idTable}) => {
         try {
             const {metadata} = mantisTable;
             const {cea, cta, cpa} = mantisTable.semanticAnnotations;
+//		console.log("**** mantis handleAnnotationCompletion: cta", JSON.stringify(cta));
             let tableData = table;
             tableData = transformMetadata(tableData, metadata);
             tableData = transformCTA(tableData, cta);
@@ -295,6 +306,7 @@ const MantisService = {
     getTable: async (idDataset, idTable) => {
         // const result = await axios.get(`${MANTIS}/dataset/${idDataset}/table/${idTable}?stringId=true&token=${MANTIS_AUTH_TOKEN}`)
         const result = await axios.get(`${MANTIS}/dataset/${idDataset}/table/${idTable}?page=1&per_page=90&token=${MANTIS_AUTH_TOKEN}`)
+	// console.log(`**** get : ${JSON.stringify(result.data.data, null, 2)}`);
         return result.data.data;
     },
     checkPendingTable: async (io) => {

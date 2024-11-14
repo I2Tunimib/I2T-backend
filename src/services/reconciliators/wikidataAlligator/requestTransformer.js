@@ -84,14 +84,17 @@ export default async (req) => {
     } else {
         console.log (`*** request alligator ### OK status code returned by alligator is: ${res.status} `);
         const getUrl = endpoint + relativeUrl + "/EMD-BC/table/" + tableName;
-        console.log(`*** request alligator *** getUrl to alligator: ${getUrl}?token=${access_token}`);
+	const itemsPerPage = req.original.items.length;
+        console.log(`*** request alligator *** getUrl to alligator: ${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`);
         let annotation;
         let status = "DOING";
         while ( status !== "DONE") {
-            // await delay(10000);
-            annotation = await axios.get(getUrl + "?token=" + access_token);
-            status = annotation.data.status;
+            await delay(3000);
+            annotation = await axios.get(`${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`);
+            status = annotation.data.data.status;
+            // console.log(`*** get Alligator: status ${annotation.data.data.status}`);
         }
-        return annotation.data;
+	// console.log(`*** get Alligator: done`);
+        return annotation.data.data;
     }
 }
