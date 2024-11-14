@@ -7,9 +7,9 @@ export default {
   public: {
     name: 'Geocoding: geo coordinates (HERE)',
     description: 'A geographic reconciliation and linking service of locations at street address or grater granularity. ' +
-        'Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from HERE. ' +
-        '*** Input: the content of the selected column, plus optional information taken from other columns.' +
-        '*** Output: Annotations (id and name) associated with body cells. Ids are formatted like ' +
+        'Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from HERE. <br>' +
+        '<br><strong>Input</strong>: the content of the selected column, plus optional information taken from other columns.' +
+        '<br><strong>Output</strong>: Annotations (id and name) associated with body cells. Ids are formatted like ' +
         '"georss:lat,lon". Names are the official Latin names of the addresses of the reconciled locations.',
     relativeUrl: '/here',
     prefix: 'georss',
