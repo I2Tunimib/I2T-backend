@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import axios from 'axios';
 
 const { endpoint } = config.private;
@@ -26,7 +26,7 @@ async function makeRequest(endpoint, payload, row, colName) {
   }catch(error){
     return {'row': row, 'colName': colName, 'items': []};
   }
-  
+
 }
 
 function prepareDict(itemProp, items, props) {
@@ -37,7 +37,7 @@ function prepareDict(itemProp, items, props) {
     if (splitted[1] !== undefined) {
       colName = splitted[1];
       dict[splitted[0]]={};
-      dict[splitted[0]][itemProp] = item.label; 
+      dict[splitted[0]][itemProp] = item.label;
       Object.keys(props).forEach(prop => {
         dict[splitted[0]][prop] = props[prop][item.id.split('$')[0]][0];
       })
@@ -61,11 +61,11 @@ function fixOptionalField(props, column, name) {
 export default async (req) => {
   const { items } = req.original;
   let { props } = req.original;
-  
+
 
   const firstRelevantProp = props["atokaFirstRel"];
   delete props["atokaFirstRel"];
-  
+
   Object.keys(props).forEach(prop => {
     if(prop.includes("atoka") === false){
       props = fixOptionalField(props, prop, "atoka"+prop);
@@ -75,7 +75,7 @@ export default async (req) => {
   let dataRequest = prepareDict(firstRelevantProp, items, props);
   const { colName } = dataRequest;
   dataRequest = dataRequest.dict;
-  
+
 
   return Promise.all(Object.keys(dataRequest).map(async (data) => {
     const payload = preparePayloadNew(dataRequest[data], access_token, 10);

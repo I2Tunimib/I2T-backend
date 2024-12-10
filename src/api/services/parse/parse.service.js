@@ -4,8 +4,8 @@ import csv from 'csv-parse';
 import {parse} from 'JSONStream';
 import {PassThrough} from 'stream';
 import yaml from 'js-yaml';
-import ParseW3C from './parse-w3c.service';
-import {cloneStream} from '../../../utils/cloneStream';
+import ParseW3C from './parse-w3c.service.js';
+import {cloneStream} from '../../../utils/cloneStream.js';
 
 const ROW_LIMIT = process.env.ROW_LIMIT;
 

@@ -1,9 +1,9 @@
 import axios from 'axios';
 // import CONFIG from '../../config/index';
-import reconciliationPipeline from '../services/reconciliation/reconciliation-pipeline';
-import config from '../../config/index';
+import reconciliationPipeline from '../services/reconciliation/reconciliation-pipeline.js';
+import config from '../../config/index.js';
 import path from 'path';
-import MantisService from '../services/reconciliation/mantis.service';
+import MantisService from '../services/reconciliation/mantis.service.js';
 
 const __dirname = path.resolve();
 
@@ -56,7 +56,7 @@ const ReconciliationController = {
     //       io,
     //       localDatasetId: idDataset,
     //       localTableId: idTable,
-    //       mantisDatasetId, 
+    //       mantisDatasetId,
     //       mantisTableId
     //     });
     //     res.json({

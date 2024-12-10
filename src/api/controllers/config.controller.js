@@ -1,4 +1,4 @@
-import config from '../../config/index';
+import config from '../../config/index.js';
 
 const { extenders: extConfig, reconciliators: reconConfig } = config;
 

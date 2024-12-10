@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import axios from 'axios';
 
 const {endpoint} = config.private;
@@ -19,7 +19,7 @@ export default async (req) => {
     }, []);
 
     const res = await axios.get(`${endpoint}${ids.join('|')}`);
-    
+
     return {
       res: res.data
     }

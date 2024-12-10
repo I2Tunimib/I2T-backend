@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import asyncMiddleware from '../middleware/async.middleware';
-import ConfigController from '../controllers/config.controller';
+import asyncMiddleware from '../middleware/async.middleware.js';
+import ConfigController from '../controllers/config.controller.js';
 
 const router = Router();
 

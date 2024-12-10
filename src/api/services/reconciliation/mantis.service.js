@@ -1,6 +1,6 @@
-import FileSystemService from '../datasets/datasets.service';
-import ExportService from '../export/export.service';
-import ParseW3C from '../parse/parse-w3c.service';
+import FileSystemService from '../datasets/datasets.service.js';
+import ExportService from '../export/export.service.js';
+import ParseW3C from '../parse/parse-w3c.service.js';
 import {nanoid} from 'nanoid';
 import {writeFile, readFile} from 'fs/promises';
 import {createReadStream} from 'fs';
@@ -8,9 +8,9 @@ import {concatLimit, queue} from 'async';
 import FormData from 'form-data';
 import axios from 'axios';
 import path from 'path';
-import {KG_INFO} from '../../../utils/constants'
-import config from '../../../config/index';
-import {log} from '../../../utils/log';
+import {KG_INFO} from '../../../utils/constants.js'
+import config from '../../../config/index.js';
+import {log} from '../../../utils/log.js';
 import {table} from 'console';
 
 const __dirname = path.resolve();
@@ -74,7 +74,7 @@ const transformCTA = (table, cta) => {
     const columnKeys = Object.keys(table.columns);
     cta.forEach((item, index) => {
 //	    console.log("**** mantis transformCTA: item", JSON.stringify(item));
-        const types = item.types.map((type) => { 
+        const types = item.types.map((type) => {
 //	    console.log("**** mantis transformCTA: type", JSON.stringify(type));
 	    return {
                 id: `wd:${type.id}`,

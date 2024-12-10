@@ -1,5 +1,5 @@
-import config from '../../../config/index';
-import { postTransform, getUniqueMaps } from './utils';
+import config from '../../../config/index.js';
+import { postTransform, getUniqueMaps } from './utils.js';
 
 const { extenders } = config;
 
@@ -13,10 +13,10 @@ const extensionPipeline = async (reqBody) => {
     throw new Error('Service not found');
   }
 
-  const { 
+  const {
     info,
     requestTransformer,
-    responseTransformer 
+    responseTransformer
   } = service;
 
   if (!requestTransformer) {
@@ -30,12 +30,12 @@ const extensionPipeline = async (reqBody) => {
 
   const { items, ...props } = rest;
 
-  const req = { 
+  const req = {
     // original request
-    original: { items, props }, 
+    original: { items, props },
     // processed request with unique items
-    ...(info.private.processRequest && { 
-      processed: { items: getUniqueMaps(items), props } 
+    ...(info.private.processRequest && {
+      processed: { items: getUniqueMaps(items), props }
     })
   };
 

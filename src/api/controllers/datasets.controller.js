@@ -1,8 +1,8 @@
-import DatasetsService from '../services/datasets/datasets.service';
-import ExportService from '../services/export/export.service';
+import DatasetsService from '../services/datasets/datasets.service.js';
+import ExportService from '../services/export/export.service.js';
 import jwt from 'jsonwebtoken';
-import config from '../../config/index';
-import AuthService from '../services/auth/auth.service';
+import config from '../../config/index.js';
+import AuthService from '../services/auth/auth.service.js';
 import fs from "fs";
 
 const {

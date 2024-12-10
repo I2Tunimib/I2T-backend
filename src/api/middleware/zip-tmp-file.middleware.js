@@ -1,5 +1,5 @@
-import isEligibleRequest from "express-fileupload/lib/isEligibleRequest";
-import FileSystemService from "../services/datasets/datasets.service";
+import isEligibleRequest from "express-fileupload/lib/isEligibleRequest.js";
+import FileSystemService from "../services/datasets/datasets.service.js";
 import { rm } from 'fs/promises';
 
 const VALID_TYPES = ['application/x-zip-compressed', 'application/zip'];
@@ -9,8 +9,8 @@ const isZipFile = (mimetype) => VALID_TYPES.includes(mimetype);
 export default async (req, res, next) => {
   // check if upload request
   if (isEligibleRequest(req)) {
-    const { files } = req;  
-  
+    const { files } = req;
+
     for (const file of Object.keys(files)) {
       const { mimetype, tempFilePath } = files[file]
 
@@ -23,7 +23,7 @@ export default async (req, res, next) => {
       }
     }
   }
-  
-  
+
+
   next();
 }

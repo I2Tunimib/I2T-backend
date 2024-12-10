@@ -6,10 +6,10 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import morgan, { token } from 'morgan';
 import compression from 'compression';
-import routes from './api/routes/index';
-import config from './config/index';
-import { colorString } from './utils/log';
-import zipTmpFileMiddleware from './api/middleware/zip-tmp-file.middleware';
+import routes from './api/routes/index.js';
+import config from './config/index.js';
+import { colorString } from './utils/log.js';
+import zipTmpFileMiddleware from './api/middleware/zip-tmp-file.middleware.js';
 const __dirname = path.resolve();
 
 

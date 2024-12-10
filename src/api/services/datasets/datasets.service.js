@@ -3,13 +3,13 @@ import {createReadStream, createWriteStream, existsSync, lstatSync} from 'fs';
 import {queue} from 'async';
 import unzipper from 'unzipper';
 import {spawn} from 'child_process';
-import ParseService from '../parse/parse.service';
-import MantisService from '../reconciliation/mantis.service';
-import config from '../../../config/index';
+import ParseService from '../parse/parse.service.js';
+import MantisService from '../reconciliation/mantis.service.js';
+import config from '../../../config/index.js';
 import path from "path"
-import {KG_INFO} from '../../../utils/constants'
-import {log} from '../../../utils/log';
-import ParseW3C from '../parse/parse-w3c.service';
+import {KG_INFO} from '../../../utils/constants.js'
+import {log} from '../../../utils/log.js';
+import ParseW3C from '../parse/parse-w3c.service.js';
 import {nanoid} from 'nanoid';
 import fs from 'fs';
 

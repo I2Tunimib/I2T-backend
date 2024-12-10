@@ -1,5 +1,6 @@
 import fs from "fs";
-import CircularJSON from "circular-json";
+// import CircularJSON from "circular-json";
+import { parse, stringify } from 'flatted';
 
 const asyncMiddleware = fn => (...args) => {
   const fnReturn = fn(...args);
