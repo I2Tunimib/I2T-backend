@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import axios from 'axios';
 
 const { endpoint } = config.private;
@@ -82,7 +82,7 @@ export default async (req) => {
     return getPropertyCode(prope, propDict);
   });
 
-  
+
 
 
   return Promise.all(Object.keys(items).map(async (colId) => {
@@ -99,7 +99,7 @@ export default async (req) => {
     let select = creaSelect(prop);
     let where = creaWhere(ids, prop);
     let query = creaQuery(select, where);
-    
+
     const result = await axios.get(endpoint + encodeURIComponent(query));
     res = result.data.results.bindings;
     res.push({'prop' : prop})

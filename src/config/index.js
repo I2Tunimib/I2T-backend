@@ -1,9 +1,9 @@
-import CONFIG from '../../config';
+import CONFIG from '../../config.js';
 import dotenv from 'dotenv';
 import { readdirSync, existsSync } from 'fs';
 import { writeFile, mkdir } from 'fs/promises';
-import { log } from '../utils/log';
-import { safeWriteFileToPath } from '../utils/safeWriteFile';
+import { log } from '../utils/log.js';
+import { safeWriteFileToPath } from '../utils/safeWriteFile.js';
 const env = dotenv.config();
 
 if (process.env.ENV === 'DEV' && env.error) {

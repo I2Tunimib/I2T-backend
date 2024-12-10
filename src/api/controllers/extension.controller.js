@@ -1,5 +1,5 @@
-import extensionPipeline from "../services/extension/extension-pipeline";
-import config from '../../config/index';
+import extensionPipeline from "../services/extension/extension-pipeline.js";
+import config from '../../config/index.js';
 
 const { extenders } = config;
 

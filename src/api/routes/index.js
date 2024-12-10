@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import configRoutes from './config.route';
-import reconciliationRoutes from './reconciliation.route';
-import datasetsRoutes from './datasets.route';
-import extensionRoutes from './extension.route';
-import authRoutes from './auth.route';
+import configRoutes from './config.route.js';
+import reconciliationRoutes from './reconciliation.route.js';
+import datasetsRoutes from './datasets.route.js';
+import extensionRoutes from './extension.route.js';
+import authRoutes from './auth.route.js';
 
 const router = Router();
 

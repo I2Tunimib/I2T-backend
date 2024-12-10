@@ -1,5 +1,5 @@
-import ParseService from "../services/parse/parse.service";
-import config from "../../config/index";
+import ParseService from "../services/parse/parse.service.js";
+import config from "../../config/index.js";
 import jwt from 'jsonwebtoken';
 
 const {

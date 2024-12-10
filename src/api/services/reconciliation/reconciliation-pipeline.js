@@ -1,5 +1,5 @@
-import config from "../../../config/index";
-import { mapToUnique } from "./utils";
+import config from "../../../config/index.js";
+import { mapToUnique } from "./utils.js";
 
 const { reconciliators } = config;
 

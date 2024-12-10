@@ -1,7 +1,7 @@
-import server, { app } from './app';
+import server, { app } from './app.js';
 import { Server } from 'socket.io';
-import { log } from './utils/log';
-import MantisService from './api/services/reconciliation/mantis.service';
+import { log } from './utils/log.js';
+import MantisService from './api/services/reconciliation/mantis.service.js';
 
 
 const io = new Server(server, { cors: { origin: '*' } });

@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import axios from 'axios';
 
 const { endpoint } = config.private;
@@ -49,8 +49,8 @@ export default async (req) => {
   prop = prop.map((prope)=>{
     return prope.split(":")[1];
   });
-  
-  
+
+
   return Promise.all(Object.keys(items).map(async (colId) => {
 
     const columnItems = items[colId];

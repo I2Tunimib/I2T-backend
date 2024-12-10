@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import axios from 'axios';
 import fs from "fs";
 

@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import axios from 'axios';
 import { stringify } from 'qs';
 import fs from "fs";
@@ -30,7 +30,7 @@ export default async (req) => {
       columnItems[metaId].forEach((rowId) => {
         const date = datesInput[rowId];
 
-        requests.push({ 
+        requests.push({
           ids: id,
           rowId,
           dates: date,

@@ -1,4 +1,4 @@
-import config from "../../../config/index";
+import config from "../../../config/index.js";
 import jwt from 'jsonwebtoken';
 
 const {

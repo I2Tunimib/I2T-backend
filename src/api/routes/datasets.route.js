@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import asyncMiddleware from '../middleware/async.middleware';
-import DatasetsController from '../controllers/datasets.controller';
+import asyncMiddleware from '../middleware/async.middleware.js';
+import DatasetsController from '../controllers/datasets.controller.js';
 
 const router = Router();
 

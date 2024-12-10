@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 import fs from "fs";
 
 export default async (req, res) => {

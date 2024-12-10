@@ -1,4 +1,4 @@
-import { KG_INFO } from '../../../utils/constants';
+import { KG_INFO } from '../../../utils/constants.js';
 
 const mapToUnique = (column) => {
   return Object.keys(column).reduce((acc, rowId) => {

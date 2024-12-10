@@ -1,8 +1,8 @@
-import ParseService from './parse.service';
-import FileSystemService from '../datasets/datasets.service';
+import ParseService from './parse.service.js';
+import FileSystemService from '../datasets/datasets.service.js';
 import { PassThrough } from 'stream';
 import { parse } from 'JSONStream';
-import { KG_INFO } from '../../../utils/constants';
+import { KG_INFO } from '../../../utils/constants.js';
 
 const DEFAULT_HEADER_PROPERTIES = {
   label: '',

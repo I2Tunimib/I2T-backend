@@ -1,4 +1,4 @@
-import config from './index';
+import config from './index.js';
 
 const { uri } = config.public;
 const {min_threshold} = config.private;

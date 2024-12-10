@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import asyncMiddleware from '../middleware/async.middleware';
-import ReconciliationController from '../controllers/reconciliation.controller';
+import asyncMiddleware from '../middleware/async.middleware.js';
+import ReconciliationController from '../controllers/reconciliation.controller.js';
 
 const router = Router();
 
