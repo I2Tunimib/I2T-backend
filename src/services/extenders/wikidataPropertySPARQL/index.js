@@ -4,38 +4,20 @@ export default {
     processRequest: true
   },
   public: {
-    name: 'SPARQL (Wikidata)',
+    name: 'Wikidata properties',
     relativeUrl: '/wikidata/entities',
-    description: 'SPARQL queries to extract properties from wikidata for the entities in the selected column' +
-      ' <br> Add the <italic>*variables*</italic> for the query (e.g., ?elevation ?unit ?unitLabel). <br>' +
-      'The variable ?item is automatically added  with values in the selected column. <br>' +
-      'Then add the <italic>*body*</italic> of the query (e.g., ?item wdt:P2044 ?elevation .) <br>' +
-      'The VALUES clause is automatically added. <br>' +
-      'Note that some required properties may be missing in Wikidata.',
+    description: 'Retrieve Wikidata properties for the entities in the selected column' +
+      ' <br> Supply a list of <italic>*properties*</italic> separated by space (e.g., P625 P2044 ). <br>' +
+      'For each property, a new column, headed with the Wikidata label of the property, is added. <br>' +
+      'Note that, for each property, only one value per entity is returned. <br>' +
+      'Note that some values may be missing in Wikidata.',
     formParams: [
       {
-        id: 'variables',
-        description: '<strong>Write your SPARQL query</strong><br> SELECT ?item <italic>*variables*</italic>',
-        label: '*variables* for the query with format ?xxx',
+        id: 'properties',
+        description: '<strong>Write the list of desired properties</strong>',
+        label: '*properties* e.g.: P625 P2044 ',
         inputType: 'text',
         rules: ['required']
-      },
-      {
-        id: 'body',
-        description: 'WHERE { VALUES { ... } <italic>*body*</italic> }',
-        label: '*body* of the query:',
-        inputType: 'text',
-        rules: ['required']
-      },
-      {
-        id: 'order',
-        description: 'ORDER BY (optional)',
-        inputType: 'text',
-      },
-      {
-        id: 'limit',
-        description: 'LIMIT (optional)',
-        inputType: 'text',
       }
     ]
   }

@@ -12,7 +12,9 @@ export default async (req) => {
 
     const ids = Object.keys(columnItems).reduce((acc, metaId) => {
       const [prefix, id] = metaId.split(':');
-      if (prefix === 'wd') {
+      console.log("****** prefix:", prefix);
+      if (id.startsWith('Q')) {
+        console.log("****** id", id);
         acc.push(id);
       }
       return acc;
