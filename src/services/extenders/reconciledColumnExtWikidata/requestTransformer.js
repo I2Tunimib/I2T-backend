@@ -12,8 +12,11 @@ export default async (req) => {
     //     console.log('File ../../fileSemTUI/requestEXT-UI-labels.json saved!');
     // });
     const { items, props } = req.processed;
-    const idArray = Object.keys(items.buyer).map(key => key.replace("wd:", ""));
-    // console.log(`*** labels *** keyArray: ${idArray}`);
+    const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
+    console.log("********** Column name:", columnName)
+
+    const idArray = Object.keys(items[columnName]).map(key => key.replace(/^.*?:/, ""));
+    console.log(`*** labels *** keyArray: ${idArray}`);
 
     const bodyReqLabels = { "json": idArray };
 

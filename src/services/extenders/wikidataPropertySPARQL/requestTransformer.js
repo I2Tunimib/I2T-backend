@@ -70,18 +70,34 @@ export default async (req) => {
   });
 
   const { items, props } = req.processed;
-  const { variables: variablesString, body } = props;
+  // const { variables: variablesString, body } = props;
+  const { properties }= props;
 
   // Extract entities (Qxxx) from items.columnName
-  const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
+  const columnName = Object.keys(items)[0]; // Extract the column name (e.g., "Museum")
   console.log("********** Column name:", columnName)
   const entities = Object.keys(items[columnName]).map(label => label.split(":")[1]);
 
   // Extract variables from the string and add ?item if it is not included
-  const variablesArray = variablesString.split(" ").map(v => v.trim());
+  // Split by one or more spaces, trim each element, and then prefix with '?'
+  const variablesArray = properties
+    .split(/\s+/) // Split by one or more spaces
+    .filter(v => v.trim() !== "") // Remove any empty strings
+    .flatMap(v => [`?${v.trim()}`, `?${v.trim()}Label`]); // Generate both `?v` and `?vLabel`
   if (!variablesArray.includes('?item')) {
     variablesArray.push('?item');
   }
+
+// Transform the properties string into the WHERE part of a SPARQL query, removing extra spaces
+  let body = properties
+    .split(/\s+/)  // Split on one or more spaces
+    .map(prop => `?item wdt:${prop} ?${prop}.`)  // Create the SPARQL triples
+    .join(" ");  // Join them back with a single space
+  body += `
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en".  # Set language preference
+  }
+`;
 
   // Log entities, variables, and query body for debugging
   console.log("********** Entities:", entities);
