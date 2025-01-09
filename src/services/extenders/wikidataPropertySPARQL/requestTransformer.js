@@ -64,10 +64,10 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
  */
 export default async (req) => {
   // Save the request to a file (optional)
-  fs.writeFile('../../fileSemTUI/requestEXT-UI-SPARQL.json', JSON.stringify(req), function (err) {
-    if (err) throw err;
-    console.log('********** File ../../fileSemTUI/requestEXT-UI-SPARQL.json saved!');
-  });
+  // fs.writeFile('../../fileSemTUI/requestEXT-UI-SPARQL.json', JSON.stringify(req), function (err) {
+  //   if (err) throw err;
+  //   console.log('********** File ../../fileSemTUI/requestEXT-UI-SPARQL.json saved!');
+  // });
 
   const { items, props } = req.processed;
   // const { variables: variablesString, body } = props;
@@ -81,6 +81,7 @@ export default async (req) => {
   // Extract variables from the string and add ?item if it is not included
   // Split by one or more spaces, trim each element, and then prefix with '?'
   const variablesArray = properties
+    .trim() // Remove leading and trailing spaces
     .split(/\s+/) // Split by one or more spaces
     .filter(v => v.trim() !== "") // Remove any empty strings
     .flatMap(v => [`?${v.trim()}`, `?${v.trim()}Label`]); // Generate both `?v` and `?vLabel`
@@ -90,14 +91,14 @@ export default async (req) => {
 
 // Transform the properties string into the WHERE part of a SPARQL query, removing extra spaces
   let body = properties
-    .split(/\s+/)  // Split on one or more spaces
-    .map(prop => `?item wdt:${prop} ?${prop}.`)  // Create the SPARQL triples
-    .join(" ");  // Join them back with a single space
+    .trim() // Remove leading and trailing spaces
+    .split(/\s+/) // Split on one or more spaces
+    .map(prop => `?item wdt:${prop} ?${prop}.`) // Create the SPARQL triples
+    .join(" "); // Join them back with a single space
   body += `
   SERVICE wikibase:label {
     bd:serviceParam wikibase:language "en".  # Set language preference
-  }
-`;
+  }`;
 
   // Log entities, variables, and query body for debugging
   console.log("********** Entities:", entities);
@@ -109,10 +110,10 @@ export default async (req) => {
     const results = await queryWikidata(entities, variablesArray, body);
 
     // Save the response to a file (optional)
-    fs.writeFile('../../fileSemTUI/response-SPARQL.json', JSON.stringify(results), function (err) {
-      if (err) throw err;
-      console.log('********** File ../../fileSemTUI/response-SPARQL.json saved!');
-    });
+    // fs.writeFile('../../fileSemTUI/response-SPARQL.json', JSON.stringify(results), function (err) {
+    //   if (err) throw err;
+    //   console.log('********** File ../../fileSemTUI/response-SPARQL.json saved!');
+    // });
 
     // Return the obtained results
     return results;

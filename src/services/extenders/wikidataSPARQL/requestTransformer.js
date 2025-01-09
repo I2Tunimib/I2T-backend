@@ -64,10 +64,10 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
  */
 export default async (req) => {
   // Save the request to a file (optional)
-  fs.writeFile('../../fileSemTUI/requestEXT-UI-SPARQL.json', JSON.stringify(req), function (err) {
-    if (err) throw err;
-    console.log('********** File ../../fileSemTUI/requestEXT-UI-SPARQL.json saved!');
-  });
+  // fs.writeFile('../../fileSemTUI/requestEXT-UI-SPARQL.json', JSON.stringify(req), function (err) {
+  //   if (err) throw err;
+  //   console.log('********** File ../../fileSemTUI/requestEXT-UI-SPARQL.json saved!');
+  // });
 
   const { items, props } = req.processed;
   const { variables: variablesString, body } = props;
@@ -93,10 +93,10 @@ export default async (req) => {
     const results = await queryWikidata(entities, variablesArray, body);
 
     // Save the response to a file (optional)
-    fs.writeFile('../../fileSemTUI/response-SPARQL.json', JSON.stringify(results), function (err) {
-      if (err) throw err;
-      console.log('********** File ../../fileSemTUI/response-SPARQL.json saved!');
-    });
+    // fs.writeFile('../../fileSemTUI/response-SPARQL.json', JSON.stringify(results), function (err) {
+    //   if (err) throw err;
+    //   console.log('********** File ../../fileSemTUI/response-SPARQL.json saved!');
+    // });
 
     // Return the obtained results
     return results;
