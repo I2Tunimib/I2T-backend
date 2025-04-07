@@ -1,12 +1,12 @@
-import config from './index.js';
-import axios from 'axios';
+import config from "./index.js";
+import axios from "axios";
 import fs from "fs";
 
 const { endpoint } = config.private;
 const { access_token } = config.private;
 
 function getAddressFormat(items) {
-  return { 'location': items }
+  return { location: items };
 }
 
 export default async (req) => {
@@ -21,16 +21,49 @@ export default async (req) => {
   const { items } = req.processed;
   const requests = [];
 
-  Object.keys(items).forEach(item => {
-    let indice = req.processed.items[item][0].split('$')[0];
+  Object.keys(items).forEach((item) => {
+    let indice = req.processed.items[item][0].split("$")[0];
     let newItem = item;
-    if (req.original.props.secondPart !== undefined && req.original.props.secondPart[indice] !== undefined) {
+    // console.log(
+    //   `*** geonames request *** indice: ${indice} ${req.processed.items[item][0]}`
+    // );
+    // console.log(`item: ${item}`);
+    // console.log(`secondPart: ${JSON.stringify(req.original.props.secondPart)}`);
+    // console.log(`secondPart[indice]: ${req.original.props.secondPart[indice]}`);
+
+    // console.log(
+    //   `additionalColumns: ${JSON.stringify(
+    //     req.original.props.additionalColumns
+    //   )}`
+    // );
+    if (req.original.props.additionalColumns !== undefined) {
+      for (const [key, value] of Object.entries(
+        req.original.props.additionalColumns
+      )) {
+        if (req.original.props.additionalColumns[key][indice] !== undefined) {
+          newItem =
+            newItem +
+            " " +
+            req.original.props.additionalColumns[key][indice][0];
+        }
+      }
+    }
+    if (
+      req.original.props.secondPart !== undefined &&
+      req.original.props.secondPart[indice] !== undefined
+    ) {
       newItem = newItem + " " + req.original.props.secondPart[indice][0];
     }
-    if (req.original.props.thirdPart !== undefined && req.original.props.thirdPart[indice] !== undefined) {
+    if (
+      req.original.props.thirdPart !== undefined &&
+      req.original.props.thirdPart[indice] !== undefined
+    ) {
       newItem = newItem + " " + req.original.props.thirdPart[indice][0];
     }
-    if (req.original.props.fourthPart !== undefined && req.original.props.fourthPart[indice] !== undefined) {
+    if (
+      req.original.props.fourthPart !== undefined &&
+      req.original.props.fourthPart[indice] !== undefined
+    ) {
       newItem = newItem + " " + req.original.props.fourthPart[indice][0];
     }
     if (newItem.length > 1 && newItem !== "null" && newItem !== undefined) {
@@ -41,18 +74,23 @@ export default async (req) => {
 
   // console.log(`*** geonames request *** addressList: ${JSON.stringify(locationList)}`);
 
-// Create an array of promises for each request
-  locationList.forEach(location => {
-    const url = endpoint + "/searchJSON?maxRows=3&style=full&username=" + access_token + "&q=" + location.location;
+  // Create an array of promises for each request
+  locationList.forEach((location) => {
+    const url =
+      endpoint +
+      "/searchJSON?maxRows=3&style=full&username=" +
+      access_token +
+      "&q=" +
+      location.location;
     // console.log(`*** geonames request *** url: ${url}`);
     requests.push(axios.get(url));
   });
-
-// Execute all requests concurrently
+  console.log("requests", JSON.stringify(requests));
+  // Execute all requests concurrently
   const responses = await Promise.all(requests);
 
-// Collect all results in 'res'
-  const res = responses.map(response => response.data);
+  // Collect all results in 'res'
+  const res = responses.map((response) => response.data);
 
   // fs.writeFile('../../fileSemTUI/response-geonames.json', JSON.stringify(res), function (err) {
   //   if (err) throw err;
@@ -71,8 +109,8 @@ export default async (req) => {
   //   adminName1: item.adminName1
   // }));
 
-  const filteredData = res.map(entry => {
-    return entry.geonames.map(item => ({
+  const filteredData = res.map((entry) => {
+    return entry.geonames.map((item) => ({
       geonameId: item.geonameId,
       name: item.name,
       countryName: item.countryName,
@@ -81,7 +119,7 @@ export default async (req) => {
       lat: item.lat,
       lng: item.lng,
       score: item.score,
-      adminName1: item.adminName1
+      adminName1: item.adminName1,
     }));
   });
 
@@ -91,11 +129,7 @@ export default async (req) => {
   // });
 
   return {
-    'result': filteredData,
-    'labelDict': labelDict
-  }
-}
-
-
-
-
+    result: filteredData,
+    labelDict: labelDict,
+  };
+};
