@@ -1,7 +1,7 @@
-import config from './index.js';
-import axios from 'axios';
-import { stringify } from 'qs';
-import fs from 'fs';
+import config from "./index.js";
+import axios from "axios";
+import { stringify } from "qs";
+import fs from "fs";
 
 const { endpoint } = config.private;
 
@@ -13,36 +13,39 @@ const { endpoint } = config.private;
  * @returns {Promise<Array<Object>>} - Results of the query as an array of objects.
  */
 async function queryWikidata(items, variables, sparqlQueryBody) {
-
   // Ensure ?item is always included among the variables
   const uniqueVariables = new Set(variables);
-  uniqueVariables.add('?item'); // Adds ?item if it is not already included
+  uniqueVariables.add("?item"); // Adds ?item if it is not already included
 
   // Construct the VALUES clause
-  const itemsClause = items.map(item => `wd:${item}`).join(' ');
+  const itemsClause = items.map((item) => `wd:${item}`).join(" ");
 
   // Construct the full query
   const sparqlQuery = `
-    SELECT ${[...uniqueVariables].join(' ')} WHERE {
+    SELECT ${[...uniqueVariables].join(" ")} WHERE {
       VALUES ?item { ${itemsClause} }
       ${sparqlQueryBody}
     }
   `;
 
   console.log("********** SPARQL QUERY", sparqlQuery);
+  const encodedQuery = encodeURIComponent(sparqlQuery);
+  const url = `${endpoint}${encodedQuery}&format=json`;
 
   try {
     // Send the query to Wikidata
-    const response = await axios.get(endpoint, {
-      params: { query: sparqlQuery, format: 'json' },
-      headers: { 'User-Agent': 'Node.js SPARQL Client' },
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent": "Node.js SPARQL Client",
+        Accept: "application/sparql-results+json",
+      },
     });
 
     // Extract the results
     const bindings = response.data.results.bindings;
 
     // Convert to table format
-    const results = bindings.map(row => {
+    const results = bindings.map((row) => {
       const parsedRow = {};
       for (const [key, value] of Object.entries(row)) {
         parsedRow[key] = value.value; // Extracts the value from the SPARQL structure
@@ -52,7 +55,7 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
 
     return results;
   } catch (error) {
-    console.error('Error during SPARQL query:', error.message);
+    console.error("Error during SPARQL query:", error.message);
     throw error;
   }
 }
@@ -71,29 +74,31 @@ export default async (req) => {
 
   const { items, props } = req.processed;
   // const { variables: variablesString, body } = props;
-  const { properties }= props;
+  const { properties } = props;
 
   // Extract entities (Qxxx) from items.columnName
   const columnName = Object.keys(items)[0]; // Extract the column name (e.g., "Museum")
-  console.log("********** Column name:", columnName)
-  const entities = Object.keys(items[columnName]).map(label => label.split(":")[1]);
+  console.log("********** Column name:", columnName);
+  const entities = Object.keys(items[columnName]).map(
+    (label) => label.split(":")[1]
+  );
 
   // Extract variables from the string and add ?item if it is not included
   // Split by one or more spaces, trim each element, and then prefix with '?'
   const variablesArray = properties
     .trim() // Remove leading and trailing spaces
     .split(/\s+/) // Split by one or more spaces
-    .filter(v => v.trim() !== "") // Remove any empty strings
-    .flatMap(v => [`?${v.trim()}`, `?${v.trim()}Label`]); // Generate both `?v` and `?vLabel`
-  if (!variablesArray.includes('?item')) {
-    variablesArray.push('?item');
+    .filter((v) => v.trim() !== "") // Remove any empty strings
+    .flatMap((v) => [`?${v.trim()}`, `?${v.trim()}Label`]); // Generate both `?v` and `?vLabel`
+  if (!variablesArray.includes("?item")) {
+    variablesArray.push("?item");
   }
 
-// Transform the properties string into the WHERE part of a SPARQL query, removing extra spaces
+  // Transform the properties string into the WHERE part of a SPARQL query, removing extra spaces
   let body = properties
     .trim() // Remove leading and trailing spaces
     .split(/\s+/) // Split on one or more spaces
-    .map(prop => `?item wdt:${prop} ?${prop}.`) // Create the SPARQL triples
+    .map((prop) => `?item wdt:${prop} ?${prop}.`) // Create the SPARQL triples
     .join(" "); // Join them back with a single space
   body += `
   SERVICE wikibase:label {
@@ -118,7 +123,7 @@ export default async (req) => {
     // Return the obtained results
     return results;
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error("Error:", error.message);
     // throw error;
   }
 };
