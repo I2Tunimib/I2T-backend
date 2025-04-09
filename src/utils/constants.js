@@ -1,12 +1,26 @@
 export const KG_INFO = {
   geo: {
-    uri: 'http://www.geonames.org/'
+    uri: "http://www.geonames.org/",
   },
   dbp: {
-    uri: 'https://dbpedia.org/page/'
+    uri: "https://dbpedia.org/page/",
   },
   wd: {
-    uri: 'https://www.wikidata.org/wiki/'
-  }
-}
-
+    uri: "https://www.wikidata.org/wiki/",
+  },
+  wiki: {
+    uri: "https://www.wikidata.org/wiki/",
+  },
+  geoCoord: {
+    uri: "http://20.8.170.217:3002/geocoords",
+  },
+  georss: {
+    uri: "http://149.132.176.67:3002/map?polyline=",
+  },
+  atoka: {
+    uri: "https://atoka.io/public/en/company/-/",
+  },
+  atokaPeople: {
+    uri: "https://atoka.io/public/en/people/-/",
+  },
+};
