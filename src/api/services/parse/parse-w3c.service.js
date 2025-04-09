@@ -1,23 +1,23 @@
-import ParseService from './parse.service.js';
-import FileSystemService from '../datasets/datasets.service.js';
-import { PassThrough } from 'stream';
-import { parse } from 'JSONStream';
-import { KG_INFO } from '../../../utils/constants.js';
+import ParseService from "./parse.service.js";
+import FileSystemService from "../datasets/datasets.service.js";
+import { PassThrough } from "stream";
+import { parse } from "JSONStream";
+import { KG_INFO } from "../../../utils/constants.js";
 
 const DEFAULT_HEADER_PROPERTIES = {
-  label: '',
-  status: 'empty',
+  label: "",
+  status: "empty",
   // extension: '',
   context: {},
   metadata: [],
   // expanded: false
-}
+};
 
 const DEFAULT_CELL_PROPERTIES = {
-  label: '',
+  label: "",
   // editable: false,
   // expanded: false
-}
+};
 
 const ParseW3C = {
   getContext: (context) => {
@@ -27,7 +27,7 @@ const ParseW3C = {
         prefix,
         ...item,
         total: 0,
-        reconciliated: 0
+        reconciliated: 0,
       };
       return acc;
     }, {});
@@ -35,14 +35,18 @@ const ParseW3C = {
   updateColumnsStatus: (columns, rows) => {
     Object.keys(columns).forEach((colId) => {
       const { context } = columns[colId];
-      const totalReconciliated = Object.keys(context)
-        .reduce((acc, key) => acc + context[key].reconciliated, 0);
-      const hasMetadata = Object.keys(context).some((key) => context[key].total > 0);
+      const totalReconciliated = Object.keys(context).reduce(
+        (acc, key) => acc + context[key].reconciliated,
+        0
+      );
+      const hasMetadata = Object.keys(context).some(
+        (key) => context[key].total > 0
+      );
 
       if (totalReconciliated === Object.keys(rows).length) {
-        columns[colId].status = 'reconciliated';
+        columns[colId].status = "reconciliated";
       } else if (hasMetadata) {
-        columns[colId].status = 'pending';
+        columns[colId].status = "pending";
       }
     });
   },
@@ -50,60 +54,60 @@ const ParseW3C = {
     const getEntityMetadata = (metaRaw) => {
       if (!metaRaw || metaRaw.length === 0) {
         return {
-          annotated: false
+          annotated: false,
         };
       }
 
       if (metaRaw.length > 0 && !metaRaw[0].entity) {
         return {
-          annotated: false
+          annotated: false,
         };
       }
 
       return {
         annotated: true,
-        data: FileSystemService.transformMetadata(metaRaw[0].entity)
+        data: FileSystemService.transformMetadata(metaRaw[0].entity),
       };
-    }
-
+    };
 
     return Object.keys(header).reduce((columns, key) => {
-      const {
-        label,
-        context = [],
-        metadata: metaRaw,
-        ...rest
-      } = header[key];
-
+      const { label, context = [], metadata: metaRaw, ...rest } = header[key];
 
       const {
         annotated,
-        data: { lowestScore, highestScore, match, metadata } = { lowestScore: 0, highestScore: 0, match: false, metadata: [] }
+        data: { lowestScore, highestScore, match, metadata } = {
+          lowestScore: 0,
+          highestScore: 0,
+          match: false,
+          metadata: [],
+        },
       } = getEntityMetadata(metaRaw);
-
 
       columns[label] = {
         id: label,
         ...DEFAULT_HEADER_PROPERTIES,
         label,
         context: ParseW3C.getContext(context),
-        ...(metaRaw && metaRaw.length > 0 && {
-          metadata: [{
-            ...metaRaw[0],
-            ...(annotated && {
-              entity: metadata,
-            })
-          }]
-        }),
+        ...(metaRaw &&
+          metaRaw.length > 0 && {
+            metadata: [
+              {
+                ...metaRaw[0],
+                ...(annotated && {
+                  entity: metadata,
+                }),
+              },
+            ],
+          }),
         annotationMeta: {
           annotated: annotated,
           match: {
-            value: match
+            value: match,
           },
           lowestScore,
-          highestScore
+          highestScore,
         },
-        ...rest
+        ...rest,
       };
       return columns;
     }, {});
@@ -158,14 +162,16 @@ const ParseW3C = {
   isCellReconciliated: (metadata) => metadata.some((item) => item.match),
   updateReconciliatorsCount: (metadata, column, columns) => {
     if (metadata.length > 0) {
-      const [prefix, _] = metadata[0].id.split(':');
+      const [prefix, _] = metadata[0].id.split(":");
       const { total, reconciliated } = columns[column].context[prefix];
 
       columns[column].context[prefix] = {
         ...columns[column].context[prefix],
         total: total + 1,
-        reconciliated: ParseW3C.isCellReconciliated(metadata) ? reconciliated + 1 : reconciliated
-      }
+        reconciliated: ParseW3C.isCellReconciliated(metadata)
+          ? reconciliated + 1
+          : reconciliated,
+      };
     }
   },
   addRow: (rows, parsedRow) => {
@@ -175,8 +181,9 @@ const ParseW3C = {
     const id = `r${index}`;
     let nReconciliated = 0;
     const cells = Object.keys(row).reduce((acc, column) => {
-      const { metadata: metaRaw = [], ...rest } = row[column]
-      const { lowestScore, highestScore, match, metadata } = FileSystemService.transformMetadata(metaRaw);
+      const { metadata: metaRaw = [], ...rest } = row[column];
+      const { lowestScore, highestScore, match, metadata } =
+        FileSystemService.transformMetadata(metaRaw);
       minMetaScore = lowestScore < minMetaScore ? lowestScore : minMetaScore;
       maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
 
@@ -187,37 +194,37 @@ const ParseW3C = {
         ...rest,
         metadata,
         annotationMeta: {
-          ...(columns[column].kind === 'entity' && {
-            annotated: true
+          ...(columns[column]?.kind === "entity" && {
+            annotated: true,
           }),
           match,
           lowestScore,
-          highestScore
-        }
-      }
+          highestScore,
+        },
+      };
       if (metadata.some((item) => item.match)) {
         nReconciliated += 1;
       }
       return acc;
     }, {});
-    return { id, cells, nReconciliated }
+    return { id, cells, nReconciliated };
   },
   parse: async (entry) => {
     try {
-      const { reconciliators } = await ParseService.readYaml('./config.yml');
+      const { reconciliators } = await ParseService.readYaml("./config.yml");
       // const stream = ParseService.createJsonStreamReader(filePath);
       const passThrough = new PassThrough({
-        objectMode: true
+        objectMode: true,
       });
       // const stream = ParseService.createJsonStreamReader(path);
-      const stream = entry.pipe(parse('*')).pipe(passThrough);
+      const stream = entry.pipe(parse("*")).pipe(passThrough);
 
       let columns = {};
       let rows = {};
       let nCells = 0;
       let nCellsReconciliated = 0;
-      let minMetaScore = 0
-      let maxMetaScore = 0
+      let minMetaScore = 0;
+      let maxMetaScore = 0;
 
       let rowIndex = -1;
 
@@ -231,7 +238,13 @@ const ParseW3C = {
           continue;
         }
         // parse row and update reconciliators count
-        const { nReconciliated, ...rest } = ParseW3C.parseRow(row, rowIndex, columns, minMetaScore, maxMetaScore);
+        const { nReconciliated, ...rest } = ParseW3C.parseRow(
+          row,
+          rowIndex,
+          columns,
+          minMetaScore,
+          maxMetaScore
+        );
         ParseW3C.addRow(rows, rest);
         nCellsReconciliated += nReconciliated;
         rowIndex += 1;
@@ -241,13 +254,13 @@ const ParseW3C = {
       nCells = Object.keys(rows).length * Object.keys(columns).length;
       stream.end();
       const data = { columns, rows, nCells, nCellsReconciliated };
-      return { status: 'success', data };
+      return { status: "success", data };
     } catch (err) {
+      console.log("error in parsing w3c", err);
       entry.destroy();
-      return { status: 'error' }
+      return { status: "error" };
     }
-
-  }
+  },
 };
 
 export default ParseW3C;
