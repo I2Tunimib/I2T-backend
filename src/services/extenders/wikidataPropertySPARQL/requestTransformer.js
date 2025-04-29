@@ -113,7 +113,6 @@ export default async (req) => {
   try {
     // Execute the SPARQL query using the extracted data
     const results = await queryWikidata(entities, variablesArray, body);
-
     // Save the response to a file (optional)
     // fs.writeFile('../../fileSemTUI/response-SPARQL.json', JSON.stringify(results), function (err) {
     //   if (err) throw err;
