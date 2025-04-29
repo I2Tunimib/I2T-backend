@@ -1,7 +1,7 @@
-import config from './index.js';
-import axios from 'axios';
-import { stringify } from 'qs';
-import fs from 'fs';
+import config from "./index.js";
+import axios from "axios";
+import { stringify } from "qs";
+import fs from "fs";
 
 const { endpoint } = config.private;
 
@@ -13,17 +13,16 @@ const { endpoint } = config.private;
  * @returns {Promise<Array<Object>>} - Results of the query as an array of objects.
  */
 async function queryWikidata(items, variables, sparqlQueryBody) {
-
   // Ensure ?item is always included among the variables
   const uniqueVariables = new Set(variables);
-  uniqueVariables.add('?item'); // Adds ?item if it is not already included
+  uniqueVariables.add("?item"); // Adds ?item if it is not already included
 
   // Construct the VALUES clause
-  const itemsClause = items.map(item => `wd:${item}`).join(' ');
+  const itemsClause = items.map((item) => `wd:${item}`).join(" ");
 
   // Construct the full query
   const sparqlQuery = `
-    SELECT ${[...uniqueVariables].join(' ')} WHERE {
+    SELECT ${[...uniqueVariables].join(" ")} WHERE {
       VALUES ?item { ${itemsClause} }
       ${sparqlQueryBody}
     }
@@ -34,15 +33,15 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
   try {
     // Send the query to Wikidata
     const response = await axios.get(endpoint, {
-      params: { query: sparqlQuery, format: 'json' },
-      headers: { 'User-Agent': 'Node.js SPARQL Client' },
+      params: { query: sparqlQuery, format: "json" },
+      headers: { "User-Agent": "Node.js SPARQL Client" },
     });
-
+    console.log("********** SPARQL RESPONSE", response.data);
     // Extract the results
     const bindings = response.data.results.bindings;
 
     // Convert to table format
-    const results = bindings.map(row => {
+    const results = bindings.map((row) => {
       const parsedRow = {};
       for (const [key, value] of Object.entries(row)) {
         parsedRow[key] = value.value; // Extracts the value from the SPARQL structure
@@ -52,7 +51,7 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
 
     return results;
   } catch (error) {
-    console.error('Error during SPARQL query:', error.message);
+    console.error("Error during SPARQL query:", error.message);
     throw error;
   }
 }
@@ -74,13 +73,15 @@ export default async (req) => {
 
   // Extract entities (Qxxx) from items.columnName
   const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
-  console.log("********** Column name:", columnName)
-  const entities = Object.keys(items[columnName]).map(label => label.split(":")[1]);
+  console.log("********** Column name:", columnName);
+  const entities = Object.keys(items[columnName]).map(
+    (label) => label.split(":")[1]
+  );
 
   // Extract variables from the string and add ?item if it is not included
-  const variablesArray = variablesString.split(" ").map(v => v.trim());
-  if (!variablesArray.includes('?item')) {
-    variablesArray.push('?item');
+  const variablesArray = variablesString.split(" ").map((v) => v.trim());
+  if (!variablesArray.includes("?item")) {
+    variablesArray.push("?item");
   }
 
   // Log entities, variables, and query body for debugging
@@ -101,7 +102,7 @@ export default async (req) => {
     // Return the obtained results
     return results;
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error("Error:", error.message);
     // throw error;
   }
 };

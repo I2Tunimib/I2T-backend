@@ -1,17 +1,19 @@
-import fs from 'fs';
+import { match } from "assert";
+import fs from "fs";
 
 export default async (req, res) => {
   try {
     // Read the JSON file with property descriptions
-    const data = await fs.promises.readFile('./wikidataPropsObj.json', 'utf8');
+    const data = await fs.promises.readFile("./wikidataPropsObj.json", "utf8");
     const wikiProps = JSON.parse(data);
-    const {items} = req.original;
+    const { items, props } = req.original;
 
     let response = {
       columns: {},
-      meta: {}
+      meta: {},
+      originalColMeta: {},
     };
-
+    console.log("********** original:", req.original);
     // Extract row mapping from columnName
     const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
     console.log("********** response Column name:", columnName);
@@ -22,6 +24,9 @@ export default async (req, res) => {
       const itemId = itemValue.split(":")[1];
       rowMapping[itemId] = rowKey;
     });
+    let newProperties = [];
+    let addedProps = [];
+    // Iterate over the properties to create new properties
 
     // Iterate over the array `res` to populate columns
     res.forEach((entry) => {
@@ -31,7 +36,9 @@ export default async (req, res) => {
           const itemId = value.split("/").pop(); // Extract Qxxx from the URL
           const rowKey = rowMapping[itemId];
           if (!rowKey) {
-            console.warn(`********** response Item ${itemId} not found in row mapping.`);
+            console.warn(
+              `********** response Item ${itemId} not found in row mapping.`
+            );
           }
           return; // Skip further processing for "item" key
         }
@@ -44,7 +51,9 @@ export default async (req, res) => {
             // console.log(newColName);
           } else {
             newColName = key; // Keep property id as column name
-            console.log(`********** response Key ${key} not found in wikiProps.`);
+            console.log(
+              `********** response Key ${key} not found in wikiProps.`
+            );
           }
 
           // Ensure the column exists
@@ -52,33 +61,52 @@ export default async (req, res) => {
             response.columns[newColName] = {
               label: newColName,
               metadata: [],
-              cells: {}
+              cells: {},
             };
           }
-
+          //add new prop pointing to the new column if it is not already present
+          if (!newProperties.some((prop) => prop.id === `wd:${key}`)) {
+            newProperties.push({
+              id: `wd:${key}`,
+              obj: newColName,
+              name: `${entry[`${key}Label`]}`,
+              match: true,
+              score: 1,
+            });
+            addedProps.push(`wd:${key}`);
+          }
           // Populate the cell for the current row and column
           let label;
-            if (value.startsWith("http://www.wikidata.org/entity/")) {
-              label = `${entry[`${key}Label`]} (wd:${value.split("/").pop()})`;
-            } else {
-              label = value;
-            }
+          if (value.startsWith("http://www.wikidata.org/entity/")) {
+            label = `${entry[`${key}Label`]} (wd:${value.split("/").pop()})`;
+          } else {
+            label = value;
+          }
           const itemId = entry.item.split("/").pop(); // Extract Qxxx from the URL
           const rowKey = rowMapping[itemId];
+          console.log(
+            `********** response rowKey: ${rowKey} - columnName: ${columnName} - newColName: ${newColName} - itemId: ${itemId} - label: ${label}`
+          );
+          console.log(
+            `********** response newColName: ${newColName} - value: ${value}`
+          );
+
           if (rowKey) {
             response.columns[newColName].cells[rowKey] = {
               label: label,
-              metadata: []
+              metadata: [],
             };
           }
         }
       });
     });
-
+    response.originalColMeta = {
+      originalColName: columnName,
+      properties: newProperties,
+    };
     return response;
-
   } catch (error) {
-    console.error('Error processing the request:', error);
-    res.status(500).send('Internal Server Error');
+    console.error("Error processing the request:", error);
+    res.status(500).send("Internal Server Error");
   }
 };
