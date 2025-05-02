@@ -22,28 +22,37 @@ export default async (req, res) => {
   //   adminName1: item.adminName1
   // }
 
-  const response = Object.keys(res.labelDict).map((label, index) => {
-    const metadata = result[index].map((item, i) => {
-      console.log(
-        `*** geonames response coord *** item: ${JSON.stringify(item)}`
-      );
-      return {
-        id: `${prefix}:${item.lat},${item.lng}`,
-        name: item.name,
-        type: [
-          {
-            id: item.fcode,
-            name: item.fcodeName,
-          },
-        ],
-        description: "",
-        score: item.score,
-        match: i === 0 ? true : false,
-      };
-    });
+  const response = req.original.items.map((requestItem, index) => {
+    // Get the label from the request item
+    const label = requestItem.label;
+
+    // Find the corresponding index in the labelDict entries that matches this label
+    const resultIndex = Object.entries(res.labelDict).findIndex(
+      ([key, value]) => key === label
+    );
+
+    // If we found a match, process the metadata, otherwise return empty metadata
+    const metadata =
+      resultIndex !== -1
+        ? result[resultIndex].map((item, i) => {
+            return {
+              id: `${prefix}:${item.lat},${item.lng}`,
+              name: item.name,
+              type: [
+                {
+                  id: item.fcode,
+                  name: item.fcodeName,
+                },
+              ],
+              description: "",
+              score: item.score,
+              match: i === 0 ? true : false,
+            };
+          })
+        : [];
 
     return {
-      id: req.original.items[index].id,
+      id: requestItem.id,
       metadata: metadata,
     };
   });
