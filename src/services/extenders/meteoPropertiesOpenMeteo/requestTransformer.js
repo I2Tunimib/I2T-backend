@@ -4,7 +4,7 @@ import { stringify } from "qs";
 import fs from "fs";
 
 const { endpoint } = config.private;
-
+const allowedPrefixes = ["geoCoord", "georss", "geo"];
 export default async (req) => {
   // fs.writeFile('../../fileSemTUI/requestEXT-UI-meteo.json', JSON.stringify(req), function (err) {
   //     if (err) throw err;
@@ -33,11 +33,15 @@ export default async (req) => {
       Object.keys(columnItems).forEach((metaId) => {
         const [prefix, coord] = metaId.split(":");
         const [lat, lon] = coord.split(",");
-        //            console.log(`*** prefix: ${prefix} - coord: ${coord} - lat: ${lat} - lon: ${lon}`);
+        if (!allowedPrefixes.includes(prefix)) {
+          //skip if not geographic coordinates
+          return;
+        }
+        //console.log(`*** prefix: ${prefix} - coord: ${coord} - lat: ${lat} - lon: ${lon}`);
 
         columnItems[metaId].forEach((rowId) => {
           const date = datesInput[rowId][0];
-          //                console.log(`*** date: ${date}`);
+          //console.log(`*** date: ${date}`);
 
           requests.push({
             ids: coord,
@@ -57,6 +61,10 @@ export default async (req) => {
 
         Object.keys(columnItems).forEach((metaId) => {
           const [prefix, coord] = metaId.split(":");
+          if (!allowedPrefixes.includes(prefix)) {
+            //skip if not geographic coordinates
+            return;
+          }
           const [lat, lon] = coord.split(",");
 
           columnItems[metaId].forEach((rowId) => {
