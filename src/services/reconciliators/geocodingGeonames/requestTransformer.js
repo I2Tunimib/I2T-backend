@@ -17,8 +17,9 @@ export default async (req) => {
   //   if (err) throw err;
   //   console.log('File ../../fileSemTUI/request-geonames.json saved!');
   // });
-
   const { items } = req.processed;
+  console.log("*** geonames request ***", Object.keys(items).length);
+
   const requests = [];
 
   Object.keys(items).forEach((item) => {
@@ -73,7 +74,9 @@ export default async (req) => {
   });
 
   // console.log(`*** geonames request *** addressList: ${JSON.stringify(locationList)}`);
-
+  console.log(
+    `*** geonames request *** addressList length: ${locationList.length}`
+  );
   // Create an array of promises for each request
   locationList.forEach((location) => {
     const url =
@@ -85,7 +88,6 @@ export default async (req) => {
     // console.log(`*** geonames request *** url: ${url}`);
     requests.push(axios.get(url));
   });
-  console.log("requests", JSON.stringify(requests));
   // Execute all requests concurrently
   const responses = await Promise.all(requests);
 
