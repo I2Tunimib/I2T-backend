@@ -18,7 +18,7 @@ export default async (req) => {
   //   console.log('File ../../fileSemTUI/request-geonames.json saved!');
   // });
   const { items } = req.processed;
-  console.log("*** geonames request ***", Object.keys(items).length);
+  // console.log("*** geonames request ***", Object.keys(items).length);
 
   const requests = [];
 
@@ -74,9 +74,9 @@ export default async (req) => {
   });
 
   // console.log(`*** geonames request *** addressList: ${JSON.stringify(locationList)}`);
-  console.log(
-    `*** geonames request *** addressList length: ${locationList.length}`
-  );
+  // console.log(
+  //   `*** geonames request *** addressList length: ${locationList.length}`
+  // );
   // Create an array of promises for each request
   locationList.forEach((location) => {
     const url =
