@@ -188,15 +188,17 @@ const ParseW3C = {
       maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
 
       ParseW3C.updateReconciliatorsCount(metadata, column, columns);
+
       acc[column] = {
         id: `${id}$${column}`,
         ...DEFAULT_CELL_PROPERTIES,
         ...rest,
         metadata,
         annotationMeta: {
-          ...(columns[column]?.kind === "entity" && {
-            annotated: true,
-          }),
+          // ...(columns[column]?.kind === "entity" && {
+          //   annotated: true,
+          // }),
+          annotated: metadata.length > 0,
           match,
           lowestScore,
           highestScore,
