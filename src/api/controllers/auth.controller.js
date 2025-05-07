@@ -127,7 +127,7 @@ const AuthController = {
 
       // Send email with password
       const mailOptions = {
-        from: "noreply@semtui.it",
+        from: process.env.EMAIL_USER,
         to: email,
         subject: "Welcome to SemTUI - Your Account Details",
         html: `
