@@ -6,8 +6,8 @@ export default {
   },
   public: {
     name: 'Geocoding: geo coordinates (HERE)',
-    description: 'A geographic reconciliation and linking service of locations at street address or grater granularity. ' +
-        'Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from HERE. <br>' +
+    description: 'A geographic reconciliation and linking service of locations at street address or greater granularity. ' +
+        'Annotations add IDs as geographical coordinates (lat,lng), names, and descriptions from HERE. <br>' +
         '<br><strong>Input</strong>: the content of the selected column, plus optional information taken from other columns.' +
         '<br><strong>Output</strong>: Annotations (id and name) associated with body cells. Ids are formatted like ' +
         '"georss:lat,lon". Names are the official Latin names of the addresses of the reconciled locations.',
@@ -36,29 +36,15 @@ export default {
     },
     formParams: [
       {
-        id: 'secondPart',
-        description: "Optional column to add information to support reconciliation.",
-        label: "Select a column with information about the location to reconcile",
+        id: "additionalColumns",
+        description:
+          "Optional columns that provide context to support reconciliation.",
+        label:
+          "Select columns with information about the locations to reconcile",
         infoText: "",
-        inputType: 'selectColumns',
-        rules: []
+        inputType: "multipleColumnSelect",
+        rules: [],
       },
-      {
-        id: 'thirdPart',
-        description: "Optional column to add information to support reconciliation.",
-        label: "Select a column with information about the location to reconcile",
-        infoText: "",
-        inputType: 'selectColumns',
-        rules: []
-      },
-      {
-        id: 'fourthPart',
-        description: "Optional column to add information to support reconciliation.",
-        label: "Select a column with information about the location to reconcile",
-        infoText: "",
-        inputType: 'selectColumns',
-        rules: []
-      }
     ]
   }
 }

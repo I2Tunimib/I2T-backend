@@ -1,5 +1,6 @@
 import config from './index.js';
 import axios from 'axios';
+import fs from "fs";
 
 const { endpoint } = config.private;
 
@@ -18,6 +19,10 @@ export default async (req) => {
   //   ...acc,
   //   [id]: { query: encodeURIComponent(label || '') }
   // }), {})
+  // fs.writeFile('../../fileSemTUI/requestREC-UI-OpenRefine.json', JSON.stringify(req), function (err) {
+  //   if (err) throw err;
+  //   console.log('File ../../fileSemTUI/requestREC-UI-OpenRefine.json saved!');
+  // });
 
   const { items } = req.processed;
 

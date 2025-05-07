@@ -7,10 +7,10 @@ export default {
   public: {
     name: "Geocoding: geo coordinates (GeoNames)",
     description:
-      "A geographic reconciliation and linking service of locations at city or grater granularity. " +
+      "A geographic reconciliation and linking service of locations at city or greater granularity. " +
       "Annotations add IDs as geographical coordinates (lat,lng), labels, and descriptions from GeoNames. <br>" +
-      "<br><strong>Input</strong>: the content of the selected column, plus optional information taken from other columns. " +
-      "<br><strong>Output</strong>: Annotations associated with column cells in W3C compliant format.",
+      "<br><strong>Input</strong>: The mentions in the selected column, plus optional context information from other columns. " +
+      "<br><strong>Output</strong>: Annotations associated with mentions in row cells in W3C compliant format.",
     relativeUrl: "/dataset",
     prefix: "geoCoord",
     uri: "http://www.google.com/maps/place/",
@@ -38,9 +38,9 @@ export default {
       {
         id: "additionalColumns",
         description:
-          "Optional columns to add information to support reconciliation.",
+          "Optional columns that provide context to support reconciliation.",
         label:
-          "Select columns with information about the location to reconcile",
+          "Select columns from the list, then click ouside to confirm.",
         infoText: "",
         inputType: "multipleColumnSelect",
         rules: [],
