@@ -1,19 +1,17 @@
-import config from './index.js';
+import config from "./index.js";
 import fs from "fs";
 
 const { uri } = config.public;
 
 function replaceAll(str, find, replace) {
-  return str.replace(new RegExp(find, 'g'), replace);
+  return str.replace(new RegExp(find, "g"), replace);
 }
 
-function cleanLabel(label){
-  return replaceAll(label, /[*+?^$&{}()|[\]\\]/g, '');
+function cleanLabel(label) {
+  return replaceAll(label, /[*+?^$&{}()|[\]\\]/g, "");
 }
-
 
 export default async (req, res) => {
-
   const { items } = req.processed;
   // console.log('*** res: ' + JSON.stringify(res));
   // fs.writeFile('../../fileSemTUI/response-OpenRefine.json', JSON.stringify(res), function (err) {
@@ -23,13 +21,13 @@ export default async (req, res) => {
   const response = Object.keys(items).flatMap((label) => {
     const metadata = res[cleanLabel(label)].result.map(({ id, ...rest }) => ({
       id: `wd:${id}`,
-      ...rest
-    }))
-
+      ...rest,
+    }));
+    console.log("*** response metadata: " + JSON.stringify(metadata));
     return items[label].map((cellId) => ({
       id: cellId,
-      metadata
-    }))
+      metadata,
+    }));
   });
 
   // const response = Object.keys(res).map((id) => {
@@ -53,4 +51,4 @@ export default async (req, res) => {
   // });
 
   return response;
-}
+};
