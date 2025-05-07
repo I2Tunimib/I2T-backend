@@ -23,13 +23,13 @@ export default async (req) => {
 
   Object.keys(items).forEach((item) => {
     let indice = req.processed.items[item][0].split("$")[0];
-    console.log(`*** geonames request *** indice: ${indice}`);
+    // console.log(`*** geonames request *** indice: ${indice}`);
     let newItem = item;
     if (req.original.props.additionalColumns !== undefined) {
       for (const [key, value] of Object.entries(
         req.original.props.additionalColumns
       )) {
-        console.log("test", req.original.props.additionalColumns[key][indice]);
+        // console.log("test", req.original.props.additionalColumns[key][indice]);
         if (req.original.props.additionalColumns[key][indice] !== undefined) {
           newItem =
             newItem +
@@ -63,7 +63,7 @@ export default async (req) => {
   });
 
   // console.log(`*** geonames request *** addressList: ${JSON.stringify(locationList)}`);
-  console.log("locationList", locationList);
+  // console.log("locationList", locationList);
   // Create an array of promises for each request
   locationList.forEach((location) => {
     const url =
@@ -79,7 +79,7 @@ export default async (req) => {
   const responses = await Promise.all(requests);
   // Collect all results in 'res'
   const res = responses.map((response) => response.data);
-  console.log("responses", JSON.stringify(res));
+  // console.log("responses", JSON.stringify(res));
 
   // fs.writeFile('../../fileSemTUI/response-geonames.json', JSON.stringify(res), function (err) {
   //   if (err) throw err;

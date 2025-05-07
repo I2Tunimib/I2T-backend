@@ -16,29 +16,21 @@ export default async (req) => {
   Object.keys(items).forEach((item) => {
     let indice = req.processed.items[item][0].split("$")[0];
     let newItem = item;
-    console.log(`*** geonames request *** indice: ${indice}`);
-    console.log(`item: ${item}`);
-    console.log(`secondPart: ${JSON.stringify(req.original.props.secondPart)}`);
-    console.log(`secondPart[indice]: ${req.original.props.secondPart[indice]}`);
+    // console.log(`*** geonames request *** indice: ${indice}`);
+    // console.log(`item: ${item}`);
 
-    console.log(`additionalColumns: ${req.original.props.additionalColumns}`);
-    if (
-      req.original.props.secondPart !== undefined &&
-      req.original.props.secondPart[indice] !== undefined
-    ) {
-      newItem = newItem + " " + req.original.props.secondPart[indice][0];
-    }
-    if (
-      req.original.props.thirdPart !== undefined &&
-      req.original.props.thirdPart[indice] !== undefined
-    ) {
-      newItem = newItem + " " + req.original.props.thirdPart[indice][0];
-    }
-    if (
-      req.original.props.fourthPart !== undefined &&
-      req.original.props.fourthPart[indice] !== undefined
-    ) {
-      newItem = newItem + " " + req.original.props.fourthPart[indice][0];
+    // console.log(`additionalColumns: ${JSON.stringify(req.original.props.additionalColumns)}`);
+    if (req.original.props.additionalColumns !== undefined) {
+      for (const [key, value] of Object.entries(
+        req.original.props.additionalColumns
+      )) {
+        if (req.original.props.additionalColumns[key][indice] !== undefined) {
+          newItem =
+            newItem +
+            " " +
+            req.original.props.additionalColumns[key][indice][0];
+        }
+      }
     }
     if (newItem.length > 1 && newItem !== "null" && newItem !== undefined) {
       labelDict[item] = newItem;
