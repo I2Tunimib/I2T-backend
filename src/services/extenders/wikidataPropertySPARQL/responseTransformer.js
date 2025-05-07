@@ -68,27 +68,33 @@ export default async (req, res) => {
 
           // Ensure the column exists
           if (!response.columns[newColName]) {
+            const propertyId = key;
             response.columns[newColName] = {
               label: newColName,
-              metadata: [],
+              metadata: [
+                {
+                  id: `wd:${propertyId}`,
+                  name: wikiProps[key]?.label || propertyId,
+                  description: wikiProps[key]?.description || "",
+                  match: true,
+                  score: 100,
+                  features: [
+                    {
+                      id: "all_labels",
+                      value: 100,
+                    },
+                  ],
+                  type: [],
+                },
+              ],
               cells: {},
             };
           }
-          //add new prop pointing to the new column if it is not already present
-          // if (!newProperties.some((prop) => prop.id === `wd:${key}`)) {
-          //   newProperties.push({
-          //     id: `wd:${key}`,
-          //     obj: newColName,
-          //     name: `${entry[`${key}Label`]}`,
-          //     match: true,
-          //     score: 1,
-          //   });
-          //   addedProps.push(`wd:${key}`);
-          // }
+
           // Populate the cell for the current row and column
           let label;
           if (value.startsWith("http://www.wikidata.org/entity/")) {
-            label = `${entry[`${key}Label`]} (wd:${value.split("/").pop()})`;
+            label = `${entry[`${key}Label`]}`;
           } else {
             label = value;
           }
@@ -104,7 +110,24 @@ export default async (req, res) => {
           if (rowKey) {
             response.columns[newColName].cells[rowKey] = {
               label: label,
-              metadata: [],
+              metadata: [
+                {
+                  id: value.startsWith("http://www.wikidata.org/entity/")
+                    ? `wd:${value.split("/").pop()}`
+                    : value,
+                  name: entry[`${key}Label`] || label,
+                  description: "",
+                  match: true,
+                  score: 100,
+                  features: [
+                    {
+                      id: "all_labels",
+                      value: 100,
+                    },
+                  ],
+                  type: [],
+                },
+              ],
             };
           }
         }

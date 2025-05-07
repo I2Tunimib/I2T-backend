@@ -75,7 +75,7 @@ const SuggestionsController = {
     try {
       let data = req.body;
       const allIds = data.map((item) => {
-        if (item.id.startsWith("wd:")) {
+        if (item.id.startsWith("wd:") || item.id.startsWith("wdA:")) {
           return item.id.split(":")[1];
         }
       });
