@@ -148,6 +148,7 @@ const loadConfig = async () => {
     MANTIS_AUTH_TOKEN: process.env.MANTIS_AUTH_TOKEN,
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+    RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
     reconciliators,
     extenders,
     helpers,
