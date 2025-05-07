@@ -671,13 +671,10 @@ const FileSystemService = {
             lowestScore < minMetaScore ? lowestScore : minMetaScore;
           maxMetaScore =
             highestScore > maxMetaScore ? highestScore : maxMetaScore;
-
           accCell[colId] = {
             ...rawRows[rowId].cells[colId],
             annotationMeta: {
-              ...(columns[colId].kind === "entity" && {
-                annotated: true,
-              }),
+              annotated: metadata.length > 0,
               match,
               lowestScore,
               highestScore,
