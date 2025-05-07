@@ -55,6 +55,16 @@ export default async (req, res) => {
               `********** response Key ${key} not found in wikiProps.`
             );
           }
+          if (!newProperties.some((prop) => prop.id === `wd:${key}`)) {
+            newProperties.push({
+              id: `wd:${key}`,
+              obj: newColName,
+              name: `${wikiProps[key].label}`,
+              match: true,
+              score: 1,
+            });
+            addedProps.push(`wd:${key}`);
+          }
 
           // Ensure the column exists
           if (!response.columns[newColName]) {
@@ -65,16 +75,16 @@ export default async (req, res) => {
             };
           }
           //add new prop pointing to the new column if it is not already present
-          if (!newProperties.some((prop) => prop.id === `wd:${key}`)) {
-            newProperties.push({
-              id: `wd:${key}`,
-              obj: newColName,
-              name: `${entry[`${key}Label`]}`,
-              match: true,
-              score: 1,
-            });
-            addedProps.push(`wd:${key}`);
-          }
+          // if (!newProperties.some((prop) => prop.id === `wd:${key}`)) {
+          //   newProperties.push({
+          //     id: `wd:${key}`,
+          //     obj: newColName,
+          //     name: `${entry[`${key}Label`]}`,
+          //     match: true,
+          //     score: 1,
+          //   });
+          //   addedProps.push(`wd:${key}`);
+          // }
           // Populate the cell for the current row and column
           let label;
           if (value.startsWith("http://www.wikidata.org/entity/")) {
@@ -100,6 +110,9 @@ export default async (req, res) => {
         }
       });
     });
+    console.log(
+      `********** response newProperties: ${JSON.stringify(newProperties)}`
+    );
     response.originalColMeta = {
       originalColName: columnName,
       properties: newProperties,
