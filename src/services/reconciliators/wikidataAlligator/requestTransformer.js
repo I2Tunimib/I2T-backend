@@ -198,6 +198,7 @@ export default async (req) => {
       // console.log(`*** get Alligator: status ${annotation.data.data.status}`);
     }
     // console.log(`*** get Alligator: done`);
+    annotation.data.data.originalColumns = header;
     return annotation.data.data;
   }
 };
