@@ -35,6 +35,7 @@ export default async (req, res) => {
   // console.log(`*** response alligator *** cea: ${JSON.stringify(cea)}`);
   const response = [];
   const usedCols = res.originalColumns;
+  const origianlColTypes = cta.find((item) => item.idColumn === 0).types;
   // NOTE: the header properties are not addressed by the frontend, types are computed by the frontend
   const header = {
     id: items.find((item) => !item.id.includes("$")).id,
@@ -42,9 +43,10 @@ export default async (req, res) => {
       {
         id: `${prefix}:Q35120`,
         description: "anything that can be considered, discussed, or observed",
-        match: false,
+        match: true,
         name: "entity",
-        score: 0,
+        score: 1,
+        type: origianlColTypes.map((type) => ({ match: false, ...type })),
         property: [
           {
             id: `${prefix}:P131`,
