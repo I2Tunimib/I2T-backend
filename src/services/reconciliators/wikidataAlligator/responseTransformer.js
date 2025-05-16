@@ -90,11 +90,13 @@ export default async (req, res) => {
       // console.log(`*** response alligator *** foundObj: ${JSON.stringify(foundObj)}`);
       if (foundObj !== undefined) {
         const metadata = foundObj.entities;
-        const semTUIMetadata = metadata.map(({ delta, ...rest }) => ({
+        let semTUIMetadata = metadata.map(({ delta, types, ...rest }) => ({
           ...rest,
+          type: types || [], // Add the "type" field with an empty array
           // type: [], // Add the "type" field with an empty array
           id: `${prefix}:${rest.id}`, // Add 'wd:' in front of the id
         }));
+
         const cellAnnotation = {
           id: mention.id,
           metadata: semTUIMetadata,
