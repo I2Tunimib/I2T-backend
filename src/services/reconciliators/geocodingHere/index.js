@@ -40,7 +40,7 @@ export default {
         description:
           "Optional columns that provide context to support reconciliation.",
         label:
-          "Select columns with information about the locations to reconcile",
+          "Select columns from the list, then click ouside to confirm.",
         infoText: "",
         inputType: "multipleColumnSelect",
         rules: [],
