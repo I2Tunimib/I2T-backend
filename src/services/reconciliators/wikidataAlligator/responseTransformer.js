@@ -36,6 +36,11 @@ export default async (req, res) => {
   const response = [];
   const usedCols = res.originalColumns;
   const origianlColTypes = cta.find((item) => item.idColumn === 0).types;
+  console.log(
+    `*** response alligator *** origianlColTypes: ${JSON.stringify(
+      origianlColTypes
+    )}`
+  );
   // NOTE: the header properties are not addressed by the frontend, types are computed by the frontend
   const header = {
     id: items.find((item) => !item.id.includes("$")).id,
@@ -46,7 +51,9 @@ export default async (req, res) => {
         match: true,
         name: "entity",
         score: 1,
-        type: origianlColTypes.map((type) => ({ match: false, ...type })),
+        type: origianlColTypes
+          .filter((type) => type.id !== "Q1229013")
+          .map((type) => ({ match: false, ...type })),
         property: [
           {
             id: `${prefix}:P131`,
@@ -90,12 +97,14 @@ export default async (req, res) => {
       // console.log(`*** response alligator *** foundObj: ${JSON.stringify(foundObj)}`);
       if (foundObj !== undefined) {
         const metadata = foundObj.entities;
-        let semTUIMetadata = metadata.map(({ delta, types, ...rest }) => ({
-          ...rest,
-          type: types || [], // Add the "type" field with an empty array
-          // type: [], // Add the "type" field with an empty array
-          id: `${prefix}:${rest.id}`, // Add 'wd:' in front of the id
-        }));
+        let semTUIMetadata = metadata
+          .filter((meta) => meta.id !== "Q1229013")
+          .map(({ delta, types, ...rest }) => ({
+            ...rest,
+            type: types || [], // Add the "type" field with an empty array
+            // type: [], // Add the "type" field with an empty array
+            id: `${prefix}:${rest.id}`, // Add 'wd:' in front of the id
+          }));
 
         const cellAnnotation = {
           id: mention.id,
