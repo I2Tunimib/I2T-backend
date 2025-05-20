@@ -40,8 +40,8 @@ export default {
       {
         id: "additionalColumns",
         description:
-          "Optional columns to add information to support reconciliation.",
-        label: "Select columns with information about the column to reconcile",
+          "Optional columns that provide context to support reconciliation.",
+        label: "Select columns from the list, then click ouside to confirm.",
         infoText: "",
         inputType: "multipleColumnSelect",
         rules: [],
