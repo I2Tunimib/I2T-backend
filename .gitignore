@@ -30,3 +30,5 @@ yarn-error.log*
 /public/raw-tables/*
 /public/annotated-tables/*
 !/public/saved/TABELLA_TEST_1.json
+
+*.zip
