@@ -21,9 +21,10 @@ const {
 
 // Create a transporter for sending emails
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: process.env.EMAIL_PORT || 587,
-  secure: process.env.EMAIL_SECURE === "true", // true for 465, false for other ports
+  service: "gmail",
+  // host: process.env.EMAIL_HOST || "smtp.gmail.com",
+  // port: process.env.EMAIL_PORT || 587,
+  // secure: process.env.EMAIL_SECURE === "true", // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -127,7 +128,7 @@ const AuthController = {
 
       // Send email with password
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_SENDER,
         to: email,
         subject: "Welcome to SemTUI - Your Account Details",
         html: `
