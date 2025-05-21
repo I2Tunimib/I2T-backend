@@ -111,11 +111,7 @@ const AuthController = {
           await fs.copyFile(templatePath, tempFilePath);
 
           // Call the dataset service to create the initial dataset
-          await FileSystemService.addDataset(
-            tempFilePath,
-            "Initial Dataset",
-            id
-          );
+          await FileSystemService.addDataset(tempFilePath, "Evaluation", id);
 
           // Clean up the temporary file
           await fs
