@@ -38,8 +38,10 @@ const AuthController = {
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
-    let username = email;
     try {
+      // Generate random password
+      const username = nanoid(10);
+      const password = nanoid(10);
       // Check if username already exists
       const existingUser = await ParseService.findOneInJson({
         path: getUsersPath(),
@@ -56,9 +58,6 @@ const AuthController = {
       const { meta, users } = usersData;
       const { lastIndex } = meta;
       const id = lastIndex + 1;
-
-      // Generate random password
-      const password = nanoid(10);
 
       // Create new user
       const newUser = {
