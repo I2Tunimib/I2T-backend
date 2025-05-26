@@ -35,7 +35,9 @@ export default async (req, res) => {
   // console.log(`*** response alligator *** cea: ${JSON.stringify(cea)}`);
   const response = [];
   const usedCols = res.originalColumns;
-  const origianlColTypes = cta.find((item) => item.idColumn === 0).types;
+  const originalColsCta = cta.find((item) => item.idColumn === 0);
+  const origianlColTypes = originalColsCta ? originalColsCta.types : [];
+
   console.log(
     `*** response alligator *** origianlColTypes: ${JSON.stringify(
       origianlColTypes
