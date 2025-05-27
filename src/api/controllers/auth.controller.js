@@ -40,7 +40,7 @@ const AuthController = {
     }
     try {
       // Generate random password
-      const username = nanoid(10);
+      const username = "semT-" + nanoid(4);
       const password = nanoid(10);
       // Check if username already exists
       const existingUser = await ParseService.findOneInJson({
