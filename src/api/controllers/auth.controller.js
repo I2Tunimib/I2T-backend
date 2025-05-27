@@ -63,7 +63,7 @@ const AuthController = {
       const newUser = {
         id,
         username,
-        email,
+        email: username,
         password,
         createdAt: new Date().toISOString(),
       };
