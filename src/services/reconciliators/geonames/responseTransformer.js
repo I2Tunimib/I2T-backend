@@ -9,33 +9,50 @@ export default async (req, res) => {
 
   const result = res.result;
   const prefix = config.public.prefix;
-  const response = result.map((item, index) => {
-    const metadata = item.map((subItem, i) => ({
-      id: `${prefix}:${subItem.geonameId}`,
-      name: subItem.name,
-      type: [
+  let response = [
+    {
+      id: req.original.items[0].id,
+      metadata: [
         {
-          id: subItem.fcode,
-          name: subItem.fcodeName,
+          id: `${prefix}:Q35120`,
+          description:
+            "anything that can be considered, discussed, or observed",
+          match: true,
+          name: "entity",
+          score: 1,
+          type: [],
+          property: [],
         },
       ],
-      description: "",
-      score: subItem.score,
-      match: i === 0 ? true : false,
-    }));
+    },
+    ...result.map((item, index) => {
+      const metadata = item.map((subItem, i) => ({
+        id: `${prefix}:${subItem.geonameId}`,
+        name: subItem.name,
+        type: [
+          {
+            id: subItem.fcode,
+            name: subItem.fcodeName,
+          },
+        ],
+        description: "",
+        score: subItem.score,
+        match: i === 0 ? true : false,
+      }));
 
-    return {
-      id: req.original.items[index].id,
-      metadata: metadata,
-    };
-  });
+      return {
+        id: req.original.items[index + 1].id,
+        metadata: metadata,
+      };
+    }),
+  ];
 
-  const header = {
-    id: req.original.items[0].id,
-    metadata: [],
-  };
+  // const header = {
+  //   id: req.original.items[0].id,
+  //   metadata: [],
+  // };
 
-  response.splice(0, 1, header);
+  // response.splice(0, 1, header);
 
   // fs.writeFile('../../fileSemTUI/response-geonames-returned-to-UI.json', JSON.stringify(response), function (err) {
   //   if (err) throw err;
