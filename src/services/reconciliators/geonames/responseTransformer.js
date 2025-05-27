@@ -1,4 +1,4 @@
-import config from './index.js';
+import config from "./index.js";
 import fs from "fs";
 
 export default async (req, res) => {
@@ -9,29 +9,30 @@ export default async (req, res) => {
 
   const result = res.result;
   const prefix = config.public.prefix;
-
-  const response = Object.keys(res.labelDict).map((label, index) => {
-    const metadata = result[index].map((item, i) => ({
-      id: `${prefix}:${item.geonameId}`,
-      name: item.name,
-      type: [{
-        id: item.fcode,
-        name: item.fcodeName
-      }],
+  const response = result.map((item, index) => {
+    const metadata = item.map((subItem, i) => ({
+      id: `${prefix}:${subItem.geonameId}`,
+      name: subItem.name,
+      type: [
+        {
+          id: subItem.fcode,
+          name: subItem.fcodeName,
+        },
+      ],
       description: "",
-      score: item.score,
-      match: i === 0 ? true : false
+      score: subItem.score,
+      match: i === 0 ? true : false,
     }));
 
     return {
       id: req.original.items[index].id,
-      metadata: metadata
+      metadata: metadata,
     };
   });
 
   const header = {
     id: req.original.items[0].id,
-    metadata: []
+    metadata: [],
   };
 
   response.splice(0, 1, header);
@@ -42,4 +43,4 @@ export default async (req, res) => {
   // });
 
   return response;
-}
+};
