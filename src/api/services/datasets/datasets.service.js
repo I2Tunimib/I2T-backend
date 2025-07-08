@@ -641,7 +641,7 @@ const FileSystemService = {
         ...metaItem,
         name: {
           value: metaItem.name,
-          uri: `${KG_INFO[prefix].uri}${id}`,
+          uri: prefix !== "None" ? `${KG_INFO[prefix].uri}${id}` : "",
         },
       };
     });

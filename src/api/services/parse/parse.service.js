@@ -138,7 +138,7 @@ const ParseService = {
     if (
       Object.keys(row).some((key) => {
         if (typeof row[key] !== "string")
-          console.log("error parsing row key", row[key], typeof row[key]);
+          console.log("error parsing row key", key, row[key], typeof row[key]);
 
         return typeof row[key] !== "string";
       })

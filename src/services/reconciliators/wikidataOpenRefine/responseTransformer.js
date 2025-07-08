@@ -18,12 +18,13 @@ export default async (req, res) => {
   //    if (err) throw err;
   //     console.log('File ../../fileSemTUI/response-OpenRefine.json saved!');
   // });
+
   const response = Object.keys(items).flatMap((label) => {
+    let cleanL = res[cleanLabel(label)];
     const metadata = res[cleanLabel(label)].result.map(({ id, ...rest }) => ({
       id: `wd:${id}`,
       ...rest,
     }));
-    console.log("*** response metadata: " + JSON.stringify(metadata));
     return items[label].map((cellId) => ({
       id: cellId,
       metadata,

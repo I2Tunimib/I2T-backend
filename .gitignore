@@ -32,3 +32,4 @@ yarn-error.log*
 !/public/saved/TABELLA_TEST_1.json
 
 *.zip
+logs
