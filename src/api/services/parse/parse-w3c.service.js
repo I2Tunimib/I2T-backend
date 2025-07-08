@@ -239,6 +239,7 @@ const ParseW3C = {
           rowIndex += 1;
           continue;
         }
+        console.log("parsing row", rowIndex);
         // parse row and update reconciliators count
         const { nReconciliated, ...rest } = ParseW3C.parseRow(
           row,
