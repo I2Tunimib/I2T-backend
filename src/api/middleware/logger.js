@@ -108,6 +108,7 @@ async function handleReconciliationRoute(req, url) {
       datasetId,
       tableId,
       OPERATION_TYPES.RECONCILIATION,
+      null,
       {
         columnName,
         service: requestedReconciliation,
@@ -134,6 +135,7 @@ async function handleExtenderRoute(req, url) {
       datasetId,
       tableId,
       OPERATION_TYPES.EXTENSION,
+      null,
       {
         columnName,
         service: requestedExtender,
@@ -147,22 +149,26 @@ async function handleSaveRoute(req, method) {
   const taskInfos = await getTaskInfos(req);
 
   // Only log if we have all the required information
-  if (taskInfos && taskInfos.length === 2) {
-    const [tableId, datasetId] = taskInfos;
+  if (taskInfos && taskInfos.length === 3) {
+    const [tableId, datasetId, deletedCols] = taskInfos;
 
     if (method === "PUT") {
       console.log(
         `Save operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
       );
-      await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE);
-    } else if (method === "GET") {
+      await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE, deletedCols);
+    }
+  } else if (taskInfos && taskInfos.length === 2) {
+    const [tableId, datasetId] = taskInfos;
+
+    if (method === "GET") {
       console.log(
         `Get operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
       );
       await writeLog(datasetId, tableId, OPERATION_TYPES.GET_TABLE);
+    } else {
+      console.error("Task infos not found or incomplete for save operation.");
     }
-  } else {
-    console.error("Task infos not found or incomplete for save operation.");
   }
 }
 
@@ -195,6 +201,7 @@ async function writeLog(
   datasetId,
   tableId,
   operationType,
+  deletedCols = null,
   options = {},
   additionalData = null
 ) {
@@ -205,6 +212,7 @@ async function writeLog(
       operationType,
       datasetId,
       tableId,
+      deletedCols,
       options,
       additionalData
     );
@@ -224,6 +232,7 @@ function buildLogMessage(
   operationType,
   datasetId,
   tableId,
+  deletedCols = null,
   options = {},
   additionalData = null
 ) {
@@ -240,6 +249,8 @@ function buildLogMessage(
     message += ` -| ${serviceLabel}: ${additionalData.serviceId}`;
   } else if (options.service) {
     message += ` -| Service: ${options.service}`;
+  } else if (deletedCols) {
+    message += ` -| DeletedCols: ${deletedCols}`;
   }
 
   if (additionalData) {
