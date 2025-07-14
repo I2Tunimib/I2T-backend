@@ -10,20 +10,22 @@ export default async (req, res, next) => {
   // check if upload request
   if (isEligibleRequest(req)) {
     const { files } = req;
+    
+    // Check if files exist before trying to iterate through them
+    if (files && Object.keys(files).length > 0) {
+      for (const file of Object.keys(files)) {
+        const { mimetype, tempFilePath } = files[file]
 
-    for (const file of Object.keys(files)) {
-      const { mimetype, tempFilePath } = files[file]
-
-      if (!isZipFile(mimetype)) {
-        await FileSystemService.zip(tempFilePath, tempFilePath)
-        // remove old file
-        await rm(tempFilePath);
-        // change path to the zipped file
-        req.files[file].tempFilePath = `${tempFilePath}.zip`
+        if (!isZipFile(mimetype)) {
+          await FileSystemService.zip(tempFilePath, tempFilePath)
+          // remove old file
+          await rm(tempFilePath);
+          // change path to the zipped file
+          req.files[file].tempFilePath = `${tempFilePath}.zip`
+        }
       }
     }
   }
-
 
   next();
 }
