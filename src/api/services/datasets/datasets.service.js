@@ -240,6 +240,15 @@ const FileSystemService = {
     let newDatasets = {};
     let newTables = {};
 
+    // Validate inputs to prevent potential errors
+    if (!datasetName) {
+      throw new Error("Dataset name is required");
+    }
+
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
     const writeTempFile = async (readStream) => {
       const id = nanoid();
       const ws = createWriteStream(`tmp/${id}`, { flags: "a" });
@@ -273,44 +282,53 @@ const FileSystemService = {
           await readFile(getTablesDbPath())
         );
 
-        const zip = createReadStream(filePath).pipe(
-          unzipper.Parse({ forceStream: true })
-        );
         let nFiles = 0;
 
-        // unzip and write each file
-        for await (const entry of zip) {
-          const { path, type } = entry;
+        // Check if filePath is provided for zip file processing
+        if (filePath) {
+          try {
+            const zip = createReadStream(filePath).pipe(
+              unzipper.Parse({ forceStream: true })
+            );
 
-          const tableName = path.split(".")[0] || "Unnamend";
+            // unzip and write each file
+            for await (const entry of zip) {
+              const { path, type } = entry;
 
-          if (type !== "File" || path.split("/").length !== 1) {
-            entry.autodrain();
+              const tableName = path.split(".")[0] || "Unnamend";
+
+              if (type !== "File" || path.split("/").length !== 1) {
+                entry.autodrain();
+              }
+
+              const tmpEntryId = await writeTempFile(entry);
+
+              metaTables.lastIndex += 1;
+              nFiles += 1;
+              // transform to app format and write to file
+              const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+              await writeFile(
+                `${datasetFolderPath}/${metaTables.lastIndex}.json`,
+                JSON.stringify(data)
+              );
+
+              newTables[`${metaTables.lastIndex}`] = {
+                id: `${metaTables.lastIndex}`,
+                idDataset: `${metaDatasets.lastIndex}`,
+                name: tableName,
+                nCols: Object.keys(data.columns).length,
+                nRows: Object.keys(data.rows).length,
+                nCells: data.nCells,
+                nCellsReconciliated: data.nCellsReconciliated,
+                lastModifiedDate: new Date().toISOString(),
+              };
+
+              await rm(`tmp/${tmpEntryId}`);
+            }
+          } catch (err) {
+            console.error("Error processing zip file:", err);
+            // Continue execution to create an empty dataset even if zip processing fails
           }
-
-          const tmpEntryId = await writeTempFile(entry);
-
-          metaTables.lastIndex += 1;
-          nFiles += 1;
-          // transform to app format and write to file
-          const data = await ParseService.parse(`tmp/${tmpEntryId}`);
-          await writeFile(
-            `${datasetFolderPath}/${metaTables.lastIndex}.json`,
-            JSON.stringify(data)
-          );
-
-          newTables[`${metaTables.lastIndex}`] = {
-            id: `${metaTables.lastIndex}`,
-            idDataset: `${metaDatasets.lastIndex}`,
-            name: tableName,
-            nCols: Object.keys(data.columns).length,
-            nRows: Object.keys(data.rows).length,
-            nCells: data.nCells,
-            nCellsReconciliated: data.nCellsReconciliated,
-            lastModifiedDate: new Date().toISOString(),
-          };
-
-          await rm(`tmp/${tmpEntryId}`);
         }
 
         // add dataset entry
@@ -345,14 +363,17 @@ const FileSystemService = {
             2
           )
         );
-        // delete temp file
-        await rm(filePath);
+        // delete temp file if it exists
+        if (filePath) {
+          await rm(filePath);
+        }
       } catch (err) {
         console.log(err);
       }
     });
     return { datasets: newDatasets, tables: newTables };
   },
+
   removeDataset: async (datasetId) => {
     await writeQueue.push(async () => {
       try {

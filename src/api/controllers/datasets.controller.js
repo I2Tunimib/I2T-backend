@@ -70,13 +70,13 @@ const DatasetsController = {
     }
   },
   addDataset: async (req, res, next) => {
-    const { file } = req.files;
+    const { file } = req.files || {};
     const { name } = req.body;
     try {
       const user = AuthService.verifyToken(req);
 
       const { datasets } = await DatasetsService.addDataset(
-        file.tempFilePath,
+        file ? file.tempFilePath : null,
         name,
         user.id
       );
@@ -206,6 +206,7 @@ const DatasetsController = {
       next(err);
     }
   },
+
 };
 
 export default DatasetsController;
