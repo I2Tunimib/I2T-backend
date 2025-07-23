@@ -70,7 +70,6 @@ export default async (req) => {
     );
   } catch (error) {
     console.error("Error setting cache:", error);
-    throw error;
   }
 
   return response.data;
