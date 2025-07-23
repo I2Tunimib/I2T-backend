@@ -63,7 +63,6 @@ const DatasetsController = {
       const tableData = await DatasetsService.findTable(idDataset, idTable);
       const dump = JSON.stringify(tableData);
       // Write dump to /sample_jsons/get_table_sample.json
-      fs.writeFileSync("./get_table_sample.json", dump);
       res.json(tableData);
     } catch (err) {
       next(err);
@@ -160,7 +159,6 @@ const DatasetsController = {
   updateTable: async (req, res, next) => {
     const data = req.body;
     //write body dump to file
-    fs.writeFileSync("./updateTable_sample.json", JSON.stringify(data));
     // Flavio
     // fs.writeFile('../../fileSemTUI/updateTable.json', JSON.stringify(data), function (err) {
     //     if (err) throw err;
