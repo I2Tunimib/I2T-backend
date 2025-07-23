@@ -160,7 +160,12 @@ async function handleSaveRoute(req, method) {
     }
   } else if (taskInfos && taskInfos.length === 2) {
     const [tableId, datasetId] = taskInfos;
-
+    if (method === "PUT") {
+      console.log(
+        `Save operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
+      );
+      await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE);
+    }
     if (method === "GET") {
       console.log(
         `Get operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
