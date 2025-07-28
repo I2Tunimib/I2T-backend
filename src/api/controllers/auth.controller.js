@@ -82,7 +82,7 @@ const AuthController = {
       // Save the updated users collection
       await fs.writeFile(
         getUsersPath(),
-        JSON.stringify(newCollection, null, 2)
+        JSON.stringify(newCollection, null, 2),
       );
 
       // Create user dataset directory if it doesn't exist
@@ -105,7 +105,7 @@ const AuthController = {
           const tempFilePath = path.join(
             process.cwd(),
             "tmp",
-            `template_${id}_${Date.now()}.zip`
+            `template_${id}_${Date.now()}.zip`,
           );
           await fs.copyFile(templatePath, tempFilePath);
 
@@ -155,7 +155,7 @@ const AuthController = {
           username: newUser.username,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
+        { expiresIn: JWT_EXPIRES_IN },
       );
 
       // Return success without sending the password in the response
@@ -177,12 +177,9 @@ const AuthController = {
     try {
       const { token } = req.body;
       const secretKey = config.RECAPTCHA_SECRET_KEY;
-      console.log("token", token);
-      console.log("secretKey", secretKey);
       const response = await axios.post(
-        `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`
+        `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`,
       );
-      console.log("response", response.data);
       res.status(200).json({
         success: response.data.success,
         score: response.data.score,
@@ -194,7 +191,6 @@ const AuthController = {
   },
 
   signIn: async (req, res, next) => {
-    console.log(req.body);
     const { username: usernameReq, password: passwordReq } = req.body;
 
     try {
@@ -205,8 +201,6 @@ const AuthController = {
         condition: ({ username, password }) =>
           usernameReq === username && password === passwordReq,
       });
-
-      console.log(user);
 
       if (!user) {
         return res.status(401).json({ error: "Invalid username or password" });
@@ -219,7 +213,7 @@ const AuthController = {
           username: user.username,
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
+        { expiresIn: JWT_EXPIRES_IN },
       );
 
       res.status(200).json({ token });
