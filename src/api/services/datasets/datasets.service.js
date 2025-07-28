@@ -179,7 +179,7 @@ const FileSystemService = {
     });
 
     const { columns, rows } = JSON.parse(
-      await readFile(`${getDatasetFilesPath()}/${idDataset}/${idTable}.json`)
+      await readFile(`${getDatasetFilesPath()}/${idDataset}/${idTable}.json`),
     );
     return {
       table,
@@ -268,7 +268,7 @@ const FileSystemService = {
       try {
         // read db datasets
         const { meta: metaDatasets, datasets } = JSON.parse(
-          await readFile(getDatasetDbPath())
+          await readFile(getDatasetDbPath()),
         );
 
         metaDatasets.lastIndex += 1;
@@ -279,7 +279,7 @@ const FileSystemService = {
         await mkdir(datasetFolderPath, { recursive: true });
         // read tables datasets
         const { meta: metaTables, tables } = JSON.parse(
-          await readFile(getTablesDbPath())
+          await readFile(getTablesDbPath()),
         );
 
         let nFiles = 0;
@@ -288,7 +288,7 @@ const FileSystemService = {
         if (filePath) {
           try {
             const zip = createReadStream(filePath).pipe(
-              unzipper.Parse({ forceStream: true })
+              unzipper.Parse({ forceStream: true }),
             );
 
             // unzip and write each file
@@ -309,7 +309,7 @@ const FileSystemService = {
               const data = await ParseService.parse(`tmp/${tmpEntryId}`);
               await writeFile(
                 `${datasetFolderPath}/${metaTables.lastIndex}.json`,
-                JSON.stringify(data)
+                JSON.stringify(data),
               );
 
               newTables[`${metaTables.lastIndex}`] = {
@@ -348,8 +348,8 @@ const FileSystemService = {
               datasets: { ...datasets, ...newDatasets },
             },
             null,
-            2
-          )
+            2,
+          ),
         );
         // add table entries
         await writeFile(
@@ -360,8 +360,8 @@ const FileSystemService = {
               tables: { ...tables, ...newTables },
             },
             null,
-            2
-          )
+            2,
+          ),
         );
         // delete temp file if it exists
         if (filePath) {
@@ -378,10 +378,10 @@ const FileSystemService = {
     await writeQueue.push(async () => {
       try {
         const { meta: metaDatasets, datasets } = JSON.parse(
-          await readFile(getDatasetDbPath())
+          await readFile(getDatasetDbPath()),
         );
         const { meta: metaTables, tables } = JSON.parse(
-          await readFile(getTablesDbPath())
+          await readFile(getTablesDbPath()),
         );
 
         // remove tables
@@ -408,12 +408,12 @@ const FileSystemService = {
         // replace db
         await writeFile(
           getDatasetDbPath(),
-          JSON.stringify({ meta: metaDatasets, datasets }, null, 2)
+          JSON.stringify({ meta: metaDatasets, datasets }, null, 2),
         );
         // replace db
         await writeFile(
           getTablesDbPath(),
-          JSON.stringify({ meta: metaTables, tables }, null, 2)
+          JSON.stringify({ meta: metaTables, tables }, null, 2),
         );
 
         // remove files
@@ -426,7 +426,7 @@ const FileSystemService = {
   removeTable: async (datasetId, tableId) => {
     await writeQueue.push(async () => {
       const { meta: metaDatasets, datasets } = JSON.parse(
-        await readFile(getDatasetDbPath())
+        await readFile(getDatasetDbPath()),
       );
       const { meta, tables } = JSON.parse(await readFile(getTablesDbPath()));
 
@@ -435,7 +435,7 @@ const FileSystemService = {
         if (tables[tableId].mantisId !== undefined) {
           await MantisService.deleteTable(
             datasets[datasetId].mantisId,
-            tables[tableId].mantisId
+            tables[tableId].mantisId,
           );
         }
         delete tables[tableId];
@@ -446,12 +446,12 @@ const FileSystemService = {
         // replace db
         await writeFile(
           getDatasetDbPath(),
-          JSON.stringify({ meta: metaDatasets, datasets }, null, 2)
+          JSON.stringify({ meta: metaDatasets, datasets }, null, 2),
         );
         // replace db
         await writeFile(
           getTablesDbPath(),
-          JSON.stringify({ meta, tables }, null, 2)
+          JSON.stringify({ meta, tables }, null, 2),
         );
 
         try {
@@ -464,6 +464,15 @@ const FileSystemService = {
     });
   },
   addTable: async (idDataset, filePath, tableName) => {
+    const generateUniqueTableName = (name, existingNames) => {
+      let uniqueName = name;
+      let counter = 1;
+      while (existingNames.includes(uniqueName)) {
+        uniqueName = `${name}_${counter}`;
+        counter++;
+      }
+      return uniqueName;
+    };
     let newDatasets = {};
     let newTables = {};
 
@@ -471,17 +480,26 @@ const FileSystemService = {
       try {
         // read db datasets
         const { meta: metaDatasets, datasets } = JSON.parse(
-          await readFile(getDatasetDbPath())
+          await readFile(getDatasetDbPath()),
         );
         // metaDatasets.lastIndex += 1;
         const datasetFolderPath = `${getDatasetFilesPath()}/${idDataset}`;
         // read tables datasets
         const { meta: metaTables, tables } = JSON.parse(
-          await readFile(getTablesDbPath())
+          await readFile(getTablesDbPath()),
+        );
+
+        const existingTableNames = Object.values(tables)
+          .filter((table) => table.idDataset === idDataset)
+          .map((table) => table.name);
+
+        const uniqueTableName = generateUniqueTableName(
+          tableName,
+          existingTableNames,
         );
 
         const zip = createReadStream(filePath).pipe(
-          unzipper.Parse({ forceStream: true })
+          unzipper.Parse({ forceStream: true }),
         );
 
         const writeTempFile = async (readStream) => {
@@ -515,13 +533,13 @@ const FileSystemService = {
 
           await writeFile(
             `${datasetFolderPath}/${metaTables.lastIndex}.json`,
-            JSON.stringify(data)
+            JSON.stringify(data),
           );
 
           newTables[`${metaTables.lastIndex}`] = {
             id: `${metaTables.lastIndex}`,
             idDataset,
-            name: tableName,
+            name: uniqueTableName,
             nCols: Object.keys(data.columns).length,
             nRows: Object.keys(data.rows).length,
             nCells: data.nCells,
@@ -546,8 +564,8 @@ const FileSystemService = {
               datasets: { ...datasets, ...newDatasets },
             },
             null,
-            2
-          )
+            2,
+          ),
         );
         // add table entries
         await writeFile(
@@ -558,8 +576,8 @@ const FileSystemService = {
               tables: { ...tables, ...newTables },
             },
             null,
-            2
-          )
+            2,
+          ),
         );
         // delete temp files
         await rm(filePath);
@@ -611,7 +629,7 @@ const FileSystemService = {
       // write updated db
       await writeFile(
         `${getTablesDbPath()}`,
-        JSON.stringify({ meta, tables }, null, 2)
+        JSON.stringify({ meta, tables }, null, 2),
       );
       // write updated table
       await writeFile(`${pathToTable}.json`, JSON.stringify({ columns, rows }));
@@ -654,7 +672,7 @@ const FileSystemService = {
       } catch (error) {
         console.error(
           `Error processing metadata item: ${JSON.stringify(metaItem)}`,
-          error
+          error,
         );
         console.log(" failed processing", KG_INFO[prefix], prefix, id);
       }
@@ -686,7 +704,7 @@ const FileSystemService = {
         cells: Object.keys(rawRows[rowId].cells).reduce((accCell, colId) => {
           const { lowestScore, highestScore, match, metadata } =
             FileSystemService.transformMetadata(
-              rawRows[rowId].cells[colId].metadata
+              rawRows[rowId].cells[colId].metadata,
             );
           minMetaScore =
             lowestScore < minMetaScore ? lowestScore : minMetaScore;
