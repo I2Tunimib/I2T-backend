@@ -56,7 +56,6 @@ const getRawBody = (req) => {
 };
 
 export default async (req, res, next) => {
-  console.log("Logger middleware triggered");
   try {
     // Capture raw body before it's parsed by express.json()
     const rawBody = await getRawBody(req);
@@ -94,16 +93,14 @@ async function routeLogs(req) {
 async function handleReconciliationRoute(req, url) {
   const requestedReconciliation = extractServiceFromUrl(
     url,
-    ROUTE_PATTERNS.RECONCILIATORS
+    ROUTE_PATTERNS.RECONCILIATORS,
   );
   const taskInfos = await getTaskInfos(req);
 
   // Only log if we have all the required information
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
-    console.log(
-      `Reconciliation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}, Column Name: ${columnName}`
-    );
+
     await writeLog(
       datasetId,
       tableId,
@@ -113,7 +110,7 @@ async function handleReconciliationRoute(req, url) {
         columnName,
         service: requestedReconciliation,
       },
-      req._rawBody || req.body
+      req._rawBody || req.body,
     );
   }
 }
@@ -128,9 +125,7 @@ async function handleExtenderRoute(req, url) {
   // Only log if we have all the required information
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
-    console.log(
-      `Extender requested for Table ID: ${tableId}, Dataset ID: ${datasetId}, Column Name: ${columnName}`
-    );
+
     await writeLog(
       datasetId,
       tableId,
@@ -140,7 +135,7 @@ async function handleExtenderRoute(req, url) {
         columnName,
         service: requestedExtender,
       },
-      req._rawBody || req.body
+      req._rawBody || req.body,
     );
   }
 }
@@ -153,23 +148,14 @@ async function handleSaveRoute(req, method) {
     const [tableId, datasetId, deletedCols] = taskInfos;
 
     if (method === "PUT") {
-      console.log(
-        `Save operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
-      );
       await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE, deletedCols);
     }
   } else if (taskInfos && taskInfos.length === 2) {
     const [tableId, datasetId] = taskInfos;
     if (method === "PUT") {
-      console.log(
-        `Save operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
-      );
       await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE);
     }
     if (method === "GET") {
-      console.log(
-        `Get operation requested for Table ID: ${tableId}, Dataset ID: ${datasetId}`
-      );
       await writeLog(datasetId, tableId, OPERATION_TYPES.GET_TABLE);
     } else {
       console.error("Task infos not found or incomplete for save operation.");
@@ -208,7 +194,7 @@ async function writeLog(
   operationType,
   deletedCols = null,
   options = {},
-  additionalData = null
+  additionalData = null,
 ) {
   try {
     const timestamp = new Date().toISOString();
@@ -219,14 +205,13 @@ async function writeLog(
       tableId,
       deletedCols,
       options,
-      additionalData
+      additionalData,
     );
 
     const logPath = getLogFilePath(datasetId, tableId);
     ensureLogDirectoryExists(logPath);
 
     fs.appendFileSync(logPath, logMessage);
-    console.log(`${operationType} log written successfully to:`, logPath);
   } catch (error) {
     console.error(`Error writing to ${operationType} log:`, error);
   }
@@ -239,7 +224,7 @@ function buildLogMessage(
   tableId,
   deletedCols = null,
   options = {},
-  additionalData = null
+  additionalData = null,
 ) {
   let message = `[${timestamp}] -| OpType: ${operationType} -| DatasetId: ${datasetId} -| TableId: ${tableId}`;
 
@@ -271,7 +256,7 @@ function getLogFilePath(datasetId, tableId) {
     process.cwd(),
     "public",
     "logs",
-    `logs-${datasetId}-${tableId}.log`
+    `logs-${datasetId}-${tableId}.log`,
   );
 }
 

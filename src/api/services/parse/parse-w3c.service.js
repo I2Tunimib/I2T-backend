@@ -37,10 +37,10 @@ const ParseW3C = {
       const { context } = columns[colId];
       const totalReconciliated = Object.keys(context).reduce(
         (acc, key) => acc + context[key].reconciliated,
-        0
+        0,
       );
       const hasMetadata = Object.keys(context).some(
-        (key) => context[key].total > 0
+        (key) => context[key].total > 0,
       );
 
       if (totalReconciliated === Object.keys(rows).length) {
@@ -239,14 +239,13 @@ const ParseW3C = {
           rowIndex += 1;
           continue;
         }
-        console.log("parsing row", rowIndex);
         // parse row and update reconciliators count
         const { nReconciliated, ...rest } = ParseW3C.parseRow(
           row,
           rowIndex,
           columns,
           minMetaScore,
-          maxMetaScore
+          maxMetaScore,
         );
         ParseW3C.addRow(rows, rest);
         nCellsReconciliated += nReconciliated;
@@ -259,7 +258,6 @@ const ParseW3C = {
       const data = { columns, rows, nCells, nCellsReconciliated };
       return { status: "success", data };
     } catch (err) {
-      console.log("error in parsing w3c", err);
       entry.destroy();
       return { status: "error" };
     }
