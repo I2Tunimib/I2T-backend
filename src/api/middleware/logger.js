@@ -1,5 +1,4 @@
-import fs from "fs";
-import path from "path";
+import LoggerService from "../services/logger/logger.service.js";
 
 // Operation types
 const OPERATION_TYPES = {
@@ -101,17 +100,13 @@ async function handleReconciliationRoute(req, url) {
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
 
-    await writeLog(
+    LoggerService.logReconciliation({
       datasetId,
       tableId,
-      OPERATION_TYPES.RECONCILIATION,
-      null,
-      {
-        columnName,
-        service: requestedReconciliation,
-      },
-      req._rawBody || req.body,
-    );
+      columnName,
+      service: requestedReconciliation,
+      additionalData: req._rawBody || req.body,
+    });
   }
 }
 
@@ -126,17 +121,13 @@ async function handleExtenderRoute(req, url) {
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
 
-    await writeLog(
+    LoggerService.logExtension({
       datasetId,
       tableId,
-      OPERATION_TYPES.EXTENSION,
-      null,
-      {
-        columnName,
-        service: requestedExtender,
-      },
-      req._rawBody || req.body,
-    );
+      columnName,
+      service: requestedExtender,
+      additionalData: req._rawBody || req.body,
+    });
   }
 }
 
@@ -148,15 +139,15 @@ async function handleSaveRoute(req, method) {
     const [tableId, datasetId, deletedCols] = taskInfos;
 
     if (method === "PUT") {
-      await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE, deletedCols);
+      LoggerService.logSave({ datasetId, tableId, deletedCols });
     }
   } else if (taskInfos && taskInfos.length === 2) {
     const [tableId, datasetId] = taskInfos;
     if (method === "PUT") {
-      await writeLog(datasetId, tableId, OPERATION_TYPES.SAVE);
+      LoggerService.logSave({ datasetId, tableId });
     }
     if (method === "GET") {
-      await writeLog(datasetId, tableId, OPERATION_TYPES.GET_TABLE);
+      LoggerService.logGetTable({ datasetId, tableId });
     } else {
       console.error("Task infos not found or incomplete for save operation.");
     }
@@ -185,84 +176,5 @@ async function getTaskInfos(req) {
   } catch (error) {
     console.error("Error extracting task infos:", error);
     return [];
-  }
-}
-
-async function writeLog(
-  datasetId,
-  tableId,
-  operationType,
-  deletedCols = null,
-  options = {},
-  additionalData = null,
-) {
-  try {
-    const timestamp = new Date().toISOString();
-    const logMessage = buildLogMessage(
-      timestamp,
-      operationType,
-      datasetId,
-      tableId,
-      deletedCols,
-      options,
-      additionalData,
-    );
-
-    const logPath = getLogFilePath(datasetId, tableId);
-    ensureLogDirectoryExists(logPath);
-
-    fs.appendFileSync(logPath, logMessage);
-  } catch (error) {
-    console.error(`Error writing to ${operationType} log:`, error);
-  }
-}
-
-function buildLogMessage(
-  timestamp,
-  operationType,
-  datasetId,
-  tableId,
-  deletedCols = null,
-  options = {},
-  additionalData = null,
-) {
-  let message = `[${timestamp}] -| OpType: ${operationType} -| DatasetId: ${datasetId} -| TableId: ${tableId}`;
-
-  if (options.columnName) {
-    message += ` -| ColumnName: ${options.columnName}`;
-  }
-  const serviceLabel =
-    operationType === OPERATION_TYPES.RECONCILIATION
-      ? "Reconciler"
-      : "Extender";
-  if (additionalData && additionalData.serviceId) {
-    message += ` -| ${serviceLabel}: ${additionalData.serviceId}`;
-  } else if (options.service) {
-    message += ` -| Service: ${options.service}`;
-  } else if (deletedCols) {
-    message += ` -| DeletedCols: ${deletedCols}`;
-  }
-
-  if (additionalData) {
-    const { items, ...rest } = additionalData;
-    message += ` -| AdditionalData: ${JSON.stringify(rest)}`;
-  }
-
-  return message + "\n";
-}
-
-function getLogFilePath(datasetId, tableId) {
-  return path.join(
-    process.cwd(),
-    "public",
-    "logs",
-    `logs-${datasetId}-${tableId}.log`,
-  );
-}
-
-function ensureLogDirectoryExists(logPath) {
-  const logsDir = path.dirname(logPath);
-  if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
   }
 }
