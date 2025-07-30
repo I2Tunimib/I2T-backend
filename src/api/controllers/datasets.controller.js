@@ -77,7 +77,7 @@ const DatasetsController = {
       const { datasets } = await DatasetsService.addDataset(
         file ? file.tempFilePath : null,
         name,
-        user.id
+        user.id,
       );
 
       res.json({
@@ -120,7 +120,7 @@ const DatasetsController = {
       const tables = await DatasetsService.addTable(
         idDataset,
         file.tempFilePath,
-        name
+        name,
       );
 
       res.json({
@@ -189,11 +189,11 @@ const DatasetsController = {
 
       const tables = await DatasetsService.findTablesByNameAndUser(
         query,
-        user.id
+        user.id,
       );
       const datasets = await DatasetsService.findDatasetsByNameAndUser(
         query,
-        user.id
+        user.id,
       );
 
       res.json({
@@ -204,7 +204,16 @@ const DatasetsController = {
       next(err);
     }
   },
-
+  trackTable: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    try {
+      const table = await DatasetsService.findTable(idDataset, idTable);
+      await TrackingService.trackTable(table);
+      res.status(200).end();
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 export default DatasetsController;
