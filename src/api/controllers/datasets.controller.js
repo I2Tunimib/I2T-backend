@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import config from "../../config/index.js";
 import AuthService from "../services/auth/auth.service.js";
 import fs from "fs";
+import LoggerService from "../services/logger/logger.service.js";
 
 const {
   JWT_SECRET,
@@ -206,9 +207,20 @@ const DatasetsController = {
   },
   trackTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
+    const { operationType, columnName, payload } = req.body;
     try {
-      const table = await DatasetsService.findTable(idDataset, idTable);
-      await TrackingService.trackTable(table);
+      switch (operationType) {
+        case LoggerService.OPERATION_TYPES.PROPAGATE_TYPE: {
+          LoggerService.logTypePropagation(
+            idDataset,
+            idTable,
+            columnName,
+            payload,
+          );
+          break;
+        }
+      }
+
       res.status(200).end();
     } catch (err) {
       next(err);
