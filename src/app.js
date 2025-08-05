@@ -23,7 +23,7 @@ app.use(
   fileUpload({
     useTempFiles: true,
     tempFileDir: "./tmp",
-  })
+  }),
 );
 
 app.use(zipTmpFileMiddleware);
@@ -48,7 +48,7 @@ app.use(
       tokens["response-time"](req, res),
       "ms",
     ].join(" ");
-  })
+  }),
 );
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
@@ -58,7 +58,7 @@ app.use(
     limit: "500mb",
     extended: true,
     parameterLimit: 1000000000000000,
-  })
+  }),
 );
 // Apply logger middleware after body parsing
 app.use(logger);
