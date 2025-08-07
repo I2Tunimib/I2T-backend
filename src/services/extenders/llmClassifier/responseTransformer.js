@@ -9,7 +9,7 @@ function latin1Safe(s) {
 }
 const openai = new OpenAI({
   apiKey: latin1Safe("sk-localapikey"), // required
-  baseURL: latin1Safe(process.env.LLM_ADDRESS || ""), // YOUR URL
+  baseURL: process.env.LLM_ADDRESS || "", // YOUR URL
 });
 
 function buildCofogPrompt(record_data) {
