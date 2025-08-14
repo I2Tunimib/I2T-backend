@@ -20,6 +20,10 @@ router.get(
   "/:idDataset/table/:idTable/export",
   asyncMiddleware(DatasetsController.exportTable),
 );
+router.get(
+  "/:idDataset/table/:idTable/code",
+  asyncMiddleware(DatasetsController.exportTableCode),
+);
 router.post("/", asyncMiddleware(DatasetsController.addDataset));
 router.post("/:idDataset/table", asyncMiddleware(DatasetsController.addTable));
 router.post(
