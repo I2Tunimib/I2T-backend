@@ -183,6 +183,39 @@ const DatasetsController = {
       next(err);
     }
   },
+  exportTableCode: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { format = "python" } = req.query;
+    try {
+      const user = AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+
+      if (dataset.userId !== user.id) {
+        return res.status(401).json({});
+      }
+
+      // Table existence isn't checked - we only need the logs
+      // The table ID is just used for reference in the generated code
+      // Get the exported code file
+      const { data, fileName, contentType } = await ExportService.semtParser({
+        id: idTable,
+        datasetId: idDataset,
+        format: format === "notebook" ? "notebook" : "python",
+      });
+
+      // Set appropriate headers for file download
+      res.setHeader("Content-Type", contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`,
+      );
+
+      // Send the file and ensure the response is complete before file cleanup
+      res.send(data);
+    } catch (err) {
+      next(err);
+    }
+  },
   search: async (req, res, next) => {
     const { query } = req.query;
     try {
