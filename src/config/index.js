@@ -154,7 +154,52 @@ const loadConfig = async () => {
       helpers.getUsersPath(),
       JSON.stringify(initialUsersDb, null, 2),
     );
-    log("db", "Created users DB with default test user");
+    log(
+      "db",
+      "Created users DB with default test user (username: test, password: test)",
+    );
+  } else {
+    // Check if default test user exists, if not add it
+    try {
+      const usersData = JSON.parse(
+        await import("fs").then((fs) =>
+          fs.promises.readFile(helpers.getUsersPath(), "utf8"),
+        ),
+      );
+      const hasTestUser = Object.values(usersData.users || {}).some(
+        (user) => user.username === "test" && user.password === "test",
+      );
+
+      if (!hasTestUser) {
+        const { meta, users } = usersData;
+        const newId = (meta.lastIndex || -1) + 1;
+
+        const defaultUser = {
+          id: newId,
+          username: "test",
+          email: "test",
+          password: "test",
+          createdAt: new Date().toISOString(),
+        };
+
+        users[newId] = defaultUser;
+        const updatedUsersDb = {
+          meta: { lastIndex: newId },
+          users,
+        };
+
+        await safeWriteFileToPath(
+          helpers.getUsersPath(),
+          JSON.stringify(updatedUsersDb, null, 2),
+        );
+        log(
+          "db",
+          "Added default test user to existing users DB (username: test, password: test)",
+        );
+      }
+    } catch (err) {
+      log("db", "Error checking for default user: " + err.message);
+    }
   }
 
   return {
