@@ -11,17 +11,17 @@ if (process.env.ENV === "DEV" && env.error) {
 }
 if (!CONFIG.datasetFilesPath) {
   throw new Error(
-    "⚠️  You must provide a path to the dataset files in config.js ⚠️"
+    "⚠️  You must provide a path to the dataset files in config.js ⚠️",
   );
 }
 if (!CONFIG.datasetDbPath) {
   throw new Error(
-    "⚠️  You must provide a path to the dataset db in config.js ⚠️"
+    "⚠️  You must provide a path to the dataset db in config.js ⚠️",
   );
 }
 if (!CONFIG.tablesDbPath) {
   throw new Error(
-    "⚠️  You must provide a path to the tables db in config.js ⚠️"
+    "⚠️  You must provide a path to the tables db in config.js ⚠️",
   );
 }
 
@@ -34,7 +34,7 @@ const loadExtenders = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/extenders`;
 
   const extenders = readdirSync(basePath).filter(
-    (extender) => !services.exclude.extenders.includes(extender)
+    (extender) => !services.exclude.extenders.includes(extender),
   );
 
   return extenders.reduce(async (acc, serviceKey) => {
@@ -66,7 +66,7 @@ const loadReconciliators = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/reconciliators`;
 
   const reconciliators = readdirSync(basePath).filter(
-    (reconciliator) => !services.exclude.reconciliators.includes(reconciliator)
+    (reconciliator) => !services.exclude.reconciliators.includes(reconciliator),
   );
 
   return reconciliators.reduce(async (acc, serviceKey) => {
@@ -121,7 +121,7 @@ const loadConfig = async () => {
     log("db", "Create tables DB");
     await safeWriteFileToPath(
       helpers.getTablesDbPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2)
+      JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2),
     );
   }
 
@@ -129,16 +129,32 @@ const loadConfig = async () => {
     log("db", "Create dataset DB");
     await safeWriteFileToPath(
       helpers.getDatasetDbPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2)
+      JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2),
     );
   }
 
   if (!existsSync(helpers.getUsersPath())) {
     log("db", "Create users DB");
+    const defaultUser = {
+      id: 0,
+      username: "test",
+      email: "test",
+      password: "test",
+      createdAt: new Date().toISOString(),
+    };
+
+    const initialUsersDb = {
+      meta: { lastIndex: 0 },
+      users: {
+        0: defaultUser,
+      },
+    };
+
     await safeWriteFileToPath(
       helpers.getUsersPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, users: {} }, null, 2)
+      JSON.stringify(initialUsersDb, null, 2),
     );
+    log("db", "Created users DB with default test user");
   }
 
   return {

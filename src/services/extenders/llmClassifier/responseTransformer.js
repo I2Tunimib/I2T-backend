@@ -11,7 +11,6 @@ const openai = new OpenAI({
   apiKey: latin1Safe("sk-localapikey"), // required
   baseURL: process.env.LLM_ADDRESS || "", // YOUR URL
 });
-
 function buildCofogPrompt(record_data) {
   return latin1Safe(`
 Based on the following information about a government department or public organization,
@@ -61,7 +60,7 @@ async function callAll(prompts, model = "phi4-mini") {
         const raw = completion.choices[0]?.message?.content;
         if (!raw)
           throw new Error(
-            `OpenAI returned empty response for prompt #${index}`,
+            `OpenAI returned empty response for prompt #${index}`
           );
 
         return { ...JSON.parse(raw), rowId: prompt.rowId };
@@ -75,7 +74,7 @@ async function callAll(prompts, model = "phi4-mini") {
           rowId: prompt.rowId,
         };
       }
-    }),
+    })
   );
 }
 /**
