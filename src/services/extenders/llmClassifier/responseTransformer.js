@@ -48,24 +48,24 @@ Example response:
 async function callAll(prompts, model = "phi4-mini") {
   return await Promise.all(
     prompts.map(async (prompt, index) => {
-      console.log(`✅ Prompt #${index} → calling API`);
       try {
         const completion = await openai.chat.completions.create({
           model,
           messages: [{ role: "user", content: prompt.prompt }],
         });
 
-        console.log(`✅ Prompt #${index} → done`);
-
         const raw = completion.choices[0]?.message?.content;
         if (!raw)
           throw new Error(
-            `OpenAI returned empty response for prompt #${index}`
+            `OpenAI returned empty response for prompt #${index}`,
           );
 
         return { ...JSON.parse(raw), rowId: prompt.rowId };
       } catch (err) {
-        console.error(`❌ Error for prompt #${index}:`, err);
+        console.error(
+          `Error processing LLM request for prompt #${index}:`,
+          err,
+        );
         // Return empty object for this prompt
         return {
           cofog_label: null,
@@ -74,7 +74,7 @@ async function callAll(prompts, model = "phi4-mini") {
           rowId: prompt.rowId,
         };
       }
-    })
+    }),
   );
 }
 /**
@@ -87,14 +87,12 @@ async function callAll(prompts, model = "phi4-mini") {
  * @returns {Object} response - Structured response with columns for each field
  */
 export default async (req, fullRows) => {
-  console.log("Address ....... ", process.env.LLM_ADDRESS);
   // Prepare response object with columns for each COFOG result field
   const prompts = fullRows.map((row) => ({
     prompt: buildCofogPrompt(row),
     rowId: row.rowId,
   }));
   const responses = await callAll(prompts);
-  console.log("LLM responses", responses);
   let response = {
     columns: {
       cofog_label: {
