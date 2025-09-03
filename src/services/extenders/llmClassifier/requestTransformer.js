@@ -30,8 +30,6 @@ export default async (req) => {
     }),
   );
 
-  console.log("Full rows:", fullRows);
-
   // Use the row IDs from the item column (assuming all columns have matching row IDs)
   return fullRows;
 };
