@@ -22,6 +22,7 @@ export default async (req) => {
       const wikidataInfo = await fetchWikidataInformation(itemCol[rowId].kbId);
       return {
         ...wikidataInfo,
+        wikidataId: itemCol[rowId].kbId.replace("wdA:", "").replace("wd:", ""),
         name: itemCol[rowId].value ? itemCol[rowId].value : "",
         country: countryCol[index] ? countryCol[index] : "",
         description: descriptionCol[index] ? descriptionCol[index] : "",
