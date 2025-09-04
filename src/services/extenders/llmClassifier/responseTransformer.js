@@ -45,6 +45,35 @@ Example response:
 {"cofog_label": "04", "confidence": "high", "reasoning": "This organization is primarily involved in economic development and infrastructure, which falls under Economic affairs."}
 `);
 }
+
+function getMostPopularForMissing(missingItemWikidataId, fullResponse) {
+  let freqMapping = {};
+  let filteredResp = fullResponse.filter(
+    (resp) => resp.wikidataId === missingItemWikidataId,
+  );
+  filteredResp.map((resp) => {
+    if (resp.cofog_label)
+      freqMapping[resp.cofog_label] = (freqMapping[resp.cofog_label] ?? 0) + 1;
+  });
+  console.log("freqmapping", freqMapping);
+  if (filteredResp.length > 0) {
+    let maxFreq = {
+      freq: freqMapping[Object.keys(freqMapping)[0]],
+      key: Object.keys(freqMapping)[0],
+    };
+    for (let key of Object.keys(freqMapping)) {
+      if (freqMapping[key] > maxFreq.freq) {
+        maxFreq["key"] = key;
+        maxFreq["freq"] = freqMapping[key];
+      }
+    }
+    console.log("done processing, returning", maxFreq["key"]);
+    return maxFreq["key"];
+  } else {
+    return null;
+  }
+}
+
 async function callAll(prompts, model = "phi4-mini") {
   return await Promise.all(
     prompts.map(async (prompt, index) => {
@@ -60,7 +89,11 @@ async function callAll(prompts, model = "phi4-mini") {
             `OpenAI returned empty response for prompt #${index}`,
           );
 
-        return { ...JSON.parse(raw), rowId: prompt.rowId };
+        return {
+          ...JSON.parse(raw),
+          rowId: prompt.rowId,
+          wikidataId: prompt.wikidataId,
+        };
       } catch (err) {
         console.error(
           `Error processing LLM request for prompt #${index}:`,
@@ -72,6 +105,7 @@ async function callAll(prompts, model = "phi4-mini") {
           confidence: null,
           reasoning: null,
           rowId: prompt.rowId,
+          wikidataId: prompt.wikidataId,
         };
       }
     }),
@@ -91,6 +125,7 @@ export default async (req, fullRows) => {
   const prompts = fullRows.map((row) => ({
     prompt: buildCofogPrompt(row),
     rowId: row.rowId,
+    wikidataId: row.wikidataId,
   }));
   const responses = await callAll(prompts);
   let response = {
@@ -132,18 +167,26 @@ export default async (req, fullRows) => {
   responses.forEach((result, idx) => {
     const rowId = fullRows[idx]?.rowId ?? idx;
     // Map cofog_label to full category name
-    const cofogLabelFull =
-      cofogCategories[result.cofog_label] || result.cofog_label || "";
+    let label = "";
+    if (!result.cofog_label) {
+      label = getMostPopularForMissing(result.wikidataId, responses);
+    } else {
+      label = result.cofog_label;
+    }
+    const cofogLabelFull = label
+      ? cofogCategories[label]
+      : "Response not available";
+
     response.columns.cofog_label.cells[rowId] = {
       label: cofogLabelFull,
       metadata: [],
     };
     response.columns.confidence.cells[rowId] = {
-      label: result.confidence || "",
+      label: result.confidence || "-",
       metadata: [],
     };
     response.columns.reasoning.cells[rowId] = {
-      label: result.reasoning || "",
+      label: result.reasoning || "-",
       metadata: [],
     };
     // Optionally, set meta mapping if you have input columns
