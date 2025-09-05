@@ -155,8 +155,8 @@ const ExportService = {
 
           outputFilePath = outputMatch[1].trim();
 
-          // Read the generated file
-          fs.readFile(outputFilePath, (err, data) => {
+          // Read the generated file with proper encoding
+          fs.readFile(outputFilePath, "utf8", (err, data) => {
             if (err) {
               // Clean up the file even if we couldn't read it
               if (outputFilePath) {
