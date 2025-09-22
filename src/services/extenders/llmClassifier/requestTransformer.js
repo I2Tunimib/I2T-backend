@@ -80,7 +80,7 @@ function getMostPopularForMissing(missingItemWikidataId, fullResponse) {
   }
 }
 
-async function callAll(prompts, model = "phi4-mini") {
+async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
   return await Promise.all(
     prompts.map(async (prompt, index) => {
       try {
