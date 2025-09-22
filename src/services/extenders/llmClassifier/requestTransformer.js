@@ -1,11 +1,122 @@
 import config from "./index.js";
-import axios from "axios";
-import { stringify } from "qs";
-import fs from "fs";
 import { fetchWikidataInformation } from "../../../utils/wikidataUtils.js";
+import OpenAI from "openai";
 
 const { endpoint } = config.private;
 const allowedPrefixes = ["wd", "wdA"];
+
+function latin1Safe(s) {
+  return s
+    .normalize("NFKC")
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, "-") // replace all hyphens/dashes
+    .replace(/[^\x00-\xff]/g, (c) => "?"); // drop remaining non‑Latin‑1
+}
+
+const openai = new OpenAI({
+  apiKey: latin1Safe("sk-localapikey"), // required
+  baseURL: process.env.LLM_ADDRESS || "", // YOUR URL
+});
+
+function buildCofogPrompt(record_data) {
+  return latin1Safe(`
+Based on the following information about a government department or public organization,
+classify it into a single, top-level COFOG (Classification of the Functions of Government) category.
+Use only the information provided to make your decision.
+
+Organization Information:
+Name: ${record_data.name || ""}
+Description: ${record_data.description || ""}
+Country: ${record_data.country || ""}
+Wikidata Description: ${record_data.wikidataDescription || ""}
+Wikidata Type: ${record_data.wikidataType || ""}
+
+COFOG Categories:
+01 - General public services
+02 - Defence
+03 - Public order and safety
+04 - Economic affairs
+05 - Environmental protection
+06 - Housing and community amenities
+07 - Health
+08 - Recreation, culture and religion
+09 - Education
+10 - Social protection
+
+Provide your response in JSON format with the following fields:
+cofog_label: A single number between 01 and 10 representing the most appropriate COFOG category
+confidence: 'high', 'medium', or 'low', indicating your confidence in this classification
+reasoning: A brief explanation of why you chose this category
+
+Example response:
+{"cofog_label": "04", "confidence": "high", "reasoning": "This organization is primarily involved in economic development and infrastructure, which falls under Economic affairs."}
+`);
+}
+
+function getMostPopularForMissing(missingItemWikidataId, fullResponse) {
+  let freqMapping = {};
+  let filteredResp = fullResponse.filter(
+    (resp) => resp.wikidataId === missingItemWikidataId
+  );
+  filteredResp.map((resp) => {
+    if (resp.cofog_label)
+      freqMapping[resp.cofog_label] = (freqMapping[resp.cofog_label] ?? 0) + 1;
+  });
+  console.log("freqmapping", freqMapping);
+  if (filteredResp.length > 0) {
+    let maxFreq = {
+      freq: freqMapping[Object.keys(freqMapping)[0]],
+      key: Object.keys(freqMapping)[0],
+    };
+    for (let key of Object.keys(freqMapping)) {
+      if (freqMapping[key] > maxFreq.freq) {
+        maxFreq["key"] = key;
+        maxFreq["freq"] = freqMapping[key];
+      }
+    }
+    console.log("done processing, returning", maxFreq["key"]);
+    return maxFreq["key"];
+  } else {
+    return null;
+  }
+}
+
+async function callAll(prompts, model = "phi4-mini") {
+  return await Promise.all(
+    prompts.map(async (prompt, index) => {
+      try {
+        const completion = await openai.chat.completions.create({
+          model,
+          messages: [{ role: "user", content: prompt.prompt }],
+        });
+
+        const raw = completion.choices[0]?.message?.content;
+        if (!raw)
+          throw new Error(
+            `OpenAI returned empty response for prompt #${index}`
+          );
+
+        return {
+          ...JSON.parse(raw),
+          rowId: prompt.rowId,
+          wikidataId: prompt.wikidataId,
+        };
+      } catch (err) {
+        console.error(
+          `Error processing LLM request for prompt #${index}:`,
+          err
+        );
+        // Return empty object for this prompt
+        return {
+          cofog_label: null,
+          confidence: null,
+          reasoning: null,
+          rowId: prompt.rowId,
+          wikidataId: prompt.wikidataId,
+        };
+      }
+    })
+  );
+}
 export default async (req) => {
   const { items, props } = req.original;
 
@@ -28,9 +139,37 @@ export default async (req) => {
         description: descriptionCol[index] ? descriptionCol[index] : "",
         rowId: rowId,
       };
-    }),
+    })
   );
 
-  // Use the row IDs from the item column (assuming all columns have matching row IDs)
-  return fullRows;
+  // Prepare prompts for LLM calls
+  const prompts = fullRows.map((row) => ({
+    prompt: buildCofogPrompt(row),
+    rowId: row.rowId,
+    wikidataId: row.wikidataId,
+  }));
+
+  // Make LLM calls and get responses
+  const llmResponses = await callAll(prompts);
+
+  // Enrich fullRows with LLM responses
+  const enrichedRows = fullRows.map((row, index) => {
+    const llmResponse =
+      llmResponses.find((resp) => resp.rowId === row.rowId) || {};
+
+    // Handle missing responses using getMostPopularForMissing
+    let cofog_label = llmResponse.cofog_label;
+    if (!cofog_label) {
+      cofog_label = getMostPopularForMissing(row.wikidataId, llmResponses);
+    }
+
+    return {
+      ...row,
+      cofog_label,
+      confidence: llmResponse.confidence,
+      reasoning: llmResponse.reasoning,
+    };
+  });
+
+  return enrichedRows;
 };
