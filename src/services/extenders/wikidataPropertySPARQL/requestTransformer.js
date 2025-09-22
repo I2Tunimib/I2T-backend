@@ -79,27 +79,46 @@ export default async (req) => {
   // Extract entities (Qxxx) from items.columnName
   const columnName = Object.keys(items)[0]; // Extract the column name (e.g., "Museum")
   console.log("********** Column name:", columnName);
+  console.log("********** Properties:", properties);
   const entities = Object.keys(items[columnName]).map(
     (label) => label.split(":")[1]
   );
 
   // Extract variables from the string and add ?item if it is not included
   // Split by one or more spaces, trim each element, and then prefix with '?'
-  const variablesArray = properties
-    .trim() // Remove leading and trailing spaces
-    .split(/\s+/) // Split by one or more spaces
-    .filter((v) => v.trim() !== "") // Remove any empty strings
-    .flatMap((v) => [`?${v.trim()}`, `?${v.trim()}Label`]); // Generate both `?v` and `?vLabel`
+  let variablesArray;
+  if (Array.isArray(properties)) {
+    // Handle array case like ["P8687", "P34", "P221"]
+    variablesArray = properties.flatMap((prop) => [
+      `?${prop}`,
+      `?${prop}Label`,
+    ]);
+  } else {
+    // Handle string case with space-separated properties
+    variablesArray = properties
+      .trim() // Remove leading and trailing spaces
+      .split(/\s+/) // Split by one or more spaces
+      .filter((v) => v.trim() !== "") // Remove any empty strings
+      .flatMap((v) => [`?${v.trim()}`, `?${v.trim()}Label`]); // Generate both `?v` and `?vLabel`
+  }
+
   if (!variablesArray.includes("?item")) {
     variablesArray.push("?item");
   }
 
   // Transform the properties string into the WHERE part of a SPARQL query, removing extra spaces
-  let body = properties
-    .trim() // Remove leading and trailing spaces
-    .split(/\s+/) // Split on one or more spaces
-    .map((prop) => `?item wdt:${prop} ?${prop}.`) // Create the SPARQL triples
-    .join(" "); // Join them back with a single space
+  let body;
+  if (Array.isArray(properties)) {
+    // Handle array case like ["P451", "P34", "P221"]
+    body = properties.map((prop) => `?item wdt:${prop} ?${prop}.`).join(" ");
+  } else {
+    // Handle string case with space-separated properties
+    body = properties
+      .trim() // Remove leading and trailing spaces
+      .split(/\s+/) // Split on one or more spaces
+      .map((prop) => `?item wdt:${prop} ?${prop}.`) // Create the SPARQL triples
+      .join(" "); // Join them back with a single space
+  }
   body += `
   SERVICE wikibase:label {
     bd:serviceParam wikibase:language "en".  # Set language preference

@@ -1,12 +1,12 @@
 import config from "../../../config/index.js";
 import { mapToUnique } from "./utils.js";
 
-const { reconciliators } = config;
+const { reconcilers } = config;
 
 const reconciliationPipeline = async (reqBody) => {
   const { serviceId, ...rest } = reqBody;
 
-  const service = reconciliators[serviceId];
+  const service = reconcilers[serviceId];
 
   if (!service) {
     throw new Error("Service not found");
