@@ -11,7 +11,7 @@ const OPERATION_TYPES = {
 // Route patterns
 const ROUTE_PATTERNS = {
   SAVE: /^\/api\/dataset\/\d+\/table\/\d+\/?$/,
-  RECONCILIATORS: "/api/reconciliators",
+  RECONCILERS: "/api/reconcilers",
   EXTENDERS: "/api/extenders",
 };
 
@@ -80,7 +80,7 @@ async function routeLogs(req) {
   }
   console.log("called url", url);
   // Handle different route types
-  if (url.includes(ROUTE_PATTERNS.RECONCILIATORS)) {
+  if (url.includes(ROUTE_PATTERNS.RECONCILERS)) {
     await handleReconciliationRoute(req, url);
   } else if (url.includes(ROUTE_PATTERNS.EXTENDERS)) {
     await handleExtenderRoute(req, url);
@@ -92,7 +92,7 @@ async function routeLogs(req) {
 async function handleReconciliationRoute(req, url) {
   const requestedReconciliation = extractServiceFromUrl(
     url,
-    ROUTE_PATTERNS.RECONCILIATORS,
+    ROUTE_PATTERNS.RECONCILERS
   );
   const taskInfos = await getTaskInfos(req);
 
@@ -122,7 +122,7 @@ async function handleExtenderRoute(req, url) {
     const [tableId, datasetId, columnName] = taskInfos;
 
     console.log(
-      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
+      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`
     );
 
     LoggerService.logExtension({

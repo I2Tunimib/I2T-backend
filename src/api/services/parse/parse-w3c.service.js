@@ -37,10 +37,10 @@ const ParseW3C = {
       const { context } = columns[colId];
       const totalReconciliated = Object.keys(context).reduce(
         (acc, key) => acc + context[key].reconciliated,
-        0,
+        0
       );
       const hasMetadata = Object.keys(context).some(
-        (key) => context[key].total > 0,
+        (key) => context[key].total > 0
       );
 
       if (totalReconciliated === Object.keys(rows).length) {
@@ -50,7 +50,7 @@ const ParseW3C = {
       }
     });
   },
-  parseHeader: (header, reconciliators) => {
+  parseHeader: (header, reconcilers) => {
     const getEntityMetadata = (metaRaw) => {
       if (!metaRaw || metaRaw.length === 0) {
         return {
@@ -160,7 +160,7 @@ const ParseW3C = {
   //   }
   // },
   isCellReconciliated: (metadata) => metadata.some((item) => item.match),
-  updateReconciliatorsCount: (metadata, column, columns) => {
+  updateReconcilersCount: (metadata, column, columns) => {
     if (metadata.length > 0) {
       const [prefix, _] = metadata[0].id.split(":");
       const { total, reconciliated } = columns[column].context[prefix];
@@ -187,7 +187,7 @@ const ParseW3C = {
       minMetaScore = lowestScore < minMetaScore ? lowestScore : minMetaScore;
       maxMetaScore = highestScore > maxMetaScore ? highestScore : maxMetaScore;
 
-      ParseW3C.updateReconciliatorsCount(metadata, column, columns);
+      ParseW3C.updateReconcilersCount(metadata, column, columns);
 
       acc[column] = {
         id: `${id}$${column}`,
@@ -213,7 +213,7 @@ const ParseW3C = {
   },
   parse: async (entry) => {
     try {
-      const { reconciliators } = await ParseService.readYaml("./config.yml");
+      const { reconcilers } = await ParseService.readYaml("./config.yml");
       // const stream = ParseService.createJsonStreamReader(filePath);
       const passThrough = new PassThrough({
         objectMode: true,
@@ -234,18 +234,18 @@ const ParseW3C = {
         if (rowIndex === -1) {
           // to parse header and transform to initial state.
           // we need to add information after rows are parsed.
-          columns = ParseW3C.parseHeader(row, reconciliators);
+          columns = ParseW3C.parseHeader(row, reconcilers);
           // pass to next iteration
           rowIndex += 1;
           continue;
         }
-        // parse row and update reconciliators count
+        // parse row and update reconcilers count
         const { nReconciliated, ...rest } = ParseW3C.parseRow(
           row,
           rowIndex,
           columns,
           minMetaScore,
-          maxMetaScore,
+          maxMetaScore
         );
         ParseW3C.addRow(rows, rest);
         nCellsReconciliated += nReconciliated;

@@ -6,6 +6,7 @@ export default async (req, res) => {
     // Read the JSON file with property descriptions
     const data = await fs.promises.readFile("./wikidataPropsObj.json", "utf8");
     const wikiProps = JSON.parse(data);
+    
     const { items, props } = req.original;
 
     let response = {
