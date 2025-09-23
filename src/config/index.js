@@ -34,7 +34,7 @@ const loadExtenders = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/extenders`;
 
   const extenders = readdirSync(basePath).filter(
-    (extender) => !services.exclude.extenders.includes(extender)
+    (extender) => !services.exclude?.extenders?.includes(extender)
   );
 
   return extenders.reduce(async (acc, serviceKey) => {
@@ -66,7 +66,7 @@ const loadReconcilers = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/reconcilers`;
 
   const reconcilers = readdirSync(basePath).filter(
-    (reconciler) => !services.exclude.reconcilers.includes(reconciler)
+    (reconciler) => !services.exclude?.reconcilers?.includes(reconciler)
   );
 
   return reconcilers.reduce(async (acc, serviceKey) => {
