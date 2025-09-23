@@ -90,7 +90,7 @@ const DatasetsController = {
           .json({ error: "Invalid or missing authentication token" });
       }
 
-      if (!user || !user.id) {
+      if (!user || user.id === null || user.id === undefined) {
         console.log("User or user.id is missing:", { user });
         return res.status(401).json({ error: "Invalid user authentication" });
       }
