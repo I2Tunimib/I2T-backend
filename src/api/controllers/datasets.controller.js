@@ -72,19 +72,40 @@ const DatasetsController = {
   addDataset: async (req, res, next) => {
     const { file } = req.files || {};
     const { name } = req.body;
+    console.log("addDataset called with:", {
+      hasFile: !!file,
+      name,
+      hasAuthHeader: !!req.headers?.authorization,
+    });
+
     try {
-      const user = AuthService.verifyToken(req);
+      let user;
+      try {
+        user = AuthService.verifyToken(req);
+        console.log("User verified successfully:", { userId: user?.id });
+      } catch (authError) {
+        console.log("Auth error:", authError.message);
+        return res
+          .status(401)
+          .json({ error: "Invalid or missing authentication token" });
+      }
+
+      if (!user || !user.id) {
+        console.log("User or user.id is missing:", { user });
+        return res.status(401).json({ error: "Invalid user authentication" });
+      }
 
       const { datasets } = await DatasetsService.addDataset(
         file ? file.tempFilePath : null,
         name,
-        user.id,
+        user.id
       );
 
       res.json({
         datasets: Object.keys(datasets).map((key) => datasets[key]),
       });
     } catch (err) {
+      console.log("Dataset creation error:", err.message);
       next(err);
     }
   },
@@ -121,7 +142,7 @@ const DatasetsController = {
       const tables = await DatasetsService.addTable(
         idDataset,
         file.tempFilePath,
-        name,
+        name
       );
 
       res.json({
@@ -207,7 +228,7 @@ const DatasetsController = {
       res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileName}"`,
+        `attachment; filename="${fileName}"`
       );
 
       // Send the file and ensure the response is complete before file cleanup
@@ -223,11 +244,11 @@ const DatasetsController = {
 
       const tables = await DatasetsService.findTablesByNameAndUser(
         query,
-        user.id,
+        user.id
       );
       const datasets = await DatasetsService.findDatasetsByNameAndUser(
         query,
-        user.id,
+        user.id
       );
 
       res.json({
@@ -248,7 +269,7 @@ const DatasetsController = {
             idDataset,
             idTable,
             columnName,
-            payload,
+            payload
           );
           break;
         }
