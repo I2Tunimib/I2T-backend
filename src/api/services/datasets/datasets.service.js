@@ -252,7 +252,7 @@ const FileSystemService = {
       throw new Error("Dataset name is required");
     }
 
-    if (!userId) {
+    if (userId === null || userId === undefined) {
       throw new Error("User ID is required");
     }
 
