@@ -72,26 +72,18 @@ const DatasetsController = {
   addDataset: async (req, res, next) => {
     const { file } = req.files || {};
     const { name } = req.body;
-    console.log("addDataset called with:", {
-      hasFile: !!file,
-      name,
-      hasAuthHeader: !!req.headers?.authorization,
-    });
 
     try {
       let user;
       try {
         user = AuthService.verifyToken(req);
-        console.log("User verified successfully:", { userId: user?.id });
       } catch (authError) {
-        console.log("Auth error:", authError.message);
         return res
           .status(401)
           .json({ error: "Invalid or missing authentication token" });
       }
 
       if (!user || user.id === null || user.id === undefined) {
-        console.log("User or user.id is missing:", { user });
         return res.status(401).json({ error: "Invalid user authentication" });
       }
 
@@ -105,7 +97,6 @@ const DatasetsController = {
         datasets: Object.keys(datasets).map((key) => datasets[key]),
       });
     } catch (err) {
-      console.log("Dataset creation error:", err.message);
       next(err);
     }
   },

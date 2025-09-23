@@ -4,7 +4,7 @@ export default {
     processRequest: true,
   },
   public: {
-    name: "LLM Classifier",
+    name: "COFOG Classifier",
     relativeUrl: "",
     description:
       "Classifies a government department or public organization into a single, top-level COFOG (Classification of the Functions of Government) category based on provided information. " +
