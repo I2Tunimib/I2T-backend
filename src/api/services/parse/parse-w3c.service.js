@@ -37,10 +37,10 @@ const ParseW3C = {
       const { context } = columns[colId];
       const totalReconciliated = Object.keys(context).reduce(
         (acc, key) => acc + context[key].reconciliated,
-        0
+        0,
       );
       const hasMetadata = Object.keys(context).some(
-        (key) => context[key].total > 0
+        (key) => context[key].total > 0,
       );
 
       if (totalReconciliated === Object.keys(rows).length) {
@@ -218,8 +218,30 @@ const ParseW3C = {
       const passThrough = new PassThrough({
         objectMode: true,
       });
-      // const stream = ParseService.createJsonStreamReader(path);
-      const stream = entry.pipe(parse("*")).pipe(passThrough);
+      // create a parser so we can attach error handlers and avoid unhandled 'error' events
+      const parser = parse("*");
+      let parseErr = null;
+
+      const handleError = (err) => {
+        parseErr = err;
+        console.error(
+          "parseW3C: json/stream error:",
+          err && err.message ? err.message : err,
+        );
+        try {
+          entry.destroy();
+        } catch (e) {}
+        try {
+          passThrough.end();
+        } catch (e) {}
+      };
+
+      // Attach listeners to prevent unhandled errors
+      parser.on && parser.on("error", handleError);
+      entry.on && entry.on("error", handleError);
+      passThrough.on && passThrough.on("error", handleError);
+
+      const stream = entry.pipe(parser).pipe(passThrough);
 
       let columns = {};
       let rows = {};
@@ -230,33 +252,58 @@ const ParseW3C = {
 
       let rowIndex = -1;
 
-      for await (const row of stream) {
-        if (rowIndex === -1) {
-          // to parse header and transform to initial state.
-          // we need to add information after rows are parsed.
-          columns = ParseW3C.parseHeader(row, reconcilers);
-          // pass to next iteration
+      try {
+        for await (const row of stream) {
+          if (rowIndex === -1) {
+            // to parse header and transform to initial state.
+            // we need to add information after rows are parsed.
+            columns = ParseW3C.parseHeader(row, reconcilers);
+            // pass to next iteration
+            rowIndex += 1;
+            continue;
+          }
+          // parse row and update reconcilers count
+          const { nReconciliated, ...rest } = ParseW3C.parseRow(
+            row,
+            rowIndex,
+            columns,
+            minMetaScore,
+            maxMetaScore,
+          );
+          ParseW3C.addRow(rows, rest);
+          nCellsReconciliated += nReconciliated;
           rowIndex += 1;
-          continue;
         }
-        // parse row and update reconcilers count
-        const { nReconciliated, ...rest } = ParseW3C.parseRow(
-          row,
-          rowIndex,
-          columns,
-          minMetaScore,
-          maxMetaScore
+        // update columns reconciliated status
+        ParseW3C.updateColumnsStatus(columns, rows);
+        nCells = Object.keys(rows).length * Object.keys(columns).length;
+        try {
+          stream.end();
+        } catch (e) {}
+        const data = { columns, rows, nCells, nCellsReconciliated };
+        return { status: "success", data };
+      } catch (err) {
+        console.error(
+          "parseW3C: error while reading JSON stream:",
+          err && err.message ? err.message : err,
         );
-        ParseW3C.addRow(rows, rest);
-        nCellsReconciliated += nReconciliated;
-        rowIndex += 1;
+        try {
+          stream.destroy();
+        } catch (e) {}
+        try {
+          entry.destroy();
+        } catch (e) {}
+        return { status: "error" };
+      } finally {
+        // cleanup listeners to avoid memory leaks
+        try {
+          parser.removeAllListeners && parser.removeAllListeners("error");
+        } catch (e) {}
+        try {
+          passThrough.removeAllListeners &&
+            passThrough.removeAllListeners("error");
+        } catch (e) {}
       }
-      // update columns reconciliated status
-      ParseW3C.updateColumnsStatus(columns, rows);
-      nCells = Object.keys(rows).length * Object.keys(columns).length;
-      stream.end();
-      const data = { columns, rows, nCells, nCellsReconciliated };
-      return { status: "success", data };
     } catch (err) {
       entry.destroy();
       return { status: "error" };
