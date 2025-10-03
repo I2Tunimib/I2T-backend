@@ -95,8 +95,41 @@ async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
             `OpenAI returned empty response for prompt #${index}`
           );
 
+        // Helper to extract JSON from responses that may be wrapped in
+        // markdown code fences or contain surrounding text.
+        function extractJson(input) {
+          try {
+            // Remove Markdown code fences and trim whitespace
+            const cleaned = input
+              .replace(/^```(?:json)?\s*/i, "") // remove opening ```json or ```
+              .replace(/```$/, "") // remove closing ```
+              .trim();
+
+            // Parse to JS object
+            return JSON.parse(cleaned);
+          } catch (err) {
+            console.error("Invalid JSON string:", err.message);
+            return null;
+          }
+        }
+
+        const parsed = extractJson(raw);
+        if (!parsed) {
+          console.error(
+            `Failed to parse LLM response for prompt #${index}. Raw response:`,
+            raw
+          );
+          return {
+            cofog_label: null,
+            confidence: null,
+            reasoning: null,
+            rowId: prompt.rowId,
+            wikidataId: prompt.wikidataId,
+          };
+        }
+
         return {
-          ...JSON.parse(raw),
+          ...parsed,
           rowId: prompt.rowId,
           wikidataId: prompt.wikidataId,
         };
