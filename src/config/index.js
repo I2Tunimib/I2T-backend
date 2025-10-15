@@ -90,6 +90,40 @@ const loadReconcilers = async () => {
   }, {});
 };
 
+
+/**
+ * Load modifiers services in memory
+ */
+const loadModifiers = async () => {
+  const { services } = CONFIG;
+
+  const basePath = `${process.env.PWD}/src${services.path}/modifiers`;
+
+  const modifiers = readdirSync(basePath).filter(
+      (modifier) => !services.exclude?.modifiers?.includes(modifier)
+  );
+
+  return modifiers.reduce(async (acc, serviceKey) => {
+    const servicePath = `${basePath}/${serviceKey}`;
+
+    const { default: info } = await import(`file:///${servicePath}/index.js`);
+    const { default: requestTransformer } = await import(
+        `file:///${servicePath}/requestTransformer.js`
+        );
+    const { default: responseTransformer } = await import(
+        `file:///${servicePath}/responseTransformer.js`
+        );
+
+    (await acc)[serviceKey] = {
+      info,
+      requestTransformer,
+      responseTransformer,
+    };
+    return acc;
+  }, {});
+};
+
+
 /**
  * Load helper functions in memory
  */
@@ -111,6 +145,7 @@ const loadHelperFunctions = async () => {
 const loadConfig = async () => {
   const reconcilers = await loadReconcilers();
   const extenders = await loadExtenders();
+  const modifiers = await loadModifiers();
   const helpers = await loadHelperFunctions();
 
   if (!existsSync(helpers.getTmpPath())) {
@@ -212,6 +247,7 @@ const loadConfig = async () => {
     RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
     reconcilers,
     extenders,
+    modifiers,
     helpers,
     mantisObjs: {
       cronsMap: {},
