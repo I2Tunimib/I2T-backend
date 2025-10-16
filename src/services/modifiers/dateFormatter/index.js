@@ -53,6 +53,17 @@ export default {
         ],
         defaultValue: "date",
       },
+      {
+        id: "outputMode",
+        label: "Output mode",
+        description: "Choose whether to create a new column or overwrite existing values.",
+        inputType: "radio",
+        defaultValue: "create",
+        options: [
+          { id: "create", label: "Create new column", value: "create" },
+          { id: "edit", label: "Edit existing column values", value: "edit" },
+        ],
+      },
     ],
   },
 };

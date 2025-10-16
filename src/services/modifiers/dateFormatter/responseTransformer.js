@@ -6,7 +6,7 @@ export default async (req, res) => {
   const columnToProcess = Object.keys(items)[0];
   const columnData = items[columnToProcess];
 
-  const {formatType, customPattern, detailLevel} = props;
+  const { formatType, customPattern, detailLevel, outputMode } = props;
 
   if (formatType === "custom") {
     const allowedTokens = ["dd", "MM", "MMMM", "yyyy", "HH", "mm", "ss", "SSS", "XXX"];
@@ -106,11 +106,16 @@ export default async (req, res) => {
     }
   }
 
-  const newColumnName = `formatted_${columnToProcess}`;
+  const newColumnName = outputMode === "edit"
+      ?  columnToProcess
+      : `formatted_${columnToProcess}`;
+
   const response = {
     columns: {
       [newColumnName]: {
-        label: `${newColumnName} (${pattern})`,
+        label: outputMode === "edit"
+          ? `${columnToProcess}`
+          : `${newColumnName} (${pattern})`,
         kind: "literal",
         metadata: [],
         cells: {},
