@@ -22,7 +22,7 @@ export default async (req) => {
     // console.log(`additionalColumns: ${JSON.stringify(req.original.props.additionalColumns)}`);
     if (req.original.props.additionalColumns !== undefined) {
       for (const [key, value] of Object.entries(
-        req.original.props.additionalColumns
+        req.original.props.additionalColumns,
       )) {
         if (req.original.props.additionalColumns[key][indice] !== undefined) {
           newItem =
@@ -38,7 +38,7 @@ export default async (req) => {
     }
   });
   const res = await axios.post(endpoint + "?token=" + access_token, {
-    json: addressList,
+    json: addressList.slice(1),
   });
   return {
     result: res.data.result,
