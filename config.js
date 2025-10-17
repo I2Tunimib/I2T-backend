@@ -11,7 +11,16 @@ export default {
   tmpPath: "/tmp",
   // path to users db relative to root folder
   usersPath: "/public/users.info.json",
-
+  errors: {
+    reconciler: {
+      "01": "External reconciliation service error.",
+      "02": "Reconciliation operation server error",
+    },
+    extender: {
+      11: "External extension service error.",
+      12: "Extension operation server error",
+    },
+  },
   services: {
     // path to services relative to src folder
     path: "/services",

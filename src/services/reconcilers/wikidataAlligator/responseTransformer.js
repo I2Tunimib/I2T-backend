@@ -18,30 +18,31 @@ function ensureDirectoryExists(dirPath) {
 }
 
 export default async (req, res) => {
+  const { result, labelDict, error } = res;
   const outputDir = "../../fileSemTUI";
   ensureDirectoryExists(outputDir);
   fs.writeFile(
     "../../fileSemTUI/response-Alligator.json",
-    JSON.stringify(res),
+    JSON.stringify(result),
     function (err) {
       if (err) throw err;
       console.log("File ../../fileSemTUI/response-Alligator.json saved!");
-    }
+    },
   );
   const { items } = req.original;
   const prefix = config.public.prefix;
-  const { cea, cta, cpa } = res.semanticAnnotations;
+  const { cea, cta, cpa } = result.semanticAnnotations;
   // console.log(`*** response alligator *** items: ${JSON.stringify(items)}`);
   // console.log(`*** response alligator *** cea: ${JSON.stringify(cea)}`);
   const response = [];
-  const usedCols = res.originalColumns;
+  const usedCols = result.originalColumns;
   const originalColsCta = cta.find((item) => item.idColumn === 0);
   const origianlColTypes = originalColsCta ? originalColsCta.types : [];
 
   console.log(
     `*** response alligator *** origianlColTypes: ${JSON.stringify(
-      origianlColTypes
-    )}`
+      origianlColTypes,
+    )}`,
   );
   // NOTE: the header properties are not addressed by the frontend, types are computed by the frontend
   const header = {
@@ -94,7 +95,7 @@ export default async (req, res) => {
     // console.log(`*** response alligator *** idRow: ${JSON.stringify(idRow)}`);
     if (idRow !== -1) {
       const foundObj = cea.find(
-        (obj) => obj.idRow === idRow + 1 && obj.idColumn === 0
+        (obj) => obj.idRow === idRow + 1 && obj.idColumn === 0,
       );
       // console.log(`*** response alligator *** foundObj: ${JSON.stringify(foundObj)}`);
       if (foundObj !== undefined) {
@@ -117,10 +118,18 @@ export default async (req, res) => {
       }
     }
   }
-  // fs.writeFile('../../fileSemTUI/responseREC-SemTUI-Alligator.json', JSON.stringify(response), function (err) {
-  //     if (err) throw err;
-  //     console.log('File ../../fileSemTUI/responseREC-SemTUI-Alligator.json saved!');
-  // });
+  // Check if no reconciliation results were found
+  const hasResults = response.some((item) => {
+    if (item.id && item.metadata && item.metadata.length > 0) {
+      // For cells, check if any metadata has match
+      return item.metadata.some((meta) => meta.match);
+    }
+    return false;
+  });
 
-  return response;
+  if (!hasResults) {
+    res.error = req.config.errors.reconciler["02"];
+  }
+
+  return { ...response, error: res.error };
 };
