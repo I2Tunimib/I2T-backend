@@ -1,6 +1,7 @@
+import { error } from "console";
 import config from "../../config/index.js";
 
-const { extenders: extConfig, reconcilers: reconConfig } = config;
+const { extenders: extConfig, reconcilers: reconConfig, errors } = config;
 
 const getPublicConfiguration = (services) => {
   return Object.keys(services).map((key) => ({
@@ -21,6 +22,7 @@ const ConfigController = {
       res.json({
         reconcilers,
         extenders,
+        errors,
       });
     } catch (err) {
       next(err);

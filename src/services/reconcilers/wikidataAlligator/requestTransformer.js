@@ -167,38 +167,64 @@ export default async (req) => {
   //     console.log('File ../../fileSemTUI/bodyAlligatorRequest.json saved!');
   // });
   console.log("*** Alligator Body *** ", bodyAlligatorRequestTemplate);
-  const res = await axios.post(
-    postUrl + "?token=" + access_token,
-    bodyAlligatorRequestTemplate,
-  );
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+
+  const reqHash = generateReqHash(req);
+
+  let cacheRes;
+  try {
+    cacheRes = await getCachedData(
+      `wikidataAlligator-${datasetId}-${tableId}-${columnName}-${reqHash}`,
+    );
+  } catch (error) {
+    console.log("cache not found");
   }
-  if (res.status !== 202) {
-    console.log(
-      `*** request alligator ### ERROR status code returned by alligator is: ${res.status} `,
+
+  if (cacheRes) {
+    console.log("cache found");
+    return { result: cacheRes.value, labelDict: {}, error: null };
+  }
+
+  try {
+    const res = await axios.post(
+      postUrl + "?token=" + access_token,
+      bodyAlligatorRequestTemplate,
     );
-  } else {
-    console.log(
-      `*** request alligator ### OK status code returned by alligator is: ${res.status} `,
-    );
-    const getUrl = endpoint + relativeUrl + "/EMD-BC/table/" + tableName;
-    const itemsPerPage = req.original.items.length;
-    console.log(
-      `*** request alligator *** getUrl to alligator: ${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
-    );
-    let annotation;
-    let status = "DOING";
-    while (status !== "DONE") {
-      await delay(3000);
-      annotation = await axios.get(
-        `${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
-      );
-      status = annotation.data.data.status;
-      // console.log(`*** get Alligator: status ${annotation.data.data.status}`);
+    function delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
     }
-    // console.log(`*** get Alligator: done`);
-    annotation.data.data.originalColumns = header;
-    return annotation.data.data;
+    if (res.status !== 202) {
+      console.log(
+        `*** request alligator ### ERROR status code returned by alligator is: ${res.status} `,
+      );
+    } else {
+      console.log(
+        `*** request alligator ### OK status code returned by alligator is: ${res.status} `,
+      );
+      const getUrl = endpoint + relativeUrl + "/EMD-BC/table/" + tableName;
+      const itemsPerPage = req.original.items.length;
+      console.log(
+        `*** request alligator *** getUrl to alligator: ${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
+      );
+      let annotation;
+      let status = "DOING";
+      while (status !== "DONE") {
+        await delay(3000);
+        annotation = await axios.get(
+          `${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
+        );
+        status = annotation.data.data.status;
+        // console.log(`*** get Alligator: status ${annotation.data.data.status}`);
+      }
+      // console.log(`*** get Alligator: done`);
+      annotation.data.data.originalColumns = header;
+      return { result: annotation.data.data, labelDict: {}, error: null };
+    }
+  } catch (err) {
+    console.error("Error in wikidataAlligator requestTransformer:", err);
+    return {
+      result: {},
+      labelDict: {},
+      error: req.config.errors.reconciler["01"],
+    };
   }
 };
