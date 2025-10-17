@@ -1,6 +1,6 @@
 export default async (req) => {
   const { props } = req.original;
-  const { formatType, customPattern, detailLevel, outputMode } = props;
+  const { formatType, customPattern, detailLevel, outputMode, joinColumns, selectedColumns } = props;
 
   return {
     props: {
@@ -8,6 +8,8 @@ export default async (req) => {
       customPattern: customPattern || "",
       detailLevel: detailLevel || "date",
       outputMode: outputMode,
+      joinColumns: joinColumns || false,
+      selectedColumns: selectedColumns || [],
     },
   };
 };
