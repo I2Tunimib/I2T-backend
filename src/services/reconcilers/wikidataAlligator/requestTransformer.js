@@ -1,12 +1,19 @@
 import config from "./index.js";
 import axios from "axios";
 import fs from "fs";
+import {
+  generateReqHash,
+  getCachedData,
+  setCachedData,
+} from "../../../utils/cachingUtils.js";
 
 const { endpoint } = config.private; // https://alligator.hel.sintef.cloud
 const { access_token } = config.private;
 const { relativeUrl } = config.public; // /dataset
 
 export default async (req) => {
+  const { tableId, datasetId, columnName } = req.original.props;
+
   // fs.writeFile('../../fileSemTUI/requestREC-UI-Alligator.json', JSON.stringify(req), function (err) {
   //     if (err) throw err;
   //     console.log('File ../../fileSemTUI/requestREC-UI-Alligator.json saved!');
