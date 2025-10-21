@@ -5,6 +5,7 @@ export default {
     processRequest: true,
   },
   public: {
+    allValues: true,
     name: "Linking: LionLinker Annotation",
     prefix: "ll",
     relativeUrl: "/lionlinker",
