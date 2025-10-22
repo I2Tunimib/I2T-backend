@@ -1,7 +1,7 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 # install zip
-RUN apk update && apk add zip
+RUN apt-get update && apt-get install -y zip && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /usr/src/app

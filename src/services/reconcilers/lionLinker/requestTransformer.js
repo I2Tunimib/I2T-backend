@@ -166,7 +166,6 @@ export default async (req) => {
           } catch (cacheError) {
             console.error("Error setting cache:", cacheError);
           }
-          console.log("***annotated rows***", annotatedRows);
           return { result: annotatedRows, labelDict: {}, error: null };
         } else if (status === "failed") {
           throw new Error(`Annotation failed: ${statusData.message}`);
