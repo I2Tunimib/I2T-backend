@@ -17,7 +17,6 @@ export default async (req, res) => {
       const rowMatch = cellId.match(/r(\d+)\$/);
       const rowId = rowMatch ? parseInt(rowMatch[1]) : null;
       const predictions = rowPredictions[rowId] || [];
-      console.log("*** predictions ***", predictions);
       const metadata = predictions.map((pred) => {
         const answerPart = pred.answer.split("ANSWER:")[1] ?? "";
         const wikidataId = answerPart.match(/Q\d+/)?.[0] ?? "N/A";
