@@ -3,7 +3,7 @@ import { it, enUS } from "date-fns/locale";
 
 export default async (req, res) => {
   const { items, props } = req.original;
-  const { formatType, customPattern, detailLevel, outputMode, joinColumns, selectedColumns, columnType, separator } = props;
+  const { formatType, customPattern, detailLevel, outputMode, columnToJoin, joinColumns, selectedColumns, columnType, separator } = props;
   const allowedTokens = ["dd","MM","MMMM","yyyy","HH","hh","mm","ss","a","SSS","XXX","z"];
 
   const dateFormats = [
@@ -23,16 +23,32 @@ export default async (req, res) => {
     }
   }
 
-  function buildPattern({ formatType, customPattern, detailLevel, columnType, joinColumns }) {
-    console.log("buildPattern columnType", columnType);
-    let pattern = "";
-    switch(formatType) {
-      case "iso": pattern = "yyyy-MM-dd"; break;
-      case "european": pattern = "dd/MM/yyyy"; break;
-      case "us": pattern = "MM/dd/yyyy"; break;
-      case "custom": pattern = customPattern; break;
-    }
+  let pattern = "";
+  switch(formatType) {
+    case "iso": pattern = "yyyy-MM-dd"; break;
+    case "european": pattern = "dd/MM/yyyy"; break;
+    case "us": pattern = "MM/dd/yyyy"; break;
+    case "custom": pattern = customPattern; break;
+  }
 
+  const datePatterns = {year: "yyyy", monthNumber: "MM", monthText: "MMMM", day: "dd",
+    monthYear: "MM-yyyy", date: pattern};
+
+  const timePatterns = {
+    hourMinutes: "HH:mm",            // 12:30
+    hourMinutes12: "hh:mm a",        // 12:30 PM
+    seconds: "HH:mm:ss",             // 12:30:45
+    seconds12: "hh:mm:ss a",         // 12:30:45 PM
+    milliseconds: "HH:mm:ss.SSS",    // 12:30:45.123
+    timezone: "HH:mm:ssXXX",         // 12:30:45+02:00
+    timezoneAbbr: "HH:mm:ss z",      // 12:30:45 GMT+2
+  };
+
+  const dateLevels = Object.keys(datePatterns);
+  const timeLevels = Object.keys(timePatterns);
+
+  function buildPattern({ formatType, customPattern, detailLevel, columnType, joinColumns, columnToJoin }) {
+    console.log("dentro buildPattern");
     //Validation custom
     if (formatType === "custom") {
       const timeAllowedTokens = ["HH","hh","mm","ss","a","SSS","XXX","z"];
@@ -40,64 +56,57 @@ export default async (req, res) => {
       const isPatternValid =
         typeof customPattern === "string" && customPattern.trim() !== "" &&
         tokens.some((token) => customPattern.includes(token));
-
       if (!isPatternValid) {
         throw new Error(`Error: Invalid custom pattern. Allowed tokens: ${tokens.join(", ")}.`);
       }
       return customPattern;
     }
-
-    const datePatterns = {year: "yyyy", monthNumber: "MM", monthText: "MMMM", day: "dd",
-      monthYear: "MM-yyyy", date: pattern};
-
-    const timePatterns = {
-      hourMinutes: "HH:mm",            // 12:30
-      hourMinutes12: "hh:mm a",        // 12:30 PM
-      seconds: "HH:mm:ss",             // 12:30:45
-      seconds12: "hh:mm:ss a",         // 12:30:45 PM
-      milliseconds: "HH:mm:ss.SSS",    // 12:30:45.123
-      timezone: "HH:mm:ssXXX",         // 12:30:45+02:00
-      timezoneAbbr: "HH:mm:ss z",      // 12:30:45 GMT+2
-    };
-
-    const dateLevels = Object.keys(datePatterns);
-    const timeLevels = Object.keys(timePatterns);
+    let patternToUse = pattern;
     const sep = formatType === "iso" ? "'T'" : " ";
 
     if (columnType === "date") {
       // Apply detailLevel selected refering to date
       if (dateLevels.includes(detailLevel)) {
-        pattern = datePatterns[detailLevel];
-      } else if (timeLevels.includes(detailLevel) && !joinColumns) {
-        // Append detailLevel selected refering to time to the date part, only if NOT joining multiple columns
+        patternToUse = datePatterns[detailLevel];
+      } else if (timeLevels.includes(detailLevel)) {
+        const hasColumnToJoin = columnToJoin && Object.values(columnToJoin)[0]?.[2];
         const timePattern = timePatterns[detailLevel];
-        pattern = `${pattern}${sep}${timePattern}`;
+        //No join
+        if (!joinColumns || !columnToJoin) {
+          //Append date formatted to time (detailLevel)
+          patternToUse = `${patternToUse}${sep}${timePattern}`;
+        }
+        //More than one column selected and checkbox join selected
+        if (joinColumns && selectedColumns.length > 1) {
+          //Append date formatted to time (detailLevel), and then append other values columns
+          patternToUse = patternToUse;
+        }
+        //Just one single column selected and column selected in the columnToJoin field
+        if (hasColumnToJoin && selectedColumns.length === 1) {
+          //Append date formatted to time (detailLevel)
+          patternToUse = `${patternToUse}${sep}${timePattern}`;
+        }
       }
     } else if (columnType === "time" && timeLevels.includes(detailLevel)) {
       // Apply detailLevel selected refering to time (no information about date)
-      pattern = timePatterns[detailLevel];
+      patternToUse = timePatterns[detailLevel];
     } else if (columnType === "datetime") {
-      // Build both date and time parts depending on the selected detail level
-      if (dateLevels.includes(detailLevel)) {
-        // Apply detailLevel selected refering to date
-        pattern = datePatterns[detailLevel];
-      } else if (timeLevels.includes(detailLevel)) {
+      if (timeLevels.includes(detailLevel)) {
         // Apply detailLevel selected refering to time
         const timePattern = timePatterns[detailLevel];
-        pattern = `${pattern}${sep}${timePattern}`;
+        patternToUse = `${patternToUse}${sep}${timePattern}`;
       }
     }
 
-    return pattern;
+    return patternToUse;
   }
 
-
-  function formatDateOnly(strValue, { formatType, customPattern, detailLevel, locales, joinColumns }) {
+  function formatDateOnly(strValue, { formatType, customPattern, detailLevel, locales, joinColumns, columnToJoin }) {
     for (const fmt of dateFormats) {
       for (const locale of locales) {
         const parsed = parse(strValue, fmt, new Date(), {locale});
         if (isValid(parsed)) {
-          const pattern = buildPattern({formatType, customPattern, detailLevel, hasTime: false, columnType: "date", joinColumns });
+          const pattern = buildPattern({formatType, customPattern, detailLevel, columnType: "date", joinColumns, columnToJoin });
           return format(parsed, pattern);
         }
       }
@@ -105,23 +114,23 @@ export default async (req, res) => {
     return null;
   }
 
-  function formatTimeOnly(strValue, { formatType, customPattern, detailLevel, joinColumns }) {
+  function formatTimeOnly(strValue, { formatType, customPattern, detailLevel, joinColumns, columnToJoin }) {
     for (const fmt of timeFormats) {
       const parsed = parse(strValue, fmt, new Date());
       if (isValid(parsed)) {
-        const pattern = buildPattern({ formatType, customPattern, detailLevel, hasTime: true, columnType: "time", joinColumns });
+        const pattern = buildPattern({ formatType, customPattern, detailLevel, columnType: "time", joinColumns, columnToJoin });
         return format(parsed, pattern);
       }
     }
     return null;
   }
 
-  function formatDateTime(strValue, { formatType, customPattern, detailLevel, locales, joinColumns }) {
+  function formatDateTime(strValue, { formatType, customPattern, detailLevel, locales, joinColumns, columnToJoin }) {
     for (const fmt of dateTimeFormats) {
       for (const locale of locales) {
         const parsed = parse(strValue, fmt, new Date(), {locale});
         if (isValid(parsed)) {
-          const pattern = buildPattern({formatType, customPattern, detailLevel, hasTime: true, columnType: "datetime", joinColumns });
+          const pattern = buildPattern({formatType, customPattern, detailLevel, columnType: "datetime", joinColumns, columnToJoin });
           return format(parsed, pattern);
         }
       }
@@ -154,33 +163,47 @@ export default async (req, res) => {
   }
 
   let response = { columns: {}, meta: {} };
-  if (joinColumns && selectedColumns && selectedColumns.length > 1) {
-    const columnsData = selectedColumns.map((col) => items[col]);
-    const newColumnName = `joined_${selectedColumns.join("_")}`;
+  let joinColName = "";
+  if ((joinColumns && selectedColumns && selectedColumns.length > 1) || columnToJoin) {
+    let allColumnsToJoin = [];
+    if (joinColumns && selectedColumns && selectedColumns.length > 1) {
+      allColumnsToJoin = selectedColumns;
+    } else if (columnToJoin) {
+      joinColName = Object.values(columnToJoin)[0]?.[2];
+      allColumnsToJoin = [...selectedColumns, joinColName];
+    }
+
+    const columnsData = allColumnsToJoin.map((col) => {
+      if (items[col]) return items[col];
+      if (columnToJoin && typeof columnToJoin === "object" && Object.values(columnToJoin)[0]?.[2] === col) {
+        return columnToJoin;
+      }
+      return undefined;
+    });
+    const newColumnName = `joined_${allColumnsToJoin.join("_")}`;
     response.columns[newColumnName] = {
       label: `${newColumnName}`,
       kind: "literal",
       metadata: [],
       cells: {},
     };
-
     const rowIds = Object.keys(columnsData[0]);
     const locales = [enUS, it];
 
-    rowIds.forEach(id => {
+    rowIds.forEach((id) => {
       const dateParts = [];
       const timeParts = [];
-      selectedColumns.forEach((col, index) => {
+      allColumnsToJoin.forEach((col, index) => {
         const raw = columnsData[index][id]?.[0];
         if (!raw) return;
         try {
           if (raw.includes(":")) {
-            const time = formatTimeOnly(raw, { formatType, customPattern, detailLevel, joinColumns: true });
-            if (!time) throw new Error("Error: Column(s) contains invalid date values");
+            //Time column
+            const time = formatTimeOnly(raw, { formatType, customPattern, detailLevel, joinColumns: true, columnToJoin });
             timeParts.push(time);
           } else {
-            const date = formatDateOnly(raw, { formatType, customPattern, detailLevel, locales, joinColumns: true });
-            if (!date) throw new Error("Error: Column(s) contains invalid date values");
+            //Date column
+            const date = formatDateOnly(raw, { formatType, customPattern, detailLevel, locales, joinColumns: true, columnToJoin});
             dateParts.push(date);
           }
         } catch {
@@ -188,11 +211,17 @@ export default async (req, res) => {
         }
       });
       let joinedValue = "";
+      const sep = separator || (formatType === "iso" ? "T" : " ");
       if (dateParts.length && timeParts.length) {
-        const sep = formatType === "iso" ? "T" : " ";
-        joinedValue = dateParts[0] + sep + timeParts[0];
-      } else {
-        joinedValue = [...dateParts, ...timeParts].join(separator);
+        //Date part splitted T and append time part
+        const [dateOnly] = dateParts[0].split("T");
+        joinedValue = `${dateOnly}${sep}${timeParts[0]}`;
+      } else if (dateParts.length) {
+        //Date only, maintain T00:00 if present
+        joinedValue = [...dateParts].join(separator);
+      } else if (timeParts.length) {
+        //Time only
+        joinedValue = [...timeParts].join(separator);
       }
       response.columns[newColumnName].cells[id] = { label: joinedValue, metadata: [] };
     });

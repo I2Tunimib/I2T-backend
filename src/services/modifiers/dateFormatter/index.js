@@ -37,9 +37,18 @@ export default {
         rules: ["required"],
       },
       {
+        id: "columnToJoin",
+        label: "Column to join",
+        description: "Select column to join",
+        infoText: "",
+        inputType: "selectColumns",
+        rules: [],
+      },
+      {
         id: "detailLevel",
         label: "Detail level",
-        description: "Define the level of detail to include in the formatted output.",
+        description: "Define the level of detail to include in the formatted output. Available options are " +
+          "determined by the selected format type.",
         inputType: "select",
         rules: ["required"],
         options: [
@@ -48,7 +57,7 @@ export default {
           { id: "monthNumber", label: "Month number only (MM)", value: "monthNumber" },
           { id: "monthText", label: "Month text only (MMMM)", value: "monthText" },
           { id: "day", label: "Day only (dd)", value: "day" },
-          { id: "date", label: "-- Date --", value: "date" },
+          { id: "dateOnly", label: "--- Date only ---", value: "dateOnly" },
           { id: "hourMinutes", label: "Hour and minutes (HH:mm)", value: "hourMinutes" },
           { id: "hourMinutes12", label: "Hour and minutes 12h (hh:mm a)", value: "hourMinutes12" },
           { id: "seconds", label: "Seconds (HH:mm:ss)", value: "seconds" },
