@@ -3,7 +3,8 @@ import { it, enUS } from "date-fns/locale";
 
 export default async (req, res) => {
   const { items, props } = req.original;
-  const { formatType, customPattern, detailLevel, outputMode, columnToJoin, joinColumns, selectedColumns, columnType, separator } = props;
+  const { formatType, customPattern, detailLevel, outputMode, columnToJoin, joinColumns, selectedColumns, columnType,
+    separator, splitDatetime } = props;
   const allowedTokens = ["dd","MM","MMMM","yyyy","HH","hh","mm","ss","a","SSS","XXX","z"];
 
   const dateFormats = [
@@ -38,6 +39,7 @@ export default async (req, res) => {
     hourMinutes: "HH:mm",            // 12:30
     hourMinutes12: "hh:mm a",        // 12:30 PM
     seconds: "HH:mm:ss",             // 12:30:45
+    secondsUTC: "HH:mm:ss'Z'",       // 12:30:45Z
     seconds12: "hh:mm:ss a",         // 12:30:45 PM
     milliseconds: "HH:mm:ss.SSS",    // 12:30:45.123
     timezone: "HH:mm:ssXXX",         // 12:30:45+02:00
@@ -46,9 +48,9 @@ export default async (req, res) => {
 
   const dateLevels = Object.keys(datePatterns);
   const timeLevels = Object.keys(timePatterns);
+  const locales = [enUS, it];
 
   function buildPattern({ formatType, customPattern, detailLevel, columnType, joinColumns, columnToJoin }) {
-    console.log("dentro buildPattern");
     //Validation custom
     if (formatType === "custom") {
       const timeAllowedTokens = ["HH","hh","mm","ss","a","SSS","XXX","z"];
@@ -79,7 +81,7 @@ export default async (req, res) => {
         //More than one column selected and checkbox join selected
         if (joinColumns && selectedColumns.length > 1) {
           //Append date formatted to time (detailLevel), and then append other values columns
-          patternToUse = patternToUse;
+          patternToUse;
         }
         //Just one single column selected and column selected in the columnToJoin field
         if (hasColumnToJoin && selectedColumns.length === 1) {
@@ -141,7 +143,6 @@ export default async (req, res) => {
   function toFormatted(value, columnType) {
     if (!value) return { value: null };
     const strValue = String(value).trim().replace("T", " ").split(",")[0];
-    const locales = [enUS, it];
     let formatted = null;
     try {
       switch (columnType) {
@@ -224,6 +225,49 @@ export default async (req, res) => {
         joinedValue = [...timeParts].join(separator);
       }
       response.columns[newColumnName].cells[id] = { label: joinedValue, metadata: [] };
+    });
+  } else if (splitDatetime && columnType === "datetime" && selectedColumns.length === 1) {
+    const colName = selectedColumns[0];
+    const dateColName = "date_splitted";
+    const timeColName = "time_splitted";
+
+    response.columns[dateColName] = {
+      label: dateColName,
+      kind: "literal",
+      metadata: [],
+      cells: {}
+    };
+    response.columns[timeColName] = {
+      label: timeColName,
+      kind: "literal",
+      metadata: [],
+      cells: {}
+    };
+
+    Object.entries(items[colName]).forEach(([rowId, valueArr]) => {
+      const raw = valueArr[0];
+      if (!raw) return;
+      const [datePart, timePart] = raw.split(/T| /);
+      const formattedDate = formatDateOnly(datePart, { formatType, customPattern, detailLevel: "dateOnly", locales });
+      let formattedTime = null;
+      if (timePart) {
+        for (const fmt of timeFormats) {
+          const parsed = parse(timePart, fmt, new Date());
+          if (isValid(parsed)) {
+            const pattern = buildPattern({ formatType, customPattern, detailLevel, columnType: "time" });
+            formattedTime =  format(parsed, pattern);
+          }
+        }
+      }
+
+      response.columns[dateColName].cells[rowId] = {
+        label: formattedDate,
+        metadata: []
+      };
+      response.columns[timeColName].cells[rowId] = {
+        label: formattedTime,
+        metadata: []
+      };
     });
   } else {
     const columnToProcess = Object.keys(items)[0];
