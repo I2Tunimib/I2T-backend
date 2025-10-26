@@ -1,6 +1,7 @@
 export default async (req) => {
   const { props } = req.original;
-  const { formatType, customPattern, detailLevel, outputMode, columnToJoin, joinColumns, selectedColumns, columnType, separator } = props;
+  const { formatType, customPattern, detailLevel, outputMode, columnToJoin, joinColumns, selectedColumns, columnType,
+    separator, splitDatetime } = props;
 
   return {
     props: {
@@ -13,6 +14,7 @@ export default async (req) => {
       selectedColumns: selectedColumns || [],
       columnType: columnType || "unknown",
       separator: separator || "; ",
+      splitDatetime: splitDatetime || false,
     },
   };
 };

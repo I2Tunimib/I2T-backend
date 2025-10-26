@@ -61,6 +61,7 @@ export default {
           { id: "hourMinutes", label: "Hour and minutes (HH:mm)", value: "hourMinutes" },
           { id: "hourMinutes12", label: "Hour and minutes 12h (hh:mm a)", value: "hourMinutes12" },
           { id: "seconds", label: "Seconds (HH:mm:ss)", value: "seconds" },
+          { id: "secondsUTC", label: "Seconds UTC (HH:mm:ss'Z')", value: "secondsUTC" },
           { id: "seconds12", label: "Seconds 12h (hh:mm:ss a)", value: "seconds12" },
           { id: "milliseconds", label: "Milliseconds (HH:mm:ss.SSS)", value: "milliseconds" },
           { id: "timezone", label: "Timezone with offset (HH:mm:ssXXX) [e.g., +02:00]", value: "timezone" },
