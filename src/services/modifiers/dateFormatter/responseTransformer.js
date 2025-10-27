@@ -181,7 +181,7 @@ export default async (req, res) => {
       }
       return undefined;
     });
-    const newColumnName = `joined_${allColumnsToJoin.join("_")}`;
+    const newColumnName = `${allColumnsToJoin.join("_")}`;
     response.columns[newColumnName] = {
       label: `${newColumnName}`,
       kind: "literal",
@@ -228,8 +228,8 @@ export default async (req, res) => {
     });
   } else if (splitDatetime && columnType === "datetime" && selectedColumns.length === 1) {
     const colName = selectedColumns[0];
-    const dateColName = "date_splitted";
-    const timeColName = "time_splitted";
+    const dateColName = "date";
+    const timeColName = "time";
 
     response.columns[dateColName] = {
       label: dateColName,
