@@ -33,7 +33,6 @@ export default {
           "XXX (timezone offset [e.g., +02:00]), z (timezone abbreviation [e.g., GMT+2])",
         inputType: "text",
         placeholder: "Check (?) to view allowed tokens",
-        conditional: { field: "formatType", value: "custom" },
         rules: ["required"],
       },
       {
