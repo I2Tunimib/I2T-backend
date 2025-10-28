@@ -184,9 +184,6 @@ const FileSystemService = {
 
     const { columns, rows, columnOrder } = tableData;
 
-    console.log("DEBUG: findTable loaded columnOrder:", columnOrder);
-    console.log("DEBUG: findTable available columns:", Object.keys(columns));
-
     return {
       table,
       columns,

@@ -1,3 +1,4 @@
+import { table } from "console";
 import fs from "fs";
 import path from "path";
 
@@ -12,8 +13,19 @@ class LoggerService {
     SAVE: "SAVE_TABLE",
     GET_TABLE: "GET_TABLE",
     PROPAGATE_TYPE: "PROPAGATE_TYPE",
+    EXPORT: "EXPORT",
   };
 
+  static logExportTable(datasetId, tableId, format) {
+    console.log("*** logging export table", datasetId, tableId, format);
+    return LoggerService.#writeLog({
+      datasetId,
+      tableId,
+      operationType: LoggerService.OPERATION_TYPES.EXPORT,
+      options: { format },
+      additionalData: { format },
+    });
+  }
   /**
    * Log a type propagation operation.
    * @param {Object} params
@@ -136,6 +148,7 @@ class LoggerService {
     additionalData = null,
   }) {
     try {
+      console.log("*** write log params", datasetId, tableId);
       const timestamp = new Date().toISOString();
       const logMessage = LoggerService.#buildLogMessage(
         timestamp,
