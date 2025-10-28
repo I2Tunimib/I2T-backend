@@ -7,7 +7,7 @@ export default {
   public: {
     allValues: true,
     name: "Linking: LionLinker Annotation",
-    prefix: "ll",
+    prefix: "wd",
     relativeUrl: "/lionlinker",
     description:
       "Reconciliation service using LionLinker for table annotation. Annotates mentions to Wikidata entities, with optional context columns for improved accuracy.",
