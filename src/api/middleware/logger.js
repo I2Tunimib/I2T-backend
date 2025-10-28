@@ -13,6 +13,7 @@ const ROUTE_PATTERNS = {
   SAVE: /^\/api\/dataset\/\d+\/table\/\d+\/?$/,
   RECONCILERS: "/api/reconcilers",
   EXTENDERS: "/api/extenders",
+  EXPORT: "/export",
 };
 
 // Raw body capture
@@ -86,13 +87,25 @@ async function routeLogs(req) {
     await handleExtenderRoute(req, url);
   } else if (ROUTE_PATTERNS.SAVE.test(url)) {
     await handleSaveRoute(req, method);
+  } else if (url.includes(ROUTE_PATTERNS.EXPORT)) {
+    handleExportOperation(req, url);
   }
 }
-
+async function handleExportOperation(req, url) {
+  try {
+    const taskInfos = await getTaskInfos(req);
+    const [tableId, datasetId] = taskInfos;
+    const format = req.query.format;
+    console.log("*** request obj", format);
+    LoggerService.logExportTable(datasetId, tableId, format);
+  } catch (error) {
+    console.error("error handling export logging", error);
+  }
+}
 async function handleReconciliationRoute(req, url) {
   const requestedReconciliation = extractServiceFromUrl(
     url,
-    ROUTE_PATTERNS.RECONCILERS
+    ROUTE_PATTERNS.RECONCILERS,
   );
   const taskInfos = await getTaskInfos(req);
 
@@ -122,7 +135,7 @@ async function handleExtenderRoute(req, url) {
     const [tableId, datasetId, columnName] = taskInfos;
 
     console.log(
-      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`
+      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
     );
 
     LoggerService.logExtension({
