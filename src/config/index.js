@@ -11,17 +11,17 @@ if (process.env.ENV === "DEV" && env.error) {
 }
 if (!CONFIG.datasetFilesPath) {
   throw new Error(
-    "⚠️  You must provide a path to the dataset files in config.js ⚠️"
+    "⚠️  You must provide a path to the dataset files in config.js ⚠️",
   );
 }
 if (!CONFIG.datasetDbPath) {
   throw new Error(
-    "⚠️  You must provide a path to the dataset db in config.js ⚠️"
+    "⚠️  You must provide a path to the dataset db in config.js ⚠️",
   );
 }
 if (!CONFIG.tablesDbPath) {
   throw new Error(
-    "⚠️  You must provide a path to the tables db in config.js ⚠️"
+    "⚠️  You must provide a path to the tables db in config.js ⚠️",
   );
 }
 
@@ -34,7 +34,7 @@ const loadExtenders = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/extenders`;
 
   const extenders = readdirSync(basePath).filter(
-    (extender) => !services.exclude?.extenders?.includes(extender)
+    (extender) => !services.exclude?.extenders?.includes(extender),
   );
 
   return extenders.reduce(async (acc, serviceKey) => {
@@ -66,7 +66,7 @@ const loadReconcilers = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/reconcilers`;
 
   const reconcilers = readdirSync(basePath).filter(
-    (reconciler) => !services.exclude?.reconcilers?.includes(reconciler)
+    (reconciler) => !services.exclude?.reconcilers?.includes(reconciler),
   );
 
   return reconcilers.reduce(async (acc, serviceKey) => {
@@ -138,6 +138,12 @@ const loadHelperFunctions = async () => {
     getUsersPath: () => `${process.env.PWD}${usersPath}`,
   };
 };
+/**
+ * Load error map in memory
+ */
+const loadErrors = () => {
+  return CONFIG.errors ?? {};
+};
 
 /**
  * Load initial configuration
@@ -147,7 +153,7 @@ const loadConfig = async () => {
   const extenders = await loadExtenders();
   const modifiers = await loadModifiers();
   const helpers = await loadHelperFunctions();
-
+  const errors = loadErrors();
   if (!existsSync(helpers.getTmpPath())) {
     await mkdir(helpers.getTmpPath());
   }
@@ -156,7 +162,7 @@ const loadConfig = async () => {
     log("db", "Create tables DB");
     await safeWriteFileToPath(
       helpers.getTablesDbPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2)
+      JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2),
     );
   }
 
@@ -164,7 +170,7 @@ const loadConfig = async () => {
     log("db", "Create dataset DB");
     await safeWriteFileToPath(
       helpers.getDatasetDbPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2)
+      JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2),
     );
   }
 
@@ -187,22 +193,22 @@ const loadConfig = async () => {
 
     await safeWriteFileToPath(
       helpers.getUsersPath(),
-      JSON.stringify(initialUsersDb, null, 2)
+      JSON.stringify(initialUsersDb, null, 2),
     );
     log(
       "db",
-      "Created users DB with default test user (username: test, password: test)"
+      "Created users DB with default test user (username: test, password: test)",
     );
   } else {
     // Check if default test user exists, if not add it
     try {
       const usersData = JSON.parse(
         await import("fs").then((fs) =>
-          fs.promises.readFile(helpers.getUsersPath(), "utf8")
-        )
+          fs.promises.readFile(helpers.getUsersPath(), "utf8"),
+        ),
       );
       const hasTestUser = Object.values(usersData.users || {}).some(
-        (user) => user.username === "test" && user.password === "test"
+        (user) => user.username === "test" && user.password === "test",
       );
 
       if (!hasTestUser) {
@@ -225,11 +231,11 @@ const loadConfig = async () => {
 
         await safeWriteFileToPath(
           helpers.getUsersPath(),
-          JSON.stringify(updatedUsersDb, null, 2)
+          JSON.stringify(updatedUsersDb, null, 2),
         );
         log(
           "db",
-          "Added default test user to existing users DB (username: test, password: test)"
+          "Added default test user to existing users DB (username: test, password: test)",
         );
       }
     } catch (err) {
@@ -249,6 +255,7 @@ const loadConfig = async () => {
     extenders,
     modifiers,
     helpers,
+    errors,
     mantisObjs: {
       cronsMap: {},
     },
