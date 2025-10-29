@@ -14,6 +14,9 @@ export const KG_INFO = {
   wdA: {
     uri: "https://www.wikidata.org/wiki/",
   },
+  wdL: {
+    uri: "https://www.wikidata.org/wiki/",
+  },
   wiki: {
     uri: "https://www.wikidata.org/wiki/",
   },
