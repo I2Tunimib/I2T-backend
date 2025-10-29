@@ -10,6 +10,7 @@ class LoggerService {
   static OPERATION_TYPES = {
     RECONCILIATION: "RECONCILIATION",
     EXTENSION: "EXTENSION",
+    MODIFICATION: "MODIFICATION",
     SAVE: "SAVE_TABLE",
     GET_TABLE: "GET_TABLE",
     PROPAGATE_TYPE: "PROPAGATE_TYPE",
@@ -93,6 +94,31 @@ class LoggerService {
       datasetId,
       tableId,
       operationType: LoggerService.OPERATION_TYPES.EXTENSION,
+      options: { columnName, service },
+      additionalData,
+    });
+  }
+
+  /**
+   * Log an modification operation.
+   * @param {Object} params
+   * @param {string|number} params.datasetId
+   * @param {string|number} params.tableId
+   * @param {string} params.columnName
+   * @param {string} params.service
+   * @param {Object} [params.additionalData]
+   */
+  static logModification({
+    datasetId,
+    tableId,
+    columnName,
+    service,
+    additionalData = {},
+  }) {
+    return LoggerService.#writeLog({
+      datasetId,
+      tableId,
+      operationType: LoggerService.OPERATION_TYPES.MODIFICATION,
       options: { columnName, service },
       additionalData,
     });
@@ -187,10 +213,12 @@ class LoggerService {
     if (options.columnName) {
       message += ` -| ColumnName: ${options.columnName}`;
     }
-    const serviceLabel =
-      operationType === LoggerService.OPERATION_TYPES.RECONCILIATION
-        ? "Reconciler"
-        : "Extender";
+    const labels = {
+      [LoggerService.OPERATION_TYPES.RECONCILIATION]: "Reconciler",
+      [LoggerService.OPERATION_TYPES.EXTENSION]: "Extender",
+      [LoggerService.OPERATION_TYPES.MODIFICATION]: "Modifier",
+    };
+    const serviceLabel = labels[operationType] || "Unknown";
     if (additionalData && additionalData.serviceId) {
       message += ` -| ${serviceLabel}: ${additionalData.serviceId}`;
     } else if (options.service) {
