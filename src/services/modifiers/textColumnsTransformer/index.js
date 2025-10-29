@@ -25,7 +25,7 @@ export default {
         {
           id: "columnToJoinSplit",
           label: "Additional columns to join",
-          description: "Optional. Specify one or more additional columns to include in the join operation, " +
+          description: "<strong>Optional:</strong> Specify one or more additional columns to include in the join operation, " +
             "in addition to the columns already selected in the main interface.",
           infoText: "",
           inputType: "multipleColumnSelect",
@@ -41,7 +41,7 @@ export default {
         {
           id: "renameNewColumn",
           label: "Custom column name",
-          description: "Optional. Specify a custom name for the resulting joined column. " +
+          description: "<strong>Optional:</strong> Specify a custom name for the resulting joined column. " +
             "If left blank, a default name in the format 'col1_col2' will be applied.",
           infoText: "",
           inputType: "text",

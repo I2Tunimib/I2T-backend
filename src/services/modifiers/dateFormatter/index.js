@@ -18,9 +18,9 @@ export default {
         inputType: "radio",
         rules: ["required"],
         options: [
-          { id: "iso", label: "ISO 8601 (yyyy-MM-dd)", value: "iso" },
-          { id: "european", label: "European (dd/MM/yyyy)", value: "european" },
-          { id: "us", label: "US (MM/dd/yyyy)", value: "us" },
+          { id: "iso", label: "ISO 8601 (yyyy-MM-dd'T'HH:mm:ssXXX)", value: "iso" },
+          { id: "european", label: "European (dd/MM/yyyy HH:mm:ssXXX)", value: "european" },
+          { id: "us", label: "US (MM/dd/yyyy HH:mm:ssXXX)", value: "us" },
           { id: "custom", label: "Custom date pattern", value: "custom" },
         ],
       },
