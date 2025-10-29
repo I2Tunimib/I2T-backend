@@ -38,6 +38,8 @@ const ExportService = {
       const { id, status, context, metadata, annotationMeta, ...propsToKeep } =
         columns[colId];
 
+      const trimmedLabel = columns[colId].label.trim();
+
       const standardContext = Object.keys(context).reduce((accCtx, prefix) => {
         const { uri } = context[prefix];
         return [...accCtx, { prefix: `${prefix}:`, uri }];
@@ -45,6 +47,7 @@ const ExportService = {
 
       acc[`th${index}`] = {
         ...propsToKeep,
+        label: trimmedLabel,
         metadata:
           metadata.length > 0
             ? [
@@ -65,8 +68,9 @@ const ExportService = {
       const { cells } = rows[rowId];
       return Object.keys(cells).reduce((acc, colId) => {
         const { id, metadata, annotationMeta, ...propsToKeep } = cells[colId];
+        const trimmedLabel = columns[colId].label.trim();
 
-        acc[colId] = {
+        acc[trimmedLabel] = {
           ...propsToKeep,
           metadata: getMetadata(metadata, keepMatching),
         };
