@@ -163,15 +163,6 @@ const ParseW3C = {
   updateReconcilersCount: (metadata, column, columns) => {
     if (metadata.length > 0) {
       const [prefix, _] = metadata[0].id.split(":");
-
-      // Safety check: ensure the prefix exists in context
-      if (!columns[column].context[prefix]) {
-        console.warn(
-          `Prefix "${prefix}" not found in column "${column}" context. Skipping reconciler count update.`,
-        );
-        return;
-      }
-
       const { total, reconciliated } = columns[column].context[prefix];
 
       columns[column].context[prefix] = {
