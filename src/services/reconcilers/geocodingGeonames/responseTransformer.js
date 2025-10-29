@@ -2,12 +2,12 @@ import config from "./index.js";
 import fs from "fs";
 
 export default async (req, res) => {
-  // fs.writeFile('../../fileSemTUI/response-geonames-COORD-filtered.json', JSON.stringify(res), function (err) {
+  const { result, labelDict, error } = res;
+  // fs.writeFile('../../fileSemTUI/response-geonames-COORD-filtered.json', JSON.stringify(result), function (err) {
   //   if (err) throw err;
   //   console.log('File ../../fileSemTUI/response-geonames-COORD-filtered.json saved!');
   // });
 
-  const result = res.result;
   const prefix = config.public.prefix;
 
   // const result = {
@@ -27,8 +27,8 @@ export default async (req, res) => {
     const label = requestItem.label;
 
     // Find the corresponding index in the labelDict entries that matches this label
-    const resultIndex = Object.entries(res.labelDict).findIndex(
-      ([key, value]) => key === label
+    const resultIndex = Object.entries(labelDict).findIndex(
+      ([key, value]) => key === label,
     );
 
     // If we found a match, process the metadata, otherwise return empty metadata
@@ -64,10 +64,23 @@ export default async (req, res) => {
 
   response.splice(0, 1, header);
 
+  // Check if no reconciliation results were found
+  const hasResults = response.some((item) => {
+    if (item.id && item.metadata && item.metadata.length > 0) {
+      // For cells, check if any metadata has match
+      return item.metadata.some((meta) => meta.match);
+    }
+    return false;
+  });
+
+  if (!hasResults) {
+    res.error = req.config.errors.reconciler["02"];
+  }
+
   // fs.writeFile('../../fileSemTUI/response-geonames-COORD-returned-to-UI.json', JSON.stringify(response), function (err) {
   //   if (err) throw err;
   //   console.log('File ../../fileSemTUI/response-geonames-COORD-returned-to-UI.json saved!');
   // });
 
-  return response;
+  return { ...response, error: res.error };
 };

@@ -1,7 +1,14 @@
 import config from "../../../config/index.js";
 import { mapToUnique } from "./utils.js";
 
-const { reconcilers } = config;
+const { reconcilers, extenders, errors } = config;
+
+const getPublicConfiguration = (services) => {
+  return Object.keys(services).map((key) => ({
+    id: key,
+    ...services[key].info.public,
+  }));
+};
 
 const reconciliationPipeline = async (reqBody) => {
   const { serviceId, ...rest } = reqBody;
@@ -30,6 +37,11 @@ const reconciliationPipeline = async (reqBody) => {
     ...(info.private.processRequest && {
       processed: { items: mapToUnique(items), props },
     }),
+    config: {
+      reconcilers: getPublicConfiguration(reconcilers),
+      extenders: getPublicConfiguration(extenders),
+      errors,
+    },
   };
 
   // get response from service
@@ -37,6 +49,10 @@ const reconciliationPipeline = async (reqBody) => {
 
   // transform response to app format
   const transformedResponse = await responseTransformer(req, serviceResponse);
+
+  if (transformedResponse.error) {
+    throw new Error(transformedResponse.error);
+  }
 
   return transformedResponse;
 };

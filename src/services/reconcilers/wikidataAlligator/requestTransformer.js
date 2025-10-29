@@ -1,12 +1,19 @@
 import config from "./index.js";
 import axios from "axios";
 import fs from "fs";
+import {
+  generateReqHash,
+  getCachedData,
+  setCachedData,
+} from "../../../utils/cachingUtils.js";
 
 const { endpoint } = config.private; // https://alligator.hel.sintef.cloud
 const { access_token } = config.private;
 const { relativeUrl } = config.public; // /dataset
 
 export default async (req) => {
+  const { tableId, datasetId, columnName } = req.original.props;
+
   // fs.writeFile('../../fileSemTUI/requestREC-UI-Alligator.json', JSON.stringify(req), function (err) {
   //     if (err) throw err;
   //     console.log('File ../../fileSemTUI/requestREC-UI-Alligator.json saved!');
@@ -46,8 +53,8 @@ export default async (req) => {
   // Add additionalColumns headers if present
   console.log(
     `*** request alligator *** req.original.props.additionalColumns: ${JSON.stringify(
-      req.original.props.additionalColumns
-    )}`
+      req.original.props.additionalColumns,
+    )}`,
   );
 
   // Handle additionalColumns from props (object with column names as keys)
@@ -55,7 +62,7 @@ export default async (req) => {
     // Loop through each column key in the additionalColumns object
     Object.keys(req.original.props.additionalColumns).forEach((colId) => {
       console.log(
-        `*** request alligator *** additionalColumns colId: ${colId}`
+        `*** request alligator *** additionalColumns colId: ${colId}`,
       );
       // Check if column exists in props and hasn't been added already
       if (
@@ -64,7 +71,7 @@ export default async (req) => {
       ) {
         const columnLabel = req.original.props.additionalColumns[colId].r0[2];
         console.log(
-          `*** request alligator *** additionalColumns columnLabel: ${columnLabel}`
+          `*** request alligator *** additionalColumns columnLabel: ${columnLabel}`,
         );
         // Avoid duplicating columns that were already added
         if (!header.includes(columnLabel)) {
@@ -77,8 +84,8 @@ export default async (req) => {
   // Add multipleColumnSelect headers if present
   console.log(
     `*** request alligator *** req.original.multipleColumnSelect: ${JSON.stringify(
-      req.original.multipleColumnSelect
-    )}`
+      req.original.multipleColumnSelect,
+    )}`,
   );
 
   // Handle multipleColumnSelect parameter if present - these are the additional columns to include
@@ -88,7 +95,7 @@ export default async (req) => {
   ) {
     req.original.props.additionalColumns.forEach((colId) => {
       console.log(
-        `*** request alligator *** multipleColumnSelect colId: ${colId}`
+        `*** request alligator *** multipleColumnSelect colId: ${colId}`,
       );
       // Check if column exists in props and hasn't been added already
       if (
@@ -106,8 +113,8 @@ export default async (req) => {
 
   console.log(
     `*** request alligator *** header from items and props: ${JSON.stringify(
-      header
-    )}`
+      header,
+    )}`,
   );
   bodyAlligatorRequestTemplate[0].header = header;
 
@@ -145,7 +152,7 @@ export default async (req) => {
           req.original.props.additionalColumns[colId][rowIndex]
         ) {
           row.data.push(
-            req.original.props.additionalColumns[colId][rowIndex][0]
+            req.original.props.additionalColumns[colId][rowIndex][0],
           );
         }
       });
@@ -159,46 +166,72 @@ export default async (req) => {
   const postUrl = endpoint + relativeUrl + "/createWithArray";
   // https://alligator.hel.sintef.cloud/dataset/createWithArray?token=alligator_demo_2023
   console.log(
-    `*** request alligator *** postUrl to alligator: ${postUrl}?token=${access_token} *** tableName: ${tableName}`
+    `*** request alligator *** postUrl to alligator: ${postUrl}?token=${access_token} *** tableName: ${tableName}`,
   );
   // fs.writeFile('../../fileSemTUI/bodyAlligatorRequest.json',
   //     JSON.stringify(bodyAlligatorRequestTemplate), function (err) {
   //     if (err) throw err;
   //     console.log('File ../../fileSemTUI/bodyAlligatorRequest.json saved!');
   // });
+  console.log("*** Alligator Body *** ", bodyAlligatorRequestTemplate);
 
-  const res = await axios.post(
-    postUrl + "?token=" + access_token,
-    bodyAlligatorRequestTemplate
-  );
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  const reqHash = generateReqHash(req);
+
+  let cacheRes;
+  try {
+    cacheRes = await getCachedData(
+      `wikidataAlligator-${datasetId}-${tableId}-${columnName}-${reqHash}`,
+    );
+  } catch (error) {
+    console.log("cache not found");
   }
-  if (res.status !== 202) {
-    console.log(
-      `*** request alligator ### ERROR status code returned by alligator is: ${res.status} `
+
+  if (cacheRes) {
+    console.log("cache found");
+    return { result: cacheRes.value, labelDict: {}, error: null };
+  }
+
+  try {
+    const res = await axios.post(
+      postUrl + "?token=" + access_token,
+      bodyAlligatorRequestTemplate,
     );
-  } else {
-    console.log(
-      `*** request alligator ### OK status code returned by alligator is: ${res.status} `
-    );
-    const getUrl = endpoint + relativeUrl + "/EMD-BC/table/" + tableName;
-    const itemsPerPage = req.original.items.length;
-    console.log(
-      `*** request alligator *** getUrl to alligator: ${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`
-    );
-    let annotation;
-    let status = "DOING";
-    while (status !== "DONE") {
-      await delay(3000);
-      annotation = await axios.get(
-        `${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`
-      );
-      status = annotation.data.data.status;
-      // console.log(`*** get Alligator: status ${annotation.data.data.status}`);
+    function delay(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
     }
-    // console.log(`*** get Alligator: done`);
-    annotation.data.data.originalColumns = header;
-    return annotation.data.data;
+    if (res.status !== 202) {
+      console.log(
+        `*** request alligator ### ERROR status code returned by alligator is: ${res.status} `,
+      );
+    } else {
+      console.log(
+        `*** request alligator ### OK status code returned by alligator is: ${res.status} `,
+      );
+      const getUrl = endpoint + relativeUrl + "/EMD-BC/table/" + tableName;
+      const itemsPerPage = req.original.items.length;
+      console.log(
+        `*** request alligator *** getUrl to alligator: ${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
+      );
+      let annotation;
+      let status = "DOING";
+      while (status !== "DONE") {
+        await delay(3000);
+        annotation = await axios.get(
+          `${getUrl}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
+        );
+        status = annotation.data.data.status;
+        // console.log(`*** get Alligator: status ${annotation.data.data.status}`);
+      }
+      // console.log(`*** get Alligator: done`);
+      annotation.data.data.originalColumns = header;
+      return { result: annotation.data.data, labelDict: {}, error: null };
+    }
+  } catch (err) {
+    console.error("Error in wikidataAlligator requestTransformer:", err);
+    return {
+      result: {},
+      labelDict: {},
+      error: req.config.errors.reconciler["01"],
+    };
   }
 };
