@@ -1,6 +1,6 @@
 import config from "./index.js";
 
-const { uri } = config.public;
+const { uri, prefix } = config.public;
 
 export default async (req, res) => {
   const { result, labelDict, error } = res;
@@ -26,7 +26,7 @@ export default async (req, res) => {
           const answerPart = pred.answer.split("ANSWER:")[1] ?? "";
           const wikidataId = answerPart.match(/Q\d+/)?.[0] ?? "N/A";
           return {
-            id: `wd:${wikidataId}`,
+            id: `${prefix}:${wikidataId}`,
             name: pred.name || label,
             uri: pred.uri || `${uri}${wikidataId}`,
             // name: {
