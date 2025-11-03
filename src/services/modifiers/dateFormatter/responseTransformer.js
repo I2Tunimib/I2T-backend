@@ -36,12 +36,17 @@ export default async (req, res) => {
     monthYear: "MM-yyyy", date: pattern};
 
   const timePatterns = {
+    hour: "HH",
+    hour12: "hh a",
+    minutes: "mm",
+    seconds: "ss",
+    milliseconds: "SSS",
     hourMinutes: "HH:mm",            // 12:30
     hourMinutes12: "hh:mm a",        // 12:30 PM
-    seconds: "HH:mm:ss",             // 12:30:45
-    secondsUTC: "HH:mm:ss'Z'",       // 12:30:45Z
-    seconds12: "hh:mm:ss a",         // 12:30:45 PM
-    milliseconds: "HH:mm:ss.SSS",    // 12:30:45.123
+    hourSeconds: "HH:mm:ss",             // 12:30:45
+    hourSecondsUTC: "HH:mm:ss'Z'",       // 12:30:45Z
+    hourSeconds12: "hh:mm:ss a",         // 12:30:45 PM
+    hourMilliseconds: "HH:mm:ss.SSS",    // 12:30:45.123
     timezone: "HH:mm:ssXXX",         // 12:30:45+02:00
     timezoneAbbr: "HH:mm:ss z",      // 12:30:45 GMT+2
   };
