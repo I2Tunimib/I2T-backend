@@ -32,8 +32,8 @@ export default {
         inputType: 'radio',
         rules: ['required'],
         options: [
-          { id: 'daily', label: 'Daily', value: 'daily'},
-          { id: 'hourly', label: 'Hourly', value: 'hourly'}
+          { id: 'daily', label: 'Daily, returns values aggregated per day', value: 'daily'},
+          { id: 'hourly', label: 'Hourly, returns values at a specific hour of a specific day', value: 'hourly'}
         ]
       },
       {
