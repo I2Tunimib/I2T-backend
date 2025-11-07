@@ -1,5 +1,3 @@
-import fs from "fs";
-
 export default async (req, res) => {
 
   const inputColumns = Object.keys(req.processed.items);
@@ -12,55 +10,45 @@ export default async (req, res) => {
 
   // result for each input column
   res.forEach((serviceResponse, colIndex) => {
-//    console.log(`\n *** serviceResponse: ${JSON.stringify(serviceResponse)} \n --- colIndex: ${colIndex}`);
     serviceResponse.forEach(({ rowId, weatherParams, data }) => {
-      const weatherParameters = weatherParams.split(',')
-//      console.log(`\n *** rowId: ${rowId} \n --- weatherParameters: ${weatherParameters} \n --- data: ${JSON.stringify(data)}`);
+      const weatherParameters = weatherParams.split(',');
+      const source = data.daily || data.hourly; // Use the available one
+      //console.log("source", source);
 
-      if (weatherParameters) {
-        // for each combination offest_weatherParam build a column
-        weatherParameters.forEach((param) => {
-          // for each item in weatherParameters build a column
-          const columNames = { // to cahnge the default names of the new columns
-            'apparent_temperature_max': 'temperature_max',
-            'apparent_temperature_min': 'temperature_min'
+
+      weatherParameters.forEach((param) => {
+        // for each item in weatherParameters build a column
+        /*
+        const columNames = { // to cahnge the default names of the new columns
+          apparent_temperature_max: 'temperature_max',
+          apparent_temperature_min: 'temperature_min',
+        };
+         */
+        const colId = `${inputColumns[colIndex]}_${param}`;
+        if (!(colId in response.columns)) {
+          response.columns[colId] = {
+            label: colId,
+            metadata: [],
+            cells: {},
           };
-          let columnName = param;
-          Object.keys(columNames).forEach(key => {
-            if (columnName.includes(key)) {
-              columnName = columnName.replace(key, columNames[key]);
-            }
-          });
-          const colId = `${inputColumns[colIndex]}_${columnName}`;
-//          console.log(`***  param: ${param} --- daily: ${JSON.stringify(data.daily[param])} --- colId: ${colId}`);
-          if (!(colId in response.columns)) {
-            response.columns[colId] = {
-              label: colId,
-              metadata: [],
-              cells: {}
-            }
-          }
-          response.meta[colId] = inputColumns[colIndex];
-          // add column cells
-          let fixedValue = data.daily[param];
-          if (decimalFormat[0] === 'comma')
-             fixedValue = fixedValue.toString().replace('.',',');
-          response.columns[colId].cells = {
-            ...response.columns[colId].cells,
-            [rowId]: { // we may check if data.daily[param] is a valid value
-              label: fixedValue,
-              metadata: []
-            }
-          }
-        });
-      }
+        }
+        response.meta[colId] = inputColumns[colIndex];
+        // add column cells
+        let fixedValue = source[param][0];
+        //console.log("fixedValue", fixedValue);
+        if (decimalFormat[0] === 'comma' && typeof fixedValue === 'number') {
+          fixedValue = fixedValue.toString().replace('.',',');
+        }
+
+        response.columns[colId].cells = {
+          ...response.columns[colId].cells,
+          [rowId]: {
+            label: fixedValue,
+            metadata: [],
+          },
+        };
+      });
     });
   });
-
-  // fs.writeFile('../../fileSemTUI/responseEXT-UI-meteo.json', JSON.stringify(req), function (err) {
-  //   if (err) throw err;
-  //   console.log('File ../../fileSemTUI/responseEXT-UI-meteo.json saved!');
-  // });
-
   return response;
-}
+};
