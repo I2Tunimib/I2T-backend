@@ -49,7 +49,7 @@ const reconciliationPipeline = async (reqBody) => {
 
   // transform response to app format
   const transformedResponse = await responseTransformer(req, serviceResponse);
-
+  console.log("*** transformed response", transformedResponse);
   if (transformedResponse.error) {
     throw new Error(transformedResponse.error);
   }

@@ -28,7 +28,6 @@ export default async (req) => {
     //   if (err) throw err;
     //   console.log('File ../../fileSemTUI/requestREC-UI-OpenRefine.json saved!');
     // });
-
     const { items } = req.processed;
     console.log("Props", req.original.props);
     const { tableId, datasetId, columnName } = req.original.props;
@@ -58,6 +57,7 @@ export default async (req) => {
     } catch (error) {
       console.log("cache not found");
     }
+    console.log("*** req transformer query", JSON.stringify(queries));
     const formBody = "queries=" + JSON.stringify(queries);
     const response = await axios.post(endpoint, formBody);
     if (response.status !== 200) {
