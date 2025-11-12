@@ -67,9 +67,10 @@ export default async (req) => {
     };
 
     const lionConfig = {
-      model_name: process.env.LLM_MODEL || "gpt-oss:20b",
+      model_name: process.env.LION_LINKER_LLM_MODEL || "gpt-oss:20b",
       model_api_provider: process.env.LLM_PROVIDER || "ollama",
-      ollama_host: process.env.LLM_ADDRESS || "https://ollama.sct.sintef.no/",
+      ollama_host:
+        process.env.LION_LINKER_LLM_ADDRESS || "https://ollama.sct.sintef.no/",
       model_api_key: apiKey,
     };
 
