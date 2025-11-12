@@ -6,7 +6,7 @@ export default {
   },
   public: {
     allValues: true,
-    name: "Linking: wikidata (LionLinker)",
+    name: "Linking: Wikidata (LionLinker)",
     prefix: "wdL",
     relativeUrl: "/lionlinker",
     description:
