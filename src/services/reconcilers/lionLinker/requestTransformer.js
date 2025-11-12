@@ -164,7 +164,7 @@ export default async (req) => {
           try {
             await setCachedData(cacheKey, annotatedRows, 60 * 60 * 3600);
           } catch (cacheError) {
-            console.error("Error setting cache:", cacheError);
+            console.error("Error setting cache:");
           }
           return { result: annotatedRows, labelDict: {}, error: null };
         } else if (status === "failed") {

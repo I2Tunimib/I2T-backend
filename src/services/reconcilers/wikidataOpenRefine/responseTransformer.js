@@ -14,20 +14,52 @@ function cleanLabel(label) {
 export default async (req, res) => {
   const { result, labelDict, error } = res;
   const { items } = req.processed;
-  // console.log('*** res: ' + JSON.stringify(result));
-  // fs.writeFile('../../fileSemTUI/response-OpenRefine.json', JSON.stringify(result), function (err) {
-  //    if (err) throw err;
-  //     console.log('File ../../fileSemTUI/response-OpenRefine.json saved!');
-  // });
+
+  console.log("*** WikidataOpenRefine responseTransformer");
+  console.log("*** Items keys:", Object.keys(items));
+  console.log("*** Result keys:", Object.keys(result || {}));
+  console.log("*** Error from requestTransformer:", error);
+
+  if (error) {
+    console.log("There is a base error");
+    return { error };
+  }
+
+  if (!result) {
+    console.error("*** No result from requestTransformer");
+    return { error: req.config.errors.reconciler["01"] };
+  }
 
   const response = Object.keys(items).flatMap((label) => {
-    let cleanL = result[cleanLabel(label)];
-    const metadata = result[cleanLabel(label)].result.map(
-      ({ id, ...rest }) => ({
-        id: `wd:${id}`,
-        ...rest,
-      }),
-    );
+    const cleanedLabel = cleanLabel(label);
+    const resultForLabel = result[cleanedLabel];
+
+    if (!resultForLabel) {
+      console.warn(
+        `*** No result for label: ${label} (cleaned: ${cleanedLabel})`,
+      );
+      return items[label].map((cellId) => ({
+        id: cellId,
+        metadata: [],
+      }));
+    }
+
+    if (!resultForLabel.result) {
+      console.warn(
+        `*** No result.result for label: ${label}, got:`,
+        resultForLabel,
+      );
+      return items[label].map((cellId) => ({
+        id: cellId,
+        metadata: [],
+      }));
+    }
+
+    const metadata = resultForLabel.result.map(({ id, ...rest }) => ({
+      id: `wd:${id}`,
+      ...rest,
+    }));
+
     return items[label].map((cellId) => ({
       id: cellId,
       metadata,
@@ -49,16 +81,32 @@ export default async (req, res) => {
   //   };
   // })
 
+  console.log("*** Checking hasResults:");
+  console.log("*** Response length:", response.length);
+  console.log(
+    "*** Sample response item:",
+    JSON.stringify(response[0], null, 2),
+  );
+  if (response[1]?.metadata?.length > 0) {
+    console.log(
+      "*** Sample metadata:",
+      JSON.stringify(response[1].metadata[0], null, 2),
+    );
+  }
+
   // Check if no reconciliation results were found
   const hasResults = response.some((item) => {
     if (item.id && item.metadata && item.metadata.length > 0) {
-      // For cells, check if any metadata has match
-      return item.metadata.some((meta) => meta.match);
+      // Check if any metadata exists (don't require match field)
+      return true;
     }
     return false;
   });
 
+  console.log("*** hasResults:", hasResults);
+
   if (!hasResults) {
+    console.log("has not results error");
     res.error = req.config.errors.reconciler["02"];
   }
 
@@ -67,5 +115,8 @@ export default async (req, res) => {
   //   console.log('File ../../fileSemTUI/responseREC-SemTUI-OpenRefine.json saved!');
   // });
 
-  return { ...response, error: res.error };
+  if (res.error) {
+    return { error: res.error };
+  }
+  return response;
 };
