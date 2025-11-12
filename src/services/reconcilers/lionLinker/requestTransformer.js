@@ -62,34 +62,24 @@ export default async (req) => {
     const datasetName = `Reconciler-${datasetId}`;
     const tableName = `Table-${tableId}`;
 
-    // const lionConfig = {
-    //   model_name: process.env.LION_LINKER_MODEL_NAME || "openai/gpt-3.5-turbo",
-    //   model_api_provider: "openrouter",
-    //   model_api_key: apiKey,
-    //   mention_columns: [columnName],
-    //   chunk_size: 32,
-    //   table_ctx_size: header.length > 1 ? header.length - 1 : 1, // Adjust context size based on additional columns
-    //   format_candidates: true,
-    //   compact_candidates: true,
-    // };
+    const metadata = {
+      mentionColumns: [columnName],
+    };
+
     const lionConfig = {
-      model_name: process.env.LLM_MODEL || "openai/gpt-3.5-turbo",
-      model_api_provider: "openrouter",
+      model_name: process.env.LLM_MODEL || "gpt-oss:20b",
+      model_api_provider: process.env.LLM_PROVIDER || "ollama",
+      ollama_host: process.env.LLM_ADDRESS || "https://ollama.sct.sintef.no/",
       model_api_key: apiKey,
-      model_api_base_url: process.env.LLM_ADDRESS,
-      mention_columns: [columnName],
-      chunk_size: 32,
-      table_ctx_size: 1,
-      format_candidates: true,
-      compact_candidates: true,
     };
 
     const retrieverConfig = {
+      class_path: "lion_linker.retrievers.LamapiClient",
       endpoint:
         process.env.RETRIEVER_ENDPOINT ||
         "https://lamapi.hel.sintef.cloud/lookup/entity-retrieval",
-      token: process.env.RETRIEVER_TOKEN || "lamapi_demo_2023",
-      num_candidates: 20,
+      token: process.env.LAMAPI_TOKEN || "",
+      num_candidates: process.env.RETRIEVER_NUM_CANDIDATES || 10,
     };
 
     const payload = [
@@ -98,6 +88,7 @@ export default async (req) => {
         tableName,
         header,
         rows,
+        metadata,
         lionConfig,
         retrieverConfig,
       },
@@ -116,7 +107,7 @@ export default async (req) => {
       console.log("LionLinker cache not found");
     }
 
-    // Register dataset
+    // Step 1: Register dataset
     const registerResp = await axios.post(`${endpoint}/datasets`, payload, {
       timeout: 60000,
     });
@@ -129,7 +120,7 @@ export default async (req) => {
     }
     const { datasetId: dsId, tableId: tbId } = registrations[0];
 
-    // Submit annotation
+    // Step 2: Submit annotation job
     const annotatePayload = { lionConfig, retrieverConfig };
     const annotateResp = await axios.post(
       `${endpoint}/datasets/${dsId}/tables/${tbId}/annotate`,
@@ -144,32 +135,39 @@ export default async (req) => {
     const job = annotateResp.data;
     const jobId = job.jobId;
 
-    // Poll for completion
+    // Step 3: Poll for completion
     const statusUrl = `${endpoint}/dataset/${dsId}/table/${tbId}`;
     const pollInterval =
-      parseFloat(process.env.LION_LINKER_POLL_INTERVAL || "1") * 1000;
+      parseFloat(process.env.LION_LINKER_POLL_INTERVAL || "2") * 1000;
+
+    console.log(`Polling job ${jobId} at ${statusUrl}`);
 
     while (true) {
       await sleep(pollInterval);
       try {
         const statusResp = await axios.get(statusUrl, {
-          params: { page: 1, per_page: 50 },
           timeout: 180000,
         });
         const statusData = statusResp.data;
         const status = statusData.status;
+
+        console.log(`Job ${jobId} status: ${status}`);
+
         if (status === "completed") {
           const annotatedRows = statusData.rows || [];
           // Cache the result
           try {
             await setCachedData(cacheKey, annotatedRows, 60 * 60 * 3600);
           } catch (cacheError) {
-            console.error("Error setting cache:");
+            console.error("Error setting cache:", cacheError);
           }
           return { result: annotatedRows, labelDict: {}, error: null };
         } else if (status === "failed") {
-          throw new Error(`Annotation failed: ${statusData.message}`);
+          throw new Error(
+            `Annotation failed: ${statusData.message || "Unknown error"}`,
+          );
         }
+        // If status is 'pending' or 'running', continue polling
       } catch (error) {
         if (error.code === "ECONNABORTED") {
           console.log("Status request timed out; retrying...");
