@@ -13,7 +13,7 @@ export default async (req, res) => {
   const inputColumnName = Object.keys(items)[0];
 
   console.log(
-    `*** Label Extender *** inputColumn: ${JSON.stringify(inputColumnName)}`
+    `*** Label Extender *** inputColumn: ${JSON.stringify(inputColumnName)}`,
   );
 
   const response = {
@@ -45,7 +45,11 @@ export default async (req, res) => {
     // console.log(`*** Label Extender *** key: ${JSON.stringify(key)}`);
     // console.log(`*** Label Extender *** items: ${JSON.stringify(items)}`);
     const buyerItems = items[inputColumnName] || {};
-    const rowIdKey = buyerItems[`wd:${key}`] || buyerItems[`wdA:${key}`] || [];
+    const rowIdKey =
+      buyerItems[`wd:${key}`] ||
+      buyerItems[`wdA:${key}`] ||
+      buyerItems[`wdL:${key}`] ||
+      [];
 
     // all rows with entity identified by key
     // console.log(`*** Label Extender *** entityIdKey: ${JSON.stringify(rowIdKey)}`);
