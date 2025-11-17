@@ -83,10 +83,7 @@ export default async (req, res) => {
 
   console.log("*** Checking hasResults:");
   console.log("*** Response length:", response.length);
-  console.log(
-    "*** Sample response item:",
-    JSON.stringify(response[0], null, 2),
-  );
+
   if (response[1]?.metadata?.length > 0) {
     console.log(
       "*** Sample metadata:",
