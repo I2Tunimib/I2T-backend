@@ -69,13 +69,27 @@ export default async (req) => {
   // });
 
   const { items, props } = req.processed;
+
+  // Check if items exists and has at least one key
+  if (!items || Object.keys(items).length === 0) {
+    console.error("Error: No items found in request");
+    return [];
+  }
+
   const { variables: variablesString, body } = props;
 
   // Extract entities (Qxxx) from items.columnName
   const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
   console.log("********** Column name:", columnName);
+
+  // Check if the column exists in items
+  if (!items[columnName]) {
+    console.error(`Error: Column "${columnName}" not found in items`);
+    return [];
+  }
+
   const entities = Object.keys(items[columnName]).map(
-    (label) => label.split(":")[1]
+    (label) => label.split(":")[1],
   );
 
   // Extract variables from the string and add ?item if it is not included

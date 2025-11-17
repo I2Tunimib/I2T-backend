@@ -1,12 +1,12 @@
-import config from './index.js';
-import axios from 'axios';
+import config from "./index.js";
+import axios from "axios";
 
 const { endpoint } = config.private;
 const { access_token } = config.private;
 
 function cleanCoordinates(coordinates) {
   if (coordinates !== undefined) {
-    coordinates = coordinates.split(':')[1].split(',');
+    coordinates = coordinates.split(":")[1].split(",");
     return [parseFloat(coordinates[0]), parseFloat(coordinates[1])];
   }
   return undefined;
@@ -32,44 +32,50 @@ function getLatLongEnd(end_row, POI) {
 function createRoute(start, end) {
   if (start !== undefined && end !== undefined) {
     return {
-      "origin": start,
-      "destination": end
-    }
+      origin: start,
+      destination: end,
+    };
   }
   return undefined;
 }
 
-
-
 export default async (req) => {
-
-
-  let RouteList = []
-  let RowDict = {}
+  let RouteList = [];
+  let RowDict = {};
 
   const { items } = req.original;
   let { props } = req.original;
   let POI = false;
 
-
-  if (props['poi_property'].findIndex((element) => element === 'poi') !== -1) {
+  // Check if props and poi_property exist
+  if (
+    props &&
+    props["poi_property"] &&
+    props["poi_property"].findIndex((element) => element === "poi") !== -1
+  ) {
     POI = true;
   }
-
-
 
   const start = items[Object.keys(items)[0]];
   const end = props.end;
 
-  Object.keys(start).forEach(row => {
-    let route = createRoute(getLatLongStart(start[row]), getLatLongEnd(end[row], POI));
+  Object.keys(start).forEach((row) => {
+    let route = createRoute(
+      getLatLongStart(start[row]),
+      getLatLongEnd(end[row], POI),
+    );
     if (route !== undefined) {
       RouteList.push(route);
       RowDict[RouteList.length - 1] = row;
     }
   });
-  const payload = { "json": RouteList };
+  const payload = { json: RouteList };
 
   const res = await axios.post(endpoint + "?&token=" + access_token, payload);
-  return { 'data': res.data, 'dict': RowDict, 'start': Object.keys(items)[0], end: props.end[Object.keys(props.end)[0]][2] };
-}
+  return {
+    data: res.data,
+    dict: RowDict,
+    start: Object.keys(items)[0],
+    end: props.end[Object.keys(props.end)[0]][2],
+  };
+};
