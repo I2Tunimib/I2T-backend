@@ -90,7 +90,7 @@ const DatasetsController = {
       const { datasets } = await DatasetsService.addDataset(
         file ? file.tempFilePath : null,
         name,
-        user.id
+        user.id,
       );
 
       res.json({
@@ -133,7 +133,7 @@ const DatasetsController = {
       const tables = await DatasetsService.addTable(
         idDataset,
         file.tempFilePath,
-        name
+        name,
       );
 
       res.json({
@@ -186,10 +186,17 @@ const DatasetsController = {
   },
   exportTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    const { format = "w3c", keepMatching = false } = req.query;
+    let { format = "w3c", keepMatching = false } = req.query;
+    console.log("*** export req query values", req.query);
     try {
       const table = await DatasetsService.findTable(idDataset, idTable);
-      const data = await ExportService[format]({ ...table, keepMatching });
+      //workaround to handle different rdf formats
+      if (format.startsWith("RDF")) format = "rdf";
+      const data = await ExportService[format]({
+        ...table,
+        keepMatching,
+        ...req.query,
+      });
       res.send(data);
     } catch (err) {
       next(err);
@@ -219,7 +226,7 @@ const DatasetsController = {
       res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileName}"`
+        `attachment; filename="${fileName}"`,
       );
 
       // Send the file and ensure the response is complete before file cleanup
@@ -235,11 +242,11 @@ const DatasetsController = {
 
       const tables = await DatasetsService.findTablesByNameAndUser(
         query,
-        user.id
+        user.id,
       );
       const datasets = await DatasetsService.findDatasetsByNameAndUser(
         query,
-        user.id
+        user.id,
       );
 
       res.json({
@@ -260,7 +267,7 @@ const DatasetsController = {
             idDataset,
             idTable,
             columnName,
-            payload
+            payload,
           );
           break;
         }

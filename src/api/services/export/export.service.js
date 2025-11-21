@@ -2,6 +2,7 @@ import { parse } from "json2csv";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+import axios from "axios";
 
 const ExportService = {
   rawJson: async ({ columns, rows }) => {
@@ -19,17 +20,37 @@ const ExportService = {
     return parse(jsonData);
   },
   w3c: async ({ columns, rows, keepMatching = false }) => {
+    // Helper function to convert score strings to numbers in type/property arrays
+    const convertScoresInArray = (arr) => {
+      if (!Array.isArray(arr)) return arr;
+      return arr.map((item) => {
+        if (item && typeof item === "object") {
+          return {
+            ...item,
+            ...(item.score !== undefined && { score: parseFloat(item.score) }),
+          };
+        }
+        return item;
+      });
+    };
+
     const getMetadata = (metadata = [], keepMatching) => {
       if (keepMatching) {
         return metadata
           .filter((meta) => meta.match)
-          .map(({ name, ...rest }) => ({
+          .map(({ name, score, type, property, ...rest }) => ({
             name: name.value,
+            ...(score !== undefined && { score: parseFloat(score) }),
+            ...(type && { type: convertScoresInArray(type) }),
+            ...(property && { property: convertScoresInArray(property) }),
             ...rest,
           }));
       }
-      return metadata.map(({ name, ...rest }) => ({
+      return metadata.map(({ name, score, type, property, ...rest }) => ({
         name: name.value,
+        ...(score !== undefined && { score: parseFloat(score) }),
+        ...(type && { type: convertScoresInArray(type) }),
+        ...(property && { property: convertScoresInArray(property) }),
         ...rest,
       }));
     };
@@ -45,20 +66,33 @@ const ExportService = {
         return [...accCtx, { prefix: `${prefix}:`, uri }];
       }, []);
 
+      // Process column metadata
+      let processedMetadata = [];
+      if (metadata.length > 0) {
+        const metaItem = { ...metadata[0] };
+
+        // Convert scores in type array
+        if (metaItem.type) {
+          metaItem.type = convertScoresInArray(metaItem.type);
+        }
+
+        // Convert scores in property array
+        if (metaItem.property) {
+          metaItem.property = convertScoresInArray(metaItem.property);
+        }
+
+        // Convert scores in entity array
+        if (metaItem.entity) {
+          metaItem.entity = getMetadata(metaItem.entity, keepMatching);
+        }
+
+        processedMetadata = [metaItem];
+      }
+
       acc[`th${index}`] = {
         ...propsToKeep,
         label: trimmedLabel,
-        metadata:
-          metadata.length > 0
-            ? [
-                {
-                  ...metadata[0],
-                  ...(metadata[0].entity && {
-                    entity: getMetadata(metadata[0].entity, keepMatching),
-                  }),
-                },
-              ]
-            : [],
+        metadata: processedMetadata,
         context: standardContext,
       };
       return acc;
@@ -79,6 +113,33 @@ const ExportService = {
     });
 
     return [firstRow, ...rest];
+  },
+  rdf: async ({ columns, rows, serialization, baseUri, score, match }) => {
+    const rdf_endpoint = process.env.RDF_EXPORT_ENDPOINT;
+    const jsonData = await ExportService.w3c({
+      columns,
+      rows,
+      keepMatching: true,
+    });
+    console.log("**** json data", serialization, baseUri, score, match);
+    const payload = {
+      json_data: jsonData,
+      base_uri: baseUri,
+      match_value: match, // or "all" or "only_true"
+      score_value: score, // minimum score threshold
+      format: serialization, // Options: TURTLE, NTRIPLES, TRIG, NQUADS, TRIX, JSON, XML
+    };
+    const response = await axios.post(rdf_endpoint, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 60000, // 60 second timeout
+    });
+    if (serialization === "JSON") {
+      return JSON.stringify(response.data);
+    } else {
+      return response.data;
+    }
   },
   semtParser: async ({ id, datasetId, format = "python" }) => {
     return new Promise((resolve, reject) => {

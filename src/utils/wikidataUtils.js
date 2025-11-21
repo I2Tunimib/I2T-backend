@@ -34,7 +34,12 @@ export async function fetchWikidataInformation(wdId) {
   }
   const wikidataId = match[0];
   const url = `https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`;
-  const response = await axios.get(url);
+  const response = await axios.get(url, {
+    headers: {
+      "User-Agent":
+        "I2T-Backend/1.0 (https://github.com/your-org/I2T-backend; contact@example.com) axios/1.7.7",
+    },
+  });
   const entity = response.data.entities[wikidataId];
 
   // Get description (default to English)
@@ -49,7 +54,12 @@ export async function fetchWikidataInformation(wdId) {
     const typeId = entity.claims.P31[0].mainsnak.datavalue.value.id;
     // Fetch type label
     const typeUrl = `https://www.wikidata.org/wiki/Special:EntityData/${typeId}.json`;
-    const typeResp = await axios.get(typeUrl);
+    const typeResp = await axios.get(typeUrl, {
+      headers: {
+        "User-Agent":
+          "I2T-Backend/1.0 (https://github.com/your-org/I2T-backend; contact@example.com) axios/1.7.7",
+      },
+    });
     typeLabel = typeResp.data.entities[typeId].labels?.en?.value || "";
   }
   return {
