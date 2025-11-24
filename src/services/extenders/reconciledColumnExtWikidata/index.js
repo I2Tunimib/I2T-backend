@@ -7,13 +7,16 @@ export default {
     public: {
         name: 'Annotation properties (Wikidata)',
         relativeUrl: '/entity/labels',
-        description: 'Consolidate wikidata ID, URI, name or descriptions of entities in the selected column.' +
-            '<br><strong>Input</strong>: A column reconciled against Wikidata + a selection of properties.' +
-            '<br><strong>Output</strong>: A new column for every requested property.',
+        description: 'An extender that extracts Wikidata metadata, such as <em>ID</em>, <em>URI</em>, <em>name</em>, ' +
+          '<em>description</em>, from a reconciled column and populates them into new column(s).<br><br>' +
+          '<strong>Input</strong>: A <em>column reconciled against Wikidata</em>, plus a <em>selection of the ' +
+          'properties</em> to extract (ID in Wikidata format e.g., <code>wd:Q42</code>, URI as full URL, name and ' +
+          'description as string).<br> <strong>Output</strong>: One new column for each requested property, ' +
+          'containing the corresponding Wikidata metadata.<br><br>',
         formParams: [
             {
                 id: 'labels',
-                description: 'Select one or more <strong>properties</strong>properties:',
+                description: 'Select one or more <strong>properties</strong>:',
                 label: 'wikidata labels',
                 infoText: 'Labels to extend the table',
                 inputType: 'checkbox',
@@ -21,22 +24,22 @@ export default {
                 options: [
                    {
                         id: 'id',
-                        label: 'The ID of entities in Wikidata',
+                        label: 'ID of entities in Wikidata',
                         value: 'id'
                     },
                     {
                         id: 'url',
-                        label: 'The URL of entities in Wikidata',
+                        label: 'URL of entities in Wikidata',
                         value: 'url'
                     },
                     {
                         id: 'name',
-                        label: 'The name of entities in Wikidata',
+                        label: 'Name of entities in Wikidata',
                         value: 'name'
                     },
                     {
                         id: 'description',
-                        label: 'The description of entities in Wikidata',
+                        label: 'Description of entities in Wikidata',
                         value: 'description'
                     }
                 ]
