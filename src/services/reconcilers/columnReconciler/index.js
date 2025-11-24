@@ -4,14 +4,16 @@ export default {
     processRequest: true,
   },
   public: {
-    name: "Linking: Column Reconciler",
+    name: "Linking: In-Table Column Reconciler",
     prefix: "local",
     relativeUrl: "",
-    description: "A local reconciliation service that links values from a selected column to matching values " +
-      "in another column within the same table. No external APIs are called. <br><br>" +
-      "<strong>Input</strong>: A column whose values you want to reconcile, and a reference column containing the" +
-      "target values. <br><strong>Output</strong>: Local links between matching cells, enriched with the selected" +
-      "URI prefix (e.g., <code>wd:</code>, <code>geo:</code>).",
+    description: "A local reconciliation service that links values from a selected column to corresponding values" +
+      "in another column of the same table, treating the second column as reference metadata for enrichment. <br><br>" +
+      "<strong>Input</strong>: A <em>column to reconcile</em>; a <em>reference column</em> containing target values " +
+      "to reconcile the selected column; an <em>URI prefix</em> for generating URIs for matched values " +
+      "(e.g., <code>wd:</code>, <code>geo:</code>). <br>" +
+      "<strong>Output</strong>: Local links between matching cells, enriched with the selected URI prefix. <br><br>" +
+      "<strong>Note</strong>: External APIs are called only to retrieve types and descriptions for the linked entities.",
     uri: "",
     metaToView: {
       id: {
@@ -37,7 +39,7 @@ export default {
       {
         id: "prefix",
         label: "Prefix",
-        description: "Select the prefix to use for generating URIs for matched values (e.g., wd, dbp, geo).",
+        description: "Select the URI prefix to use for matched values",
         infoText: "",
         inputType: "selectPrefix",
         rules: ["required"],
@@ -45,7 +47,7 @@ export default {
       {
         id: "columnToReconcile",
         label: "Reference column",
-        description: "Select the column whose values will be used to reconcile the selected column.",
+        description: "Select the reference column containing values to reconcile the selected column",
         infoText: "",
         inputType: "selectColumns",
         rules: ["required"],

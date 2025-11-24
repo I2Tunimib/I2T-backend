@@ -10,7 +10,13 @@ export default {
     prefix: "wdL",
     relativeUrl: "/lionlinker",
     description:
-      "Reconciliation service using LionLinker for table annotation. Annotates mentions to Wikidata entities, with optional context columns for improved accuracy.",
+      "A reconciliation service using LionLinker for table annotation, linking mentions to Wikidata entities. " +
+      "<br><br><strong>Input</strong>: A <em>column of mentions</em> to reconcile; possibly additional columns " +
+      "providing context to improve reconciliation accuracy.<br>" +
+      "<strong>Output</strong>: Annotations for each matched mention, including <em>ID</em>, <em>name</em>, " +
+      "<em>description</em> and <em>types</em>.<br><br>" +
+      "<strong>Note</strong>: Requires access to the LionLinker API. More precise than OpenRefine-based " +
+      "reconciliation.",
     uri: "https://www.wikidata.org/wiki/",
     metaToView: {
       id: {
@@ -40,7 +46,7 @@ export default {
         id: "additionalColumns",
         description:
           "Optional columns that provide context to support reconciliation.",
-        label: "Select columns from the list, then click outside to confirm.",
+        label: "Select columns",
         infoText: "",
         inputType: "multipleColumnSelect",
         rules: [],
