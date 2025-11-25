@@ -6,13 +6,16 @@ export default {
   public: {
     name: "SPARQL (Wikidata)",
     relativeUrl: "/wikidata/entities",
-    description:
-      "SPARQL queries to extract properties from wikidata for the entities in the selected column" +
-      " <br> Add the <italic>*variables*</italic> for the query (e.g., ?elevation ?unit ?unitLabel). <br>" +
-      "The variable ?item is automatically added  with values in the selected column. <br>" +
-      "Then add the <italic>*body*</italic> of the query (e.g., ?item wdt:P2044 ?elevation .) <br>" +
-      "The VALUES clause is automatically added. <br>" +
-      "Note that some required properties may be missing in Wikidata.",
+    description: 'An extender that executes SPARQL queries on Wikidata for the entities in the selected column.<br><br>' +
+      '<strong>Input</strong>: A <em>reconciled column</em> with Wikidata entities; plus the variables and body of the ' +
+      'SPARQL query. Specify the variables for the SELECT clause (e.g., <code>?elevation ?unit ?unitLabel' +
+      '</code>). The variable <code>?item</code> is automatically included with the values from the selected column. ' +
+      'Provide the body of the query (e.g., <code>?item wdt:P2044 ?elevation</code>). The VALUES clause is automatically ' +
+      'added. Optionally, specify ORDER BY and LIMIT clauses.<br>' +
+      '<strong>Output</strong>: A new column for each selected variable containing the retrieved property values ' +
+      'for each entity, returned as strings or numbers according to Wikidata property types.<br><br>' +
+      '<strong>Notes</strong>: Some properties may be missing for certain entities in Wikidata. ' +
+      'Ensure variable names correspond to properties used in the query body.',
     formParams: [
       {
         id: "variables",
