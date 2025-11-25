@@ -8,7 +8,7 @@ export default {
     allValues: true,
     name: "CH Matching",
     description:
-      "Match company names to Companies House data using optional address context for better matching. Adds new columns with matched company details.",
+      "Open Opportunities company house matching service. It uses a specialized hybrid search service over a collection of european company data. It allows to extend data with the actual company name, address and additional company information. ",
     formParams: [
       {
         id: "additionalColumns",
