@@ -15,9 +15,19 @@ const ExportService = {
       }, {});
     });
   },
-  csv: async ({ columns, rows }) => {
+  csv: async ({ columns, rows, delimiter, quote, decimalSeparator, includeHeader }) => {
     const jsonData = await ExportService.rawJson({ columns, rows });
-    return parse(jsonData);
+    const includeHeaderFlag = includeHeader === true || includeHeader === "true";
+    let csv = parse(jsonData, {
+      delimiter,
+      quote,
+      header: includeHeaderFlag,
+      decimal: decimalSeparator,
+    });
+    if (decimalSeparator === ".") {
+      csv = csv.replace(/(\d+)\,(\d+)/g, `$1${decimalSeparator}$2`);
+    }
+    return csv;
   },
   w3c: async ({ columns, rows, keepMatching = false }) => {
     // Helper function to convert score strings to numbers in type/property arrays
