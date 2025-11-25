@@ -7,12 +7,15 @@ export default {
   public: {
     name: "Linking: Wikidata (Alligator)",
     description:
-      "A general purpose reconciliation and linking service that use Alligator to add Wikidata IDs, " +
-      "labels, descriptions and types to body cells (mentions), and types and properties " +
-      "to header cells (schema). <br>" +
-      "<br><strong>Input</strong>: A column with mentions (strings) to reconcile, and possibly " +
-      "more columns to set a context for more accurate results. " +
-      "<br><strong>Output</strong>: Metadata associated with body cells and schema cells in W3C compliant format.",
+      "A general purpose reconciliation service using Alligator to match mentions to Wikidata entities. " +
+      "It enriches <em> body cells </em> (mentions) with Wikidata IDs, labels, descriptions, and types, and enriches " +
+      "<em> header cells </em> (schema) with types and properties.<br><br> " +
+      "<strong>Input</strong>: A <em> column of mentions </em> (strings) to reconcile; possibly additional columns " +
+      "providing context to improve reconciliation accuracy.<br>" +
+      "<strong>Output</strong>: Metadata associated with body and schema cells in W3C compliant format, including " +
+      "<em> IDs</em>, <em> labels</em>, <em> descriptions</em>, <em> types</em> and <em> properties</em>.<br><br>" +
+      "<strong>Note</strong>: Requires access to the Alligator API. More precise than OpenRefine-based " +
+      "reconciliation.",
     relativeUrl: "/dataset",
     prefix: "wdA",
     uri: "https://www.wikidata.org/wiki/",
@@ -41,7 +44,7 @@ export default {
         id: "additionalColumns",
         description:
           "Optional columns that provide context to support reconciliation.",
-        label: "Select columns from the list, then click ouside to confirm.",
+        label: "Select columns",
         infoText: "",
         inputType: "multipleColumnSelect",
         rules: [],

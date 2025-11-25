@@ -5,13 +5,15 @@ export default {
     processRequest: true,
   },
   public: {
-    name: "Geocoding: geo coordinates (HERE)",
+    name: "Geocoding: Geo Coordinates (HERE)",
     description:
-      "A geographic reconciliation and linking service of locations at street address or greater granularity. " +
-      "Annotations add IDs as geographical coordinates (lat,lng), names, and descriptions from HERE. <br>" +
-      "<br><strong>Input</strong>: the content of the selected column, plus optional information taken from other columns." +
-      "<br><strong>Output</strong>: Annotations (id and name) associated with body cells. Ids are formatted like " +
-      '"georss:lat,lon". Names are the official Latin names of the addresses of the reconciled locations.',
+      "A geographic reconciliation service that links location mentions to HERE entries, providing <em> street-level " +
+      "or higher granularity </em> with latitude, longitude, names, and descriptions.<br><br>" +
+      "<strong>Input</strong>: A <em>column of location mentions</em> to reconcile; plus optional information taken " +
+      "from other columns providing context to improve reconciliation accuracy.<br>" +
+      "<strong>Output</strong>: Annotations for each matched mention, including <em> ID</em> (formatted as " +
+      "<code>georss:lat,lon</code>), <em> name</em> (official Latin name of the address) and " +
+      "<em> description </em>.<br><br> <strong>Note</strong>: Requires access to the HERE API",
     relativeUrl: "/here",
     prefix: "georss",
     uri: "http://www.google.com/maps/place/",
@@ -40,7 +42,7 @@ export default {
         id: "additionalColumns",
         description:
           "Optional columns that provide context to support reconciliation.",
-        label: "Select columns from the list, then click ouside to confirm.",
+        label: "Select columns",
         infoText: "",
         inputType: "multipleColumnSelect",
         rules: [],

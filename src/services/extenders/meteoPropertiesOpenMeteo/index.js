@@ -6,22 +6,20 @@ export default {
   public: {
     name: 'Meteo Properties (OpenMeteo)',
     relativeUrl: '',
-    description: 'Add properties for the geo points in the selected reconclied column ' +
-      '(latitude,longitude) in a given day in another column (yyyy-MM-dd or yyyy-MM-dd\'T\'HH:mm).' +
-      '<br>Only dates prior to 5 days of the current date are covered. <br>All dates in CET timezone.<br>' +
-      '<br><strong>Input</strong>: A column reconciled with latitute and longitude (e.g., geo coordinates IDs ' +
-      '(lat,lon) - "georss:52.51604,13.37691") and a second column with dates in ISO8601 format (yyyy-MM-dd ' +
-      'or yyyy-MM-dd\'T\'HH:mm).' +
-      '<br><strong>Output</strong>: A new column for every requested parameter. ' +
-      'Output numbers can be in either comma or period notation. <br><br><strong>Note: </strong> If the ' +
-      'date column contains full datetime (yyyy-MM-dd\'T\'HH:mm) and daily parameters are selected, ' +
-      'the hour information will be ignored.',
-    formParams: [
+    description: 'An extender tharìt add weather properties for the geographic points in the selected <em>reconclied ' +
+      'column</em> (latitude, longitude) for a given date provided in another column.<br><br>' +
+      '<strong>Input</strong>: A <em>column reconciled with latitute and longitude</em> (e.g., <code>georss:52.51604,' +
+      '13.37691</code>) and a second <em>column with dates</em> in ISO8601 format (<code>yyyy-MM-dd</code> or ' +
+      '<code>yyyy-MM-dd\'T\'HH:mm</code>).<br> <strong>Output</strong>: A new column for every requested parameter.<br><br>' +
+      '<strong>Note</strong>: Only dates prior to 5 days of the current date are covered. All dates in CET timezone. ' +
+      'If the date column contains full datetime (<code>yyyy-MM-dd\'T\'HH:mm</code>) and daily parameters are ' +
+      'selected, the hour information will be ignored.',
+      formParams: [
       {
         id: 'dates',
-        description: 'Select a column with the days in ISO8601 format (yyyy-MM-dd or yyyy-MM-dd\'T\'HH:mm):',
+        description: 'Select a column containing dates:',
         label: 'Date column',
-        infoText: 'Only dates prior to 10 days are covered (ISO8601 format yyyy-MM-dd or yyyy-MM-dd\'T\'HH:mm)',
+        infoText: 'Only dates prior to 10 days are covered',
         inputType: 'selectColumns',
         rules: ['required']
       },
