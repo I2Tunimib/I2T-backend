@@ -6,6 +6,7 @@ export default {
   public: {
     relativeUrl: "",
     allValues: true,
+    skipFiltering: true,
     name: "CH Matching",
     description:
       "Open Opportunities company house matching service. It uses a specialized hybrid search service over a collection of european company data. It allows to extend data with the actual company name, address and additional company information. ",
