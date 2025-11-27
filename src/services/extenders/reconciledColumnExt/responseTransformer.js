@@ -21,7 +21,7 @@ function getId(row) {
     row[1].forEach(element => {
       if(element.match === true){
         result = element.id.split(":")[1];
-      }      
+      }
     });
   } else {
     return "";
@@ -53,34 +53,40 @@ export default async (req, res) => {
   //       console.log('File ../../fileSemTUI/requestEXT-UI-columnExt.json saved!');
   //     });
 
-  const { column } = res;
+  const { items, props } = req.original;
+  const { selectedColumns } = props;
+  if (!selectedColumns || selectedColumns.length === 0) {
+    throw new Error("At least one column must be selected before running the operation.");
+  }
   const property = res.property;
-  const column_to_extend = column[Object.keys(column)[0]][2];
-  const dictRow = getRowDict(column);
-//  console.log(property)
-
+  //  console.log(property)
 
   let response = {
     columns: {},
     meta: {}
   }
 
-  property.forEach(prop => {
-    let label_column = prop +"_"+column_to_extend;
- 
+  selectedColumns.forEach((col) => {
+    property.forEach((prop) => {
+      let label_column = prop +"_"+col;
+      console.log("label_column", label_column);
       response.columns[label_column] = {
-      label: label_column,
-      // kind: 'literal',
-      metadata: [],
-      cells: {}
-    };
+        label: label_column,
+        metadata: [],
+        cells: {},
+      };
 
-    Object.keys(res.column).forEach(row_id => {
-      let label_result = getLabel(dictRow, prop, row_id);
-      response.columns[label_column].cells[row_id] = {
-        label: label_result,
-        metadata: []
-      }
+      const columnData = items[col];
+      const dictRow = getRowDict(columnData);
+
+      Object.entries(columnData).forEach(([row_id]) => {
+        let label_result = getLabel(dictRow, prop, row_id);
+        console.log("label_result", label_result);
+        response.columns[label_column].cells[row_id] = {
+          label: label_result,
+          metadata: []
+        }
+      });
     });
   });
   // fs.writeFile('../../fileSemTUI/responseEXT-UI-columnExt.json',
