@@ -4,7 +4,7 @@ export default {
     processRequest: true,
   },
   public: {
-    name: "Linking: In-Table Column Reconciler",
+    name: "Linking: In-Table Linking",
     prefix: "local",
     relativeUrl: "",
     description: "A local reconciliation service that links values from a selected column to corresponding values" +
