@@ -12,7 +12,7 @@ export default {
           '<strong>Input</strong>: A <em>column reconciled against Wikidata</em>, plus a <em>selection of the ' +
           'properties</em> to extract (ID in Wikidata format e.g., <code>wd:Q42</code>, URI as full URL, name and ' +
           'description as string).<br> <strong>Output</strong>: One new column for each requested property, ' +
-          'containing the corresponding Wikidata metadata.<br><br>',
+          'containing the corresponding Wikidata metadata.',
         formParams: [
             {
                 id: 'labels',
