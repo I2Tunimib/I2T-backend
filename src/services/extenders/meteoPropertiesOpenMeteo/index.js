@@ -6,7 +6,7 @@ export default {
   public: {
     name: 'Meteo Properties (OpenMeteo)',
     relativeUrl: '',
-    description: 'An extender tharìt add weather properties for the geographic points in the selected <em>reconclied ' +
+    description: 'An extender that adds weather properties for the geographic points in the selected <em>reconclied ' +
       'column</em> (latitude, longitude) for a given date provided in another column.<br><br>' +
       '<strong>Input</strong>: A <em>column reconciled with latitute and longitude</em> (e.g., <code>georss:52.51604,' +
       '13.37691</code>) and a second <em>column with dates</em> in ISO8601 format (<code>yyyy-MM-dd</code> or ' +
