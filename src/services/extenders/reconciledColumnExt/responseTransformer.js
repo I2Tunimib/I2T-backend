@@ -1,44 +1,43 @@
-import fs from "fs";
+import fetch from "node-fetch";
 
-function getName(row) {
+async function getName(id) {
   let result = "";
-  if (row[1] !== []) {
-    row[1].forEach(element => {
-      if(element.match === true){
-        result = element.name.value;
-      }
-//      console.log(result)
-    });
-  } else {
-    return "";
+  if (id) {
+    if (id.startsWith("wd:")) {
+      const cleanId = id.replace(/^wd:/, "").replace(/^wdA:/, "").replace(/^wdL:/, "").trim();
+      const url = `https://www.wikidata.org/wiki/Special:EntityData/${cleanId}.json`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const entity = data.entities?.[cleanId];
+      result = entity?.labels?.en?.value || "";
+    } else if (id.startsWith("geo:")) {
+      const endpoint = process.env.GEONAMES;
+      const token = process.env.GEONAMES_TOKEN;
+      const cleanId = id.replace(/^geo:/, "").trim();
+      const url = `${endpoint}/getJSON?geonameId=${cleanId}&username=${token}`;
+      const res = await fetch(url);
+      const item = await res.json();
+      result = item.name;
+    }
   }
   return String(result);
 }
 
-function getId(row) {
-  let result = "";
-  if (row[1] !== []) {
-    row[1].forEach(element => {
-      if(element.match === true){
-        result = element.id.split(":")[1];
-      }
-    });
-  } else {
-    return "";
-  }
-  return String(result);
+function getId(id) {
+  if (!id) return "";
+  return id.split(":")[1] || "";
 }
 
-function getRowDict(column) {
-  let dict = {}
-  Object.keys(column).forEach(row => {
+async function getRowDict(column) {
+  const dict = {};
+  for (const row of Object.keys(column)) {
     if (column[row] !== undefined) {
       dict[row] = {
-        "name": getName(column[row]),
-        "id": getId(column[row])
+        name: await getName(column[row]),
+        id: getId(column[row])
       };
     }
-  })
+  }
   return dict;
 }
 
@@ -46,56 +45,38 @@ function getLabel(dict, prop, row) {
   return dict[row][prop];
 }
 
-export default async (req, res) => {
-  // fs.writeFile('../../fileSemTUI/requestEXT-UI-columnExt.json',
-  //     JSON.stringify(req), function (err) {
-  //       if (err) throw err;
-  //       console.log('File ../../fileSemTUI/requestEXT-UI-columnExt.json saved!');
-  //     });
-
+export default async function responseTransformer(req, res) {
   const { items, props } = req.original;
   const { selectedColumns } = props;
+
   if (!selectedColumns || selectedColumns.length === 0) {
     throw new Error("At least one column must be selected before running the operation.");
   }
   const property = res.property;
-  //  console.log(property)
 
-  let response = {
-    columns: {},
-    meta: {}
-  }
+  const response = { columns: {}, meta: {} };
 
-  selectedColumns.forEach((col) => {
-    property.forEach((prop) => {
-      let label_column = prop +"_"+col;
-      console.log("label_column", label_column);
+  for (const col of selectedColumns) {
+    for (const prop of property) {
+      const label_column = `${prop}_${col}`;
       response.columns[label_column] = {
         label: label_column,
         metadata: [],
-        cells: {},
+        cells: {}
       };
 
       const columnData = items[col];
-      const dictRow = getRowDict(columnData);
+      const dictRow = await getRowDict(columnData);
 
-      Object.entries(columnData).forEach(([row_id]) => {
-        let label_result = getLabel(dictRow, prop, row_id);
-        console.log("label_result", label_result);
+      for (const row_id of Object.keys(columnData)) {
+        const label_result = getLabel(dictRow, prop, row_id);
         response.columns[label_column].cells[row_id] = {
           label: label_result,
           metadata: []
-        }
-      });
-    });
-  });
-  // fs.writeFile('../../fileSemTUI/responseEXT-UI-columnExt.json',
-  //     JSON.stringify(response), function (err) {
-  //       if (err) throw err;
-  //       console.log('File ../../fileSemTUI/responseEXT-UI-columnExt.json saved!');
-  //     });
+        };
+      }
+    }
+  }
 
   return response;
 }
-
-
