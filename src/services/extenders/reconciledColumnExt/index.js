@@ -14,13 +14,6 @@ export default {
       'extracted metadata from the reconciled entities.',
     formParams: [
       {
-        id: 'column',
-        description: 'Select the column to extend:',
-        label: 'Column to extend',
-        inputType: 'selectColumns',
-        rules: ['required']
-      },
-      {
         id: 'property',
         description: 'Select one or more <b>properties</b>:',
         label: 'Property',
