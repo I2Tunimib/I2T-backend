@@ -55,7 +55,7 @@ Example response:
 function getMostPopularForMissing(missingItemWikidataId, fullResponse) {
   let freqMapping = {};
   let filteredResp = fullResponse.filter(
-    (resp) => resp.wikidataId === missingItemWikidataId
+    (resp) => resp.wikidataId === missingItemWikidataId,
   );
   filteredResp.map((resp) => {
     if (resp.cofog_label)
@@ -92,21 +92,30 @@ async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
         const raw = completion.choices[0]?.message?.content;
         if (!raw)
           throw new Error(
-            `OpenAI returned empty response for prompt #${index}`
+            `OpenAI returned empty response for prompt #${index}`,
           );
 
         // Helper to extract JSON from responses that may be wrapped in
         // markdown code fences or contain surrounding text.
         function extractJson(input) {
           try {
-            // Remove Markdown code fences and trim whitespace
-            const cleaned = input
-              .replace(/^```(?:json)?\s*/i, "") // remove opening ```json or ```
-              .replace(/```$/, "") // remove closing ```
-              .trim();
+            // First, try to extract from markdown code fence
+            const fenceRegex = /```(?:json)?\s*([\s\S]*?)\s*```/i;
+            const fenceMatch = input.match(fenceRegex);
+            let candidate = fenceMatch ? fenceMatch[1].trim() : input.trim();
+
+            // Find the first { and last } to extract just the JSON object
+            const firstBrace = candidate.indexOf("{");
+            const lastBrace = candidate.lastIndexOf("}");
+
+            if (firstBrace === -1 || lastBrace === -1) {
+              throw new Error("No JSON object found in response");
+            }
+
+            const jsonStr = candidate.slice(firstBrace, lastBrace + 1);
 
             // Parse to JS object
-            return JSON.parse(cleaned);
+            return JSON.parse(jsonStr);
           } catch (err) {
             console.error("Invalid JSON string:", err.message);
             return null;
@@ -117,7 +126,7 @@ async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
         if (!parsed) {
           console.error(
             `Failed to parse LLM response for prompt #${index}. Raw response:`,
-            raw
+            raw,
           );
           return {
             cofog_label: null,
@@ -136,7 +145,7 @@ async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
       } catch (err) {
         console.error(
           `Error processing LLM request for prompt #${index}:`,
-          err
+          err,
         );
         // Return empty object for this prompt
         return {
@@ -147,7 +156,7 @@ async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
           wikidataId: prompt.wikidataId,
         };
       }
-    })
+    }),
   );
 }
 export default async (req) => {
@@ -172,7 +181,7 @@ export default async (req) => {
         description: descriptionCol[index] ? descriptionCol[index] : "",
         rowId: rowId,
       };
-    })
+    }),
   );
 
   // Prepare prompts for LLM calls
