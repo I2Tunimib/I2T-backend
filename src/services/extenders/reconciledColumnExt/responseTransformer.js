@@ -89,9 +89,13 @@ export default async (req, res) => {
     columns: {},
     meta: {},
   };
-
+  console.log("*** selected columns", selectedColumns);
   // OLD IMPLEMENTATION (when selectedColumns is passed)
-  if (selectedColumns && selectedColumns.length > 0) {
+  if (
+    selectedColumns &&
+    selectedColumns.length > 0 &&
+    typeof selectedColumns[0] !== "string"
+  ) {
     selectedColumns.forEach((col) => {
       property.forEach((prop) => {
         let label_column = prop + "_" + col;
