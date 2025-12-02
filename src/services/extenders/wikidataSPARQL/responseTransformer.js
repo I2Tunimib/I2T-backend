@@ -3,18 +3,24 @@ export default async (req, res) => {
 
   let response = {
     columns: {},
-    meta: {}
+    meta: {},
   };
 
   // Extract row mapping from columnName
   const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
-  console.log("********** response Column name:", columnName)
+  console.log("********** response Column name:", columnName);
   const rowMapping = {};
   Object.entries(items[columnName]).forEach(([rowKey, itemValue]) => {
     // Extract the Qxxx part from the "wd:Qxxx" format
     const itemId = itemValue.split(":")[1];
     rowMapping[itemId] = rowKey;
   });
+
+  // Check if res is undefined or empty
+  if (!res || !Array.isArray(res) || res.length === 0) {
+    console.warn("No results returned from SPARQL query");
+    return response;
+  }
 
   // Iterate over the array `res` to populate columns
   res.forEach((entry) => {
@@ -34,7 +40,7 @@ export default async (req, res) => {
         response.columns[key] = {
           label: key,
           metadata: [],
-          cells: {}
+          cells: {},
         };
       }
 
@@ -44,7 +50,7 @@ export default async (req, res) => {
       if (rowKey) {
         response.columns[key].cells[rowKey] = {
           label: value,
-          metadata: []
+          metadata: [],
         };
       }
     });
