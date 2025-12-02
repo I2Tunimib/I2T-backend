@@ -25,14 +25,9 @@ export default async (req, res) => {
   // Iterate over the array `res` to populate columns
   res.forEach((entry) => {
     Object.entries(entry).forEach(([key, value]) => {
-      if (key === "item") {
-        // Map item to its row (skip column creation for "item")
-        const itemId = value.split("/").pop(); // Extract Qxxx from the URL
-        const rowKey = rowMapping[itemId];
-        if (!rowKey) {
-          console.warn(`Item ${itemId} not found in row mapping.`);
-        }
-        return; // Skip further processing for "item" key
+      // Skip source column variables - these should not be returned as new columns
+      if (key === "item" || key === "itemLabel" || key === "itemDescription") {
+        return; // Skip processing for source column variables
       }
 
       // Ensure the column exists
