@@ -14,7 +14,7 @@ export default {
       "<strong>Input</strong>: Organization details including <em>name</em>, <em>description</em>, <em>country</em> " +
       "and optional <em>Wikidata fields</em> such as description or type.<br>" +
       "<strong>Output</strong>: A JSON object containing the predicted COFOG category (<code>cofog_label: 01-10</code>), " +
-      "confidence level (high/medium/low) and reasoning notes.<br><br>",
+      "confidence level (high/medium/low) and reasoning notes.",
     formParams: [
       {
         id: "description",
