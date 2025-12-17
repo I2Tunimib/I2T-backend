@@ -1,6 +1,6 @@
-export default async (req, res) => {
+export default async (req) => {
   const { items, props } = req.original;
-  const { operationType, columnToJoinSplit, separator, renameNewColumn, selectedColumns } = props;
+  const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns, splitRenameMode } = props;
 
   const sep = separator || "; ";
   const response = { columns: {}, meta: {} };
@@ -10,14 +10,14 @@ export default async (req, res) => {
   }
 
   if (operationType === "joinOp") {
-    const allColumnsToJoin = [...selectedColumns, ...Object.keys(columnToJoinSplit || {})];
+    const allColumnsToJoin = [...selectedColumns, ...Object.keys(columnToJoin || {})];
 
     if (allColumnsToJoin.length < 2) {
       throw new Error("At least two columns must be selected for join operation.");
     }
 
-    const newColName = renameNewColumn && renameNewColumn.trim() !== ""
-      ? renameNewColumn.trim()
+    const newColName = renameJoinedColumn && renameJoinedColumn.trim() !== ""
+      ? renameJoinedColumn.trim()
       : `${allColumnsToJoin.join("_")}`;
 
     response.columns[newColName] = {
@@ -35,8 +35,8 @@ export default async (req, res) => {
           if (selectedColumns.includes(col)) {
             const cell = items[col]?.[rowId];
             return cell ? String(cell[0]) : "";
-          } else if (columnToJoinSplit?.[col]) {
-            const cell = columnToJoinSplit[col]?.[rowId];
+          } else if (columnToJoin?.[col]) {
+            const cell = columnToJoin[col]?.[rowId];
             return cell ? String(cell[0]) : "";
           }
           return "";
@@ -66,12 +66,24 @@ export default async (req, res) => {
     const maxParts = Math.max(...splitSamples.map((p) => p.length));
 
     let splitNames = [];
-    if (renameNewColumn && renameNewColumn.trim() !== "") {
-      splitNames = renameNewColumn.split(",").map((n) => n.trim());
+    if (splitRenameMode === "custom") {
+      splitNames = renameNewColumnSplit
+        .split(",")
+        .map((n) => n.trim())
+        .filter(Boolean);
+
+      if (splitNames.length !== maxParts) {
+        throw new Error(
+          `Expected ${maxParts} column names based on the chosen separator, but got ${splitNames.length}.`
+        );
+      }
+    } else {
+      splitNames = Array.from(
+        {length: maxParts},
+        (_, i) => `${targetCol}_${i + 1}`
+      );
     }
-    while (splitNames.length < maxParts) {
-      splitNames.push(`${targetCol}_${splitNames.length + 1}`);
-    }
+
     splitNames.forEach((name) => {
       response.columns[name] = {
         label: name,
