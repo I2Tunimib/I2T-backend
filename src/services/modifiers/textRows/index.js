@@ -3,18 +3,20 @@ export default {
     endpoint: "",
     processRequest: true,
   },
-  skipFiltering: true,
   public: {
     name: "Text to rows",
     relativeUrl: "",
     description:
-      "Split a single column into multiple rows by a custom separator, duplicating all other column values.",
+      "A transformation function that allows splitting the values of a single column into multiple rows " +
+      "using a custom separator defined by the user. For each split value, a new row is created and the " +
+      "values of the other columns are duplicated.",
     skipFiltering: true,
     formParams: [
       {
         id: "separator",
         label: "Separator",
-        description: "Separator used to split values into new rows.",
+        description: "Specify the separator to use for splitting values into new rows.",
+        infoText: "",
         inputType: "text",
         rules: ["required"],
       },
