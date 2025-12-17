@@ -11,7 +11,13 @@ export default {
       'and those in the selected <em>destination</em> column.<br><br>' +
       '<strong>Input</strong>: A <em>column reconciled with latitute and longitude</em>; another <em>column containing ' +
       'either geo coordinates</em> (e.g., <code>georss:52.51604,13.37691</code>) or text labels of <em>Points of Interest ' +
-      '(POI)</em>.<br> <strong>Output</strong>: A new column for each selected route property.<br><br>' +
+      '(POI)</em>, plus a <em>selection of properties</em>:' +
+      '<ul style="list-style-type: disc;">' +
+        '<li>Route duration in minute</li>' +
+        '<li>Route length in km</li>' +
+        '<li>Route path from origin to destination in polyline format</li>' +
+      '</ul>' +
+      '<strong>Output</strong>: A new column for each selected route property.<br><br>' +
       '<strong>Notes</strong>: If the destination column contains POIs, enable the corresponding option so the ' +
       'service can resolve textual POI labels to geographic coordinates before computing the route.',
     formParams: [
