@@ -1,6 +1,7 @@
 export default async (req) => {
   const { items, props } = req.original;
-  const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns, splitRenameMode } = props;
+  const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns,
+    splitMode, extractPortion, splitRenameMode } = props;
 
   const sep = separator || "; ";
   const response = { columns: {}, meta: {} };
@@ -57,13 +58,36 @@ export default async (req) => {
       throw new Error("Selected column contains no data.");
     }
 
-    const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
-    if (!separatorFound) {
-      throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
-    }
+    let maxParts;
+    let extractParts;
 
-    const splitSamples = rowEntries.map(([_, val]) => String(val?.[0] ?? "").split(sep));
-    const maxParts = Math.max(...splitSamples.map((p) => p.length));
+    if (splitMode === "separator") {
+      const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
+      if (!separatorFound) {
+        throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
+      }
+
+      const splitSamples = rowEntries.map(([_, val]) => String(val?.[0] ?? "").split(sep));
+      maxParts = Math.max(...splitSamples.map((p) => p.length));
+      extractParts = (raw) => raw.split(sep);
+
+    } else if (splitMode === "portion") {
+      maxParts = 2;
+
+      extractParts = (raw) => {
+        const parts = raw.trim().split(/\s+/);
+
+        if (extractPortion === "last") {
+          return [parts.slice(0, -1).join(" "), parts.at(-1) ?? "",];
+        }
+
+        if (extractPortion === "first") {
+          return [parts[0] ?? "", parts.slice(1).join(" "),];
+        }
+
+        return ["", ""];
+      };
+    }
 
     let splitNames = [];
     if (splitRenameMode === "custom") {
@@ -95,7 +119,7 @@ export default async (req) => {
 
     rowEntries.forEach(([rowId, val]) => {
       const raw = String(val?.[0] ?? "");
-      const parts = raw.split(sep);
+      const parts = extractParts(raw);
       splitNames.forEach((colName, i) => {
         response.columns[colName].cells[rowId] = {
           label: parts[i] ?? "",
