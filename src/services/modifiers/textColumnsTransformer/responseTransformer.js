@@ -1,7 +1,7 @@
 export default async (req) => {
   const { items, props } = req.original;
   const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns,
-    splitMode, extractPortion, splitRenameMode } = props;
+    splitMode, binaryDirection, splitRenameMode } = props;
 
   const sep = separator || "; ";
   const response = { columns: {}, meta: {} };
@@ -61,7 +61,7 @@ export default async (req) => {
     let maxParts;
     let extractParts;
 
-    if (splitMode === "separator") {
+    if (splitMode === "separatorAll") {
       const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
       if (!separatorFound) {
         throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
@@ -71,21 +71,26 @@ export default async (req) => {
       maxParts = Math.max(...splitSamples.map((p) => p.length));
       extractParts = (raw) => raw.split(sep);
 
-    } else if (splitMode === "portion") {
+    } else if (splitMode === "separatorBinary") {
       maxParts = 2;
 
-      extractParts = (raw) => {
-        const parts = raw.trim().split(/\s+/);
+      extractParts = raw => {
+        const value = String(raw);
+        let index = "";
 
-        if (extractPortion === "last") {
-          return [parts.slice(0, -1).join(" "), parts.at(-1) ?? "",];
+        if (!value.includes(sep)) {
+          return [value, ""];
         }
 
-        if (extractPortion === "first") {
-          return [parts[0] ?? "", parts.slice(1).join(" "),];
+        if (binaryDirection === "left") {
+          index = value.indexOf(sep);
+        } else if (binaryDirection === "right") {
+          index = value.lastIndexOf(sep);
         }
-
-        return ["", ""];
+        return [
+          value.slice(0, index),
+          value.slice(index + sep.length),
+        ];
       };
     }
 
