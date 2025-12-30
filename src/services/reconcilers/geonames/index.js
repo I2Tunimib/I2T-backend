@@ -18,6 +18,7 @@ export default {
     relativeUrl: "/dataset",
     prefix: "geo",
     uri: "http://www.geonames.org/",
+    searchPattern: "https://www.geonames.org/search.html?q={label}",
     metaToView: {
       id: {
         label: "ID",

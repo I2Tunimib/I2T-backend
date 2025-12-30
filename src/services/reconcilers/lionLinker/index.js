@@ -18,6 +18,7 @@ export default {
       "<strong>Note</strong>: Requires access to the LionLinker API. More precise than OpenRefine-based " +
       "reconciliation.",
     uri: "https://www.wikidata.org/wiki/",
+    searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
     metaToView: {
       id: {
         label: "ID",
