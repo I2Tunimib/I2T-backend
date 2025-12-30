@@ -19,6 +19,7 @@ export default {
     relativeUrl: "/dataset",
     prefix: "wdA",
     uri: "https://www.wikidata.org/wiki/",
+    searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
     metaToView: {
       id: {
         label: "ID",

@@ -14,6 +14,7 @@ export default {
       '<strong>Note</strong>: Requires access to the OpenRefine reconciliation API; Reconciliation is performed ' +
       'without using other columns for context, which may reduce accuracy compared to other services.',
     uri: 'https://www.wikidata.org/wiki/',
+    searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
     metaToView: {
       id: {
         label: 'ID',
