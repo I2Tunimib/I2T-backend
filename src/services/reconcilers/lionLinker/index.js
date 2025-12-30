@@ -19,6 +19,8 @@ export default {
       "reconciliation.",
     uri: "https://www.wikidata.org/wiki/",
     searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    searchTypesPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: "ID",

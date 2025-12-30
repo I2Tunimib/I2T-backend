@@ -15,6 +15,8 @@ export default {
       'without using other columns for context, which may reduce accuracy compared to other services.',
     uri: 'https://www.wikidata.org/wiki/',
     searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    searchTypesPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: 'ID',
