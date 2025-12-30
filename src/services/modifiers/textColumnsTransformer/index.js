@@ -31,17 +31,6 @@ export default {
           inputType: "multipleColumnSelect",
         },
         {
-          id: "splitMode",
-          label: "Split mode",
-          description: "Choose how to split the selected column.",
-          inputType: "radio",
-          rules: ["required"],
-          options: [
-            { id: "separator", label: "Specifying a separator (e.g., comma, space)", value: "separator" },
-            { id: "portion", label: "Extracting first or last token of the cell value", value: "portion" },
-          ],
-        },
-        {
           id: "separator",
           label: "Separator",
           description: "Specify the separator to use for joining or splitting values.",
@@ -50,14 +39,25 @@ export default {
           rules: ["required"],
         },
         {
-          id: "extractPortion",
-          label: "Extract",
-          description: "Choose which portion of the cell value to extract, splitting the selected column into two columns.",
+          id: "splitMode",
+          label: "Split mode",
+          description: "Choose how to split the selected column.",
           inputType: "radio",
           rules: ["required"],
           options: [
-            { id: "first", label: "First token (e.g., 'Mario' | 'Rossi 123456')", value: "first" },
-            { id: "last", label: "Last token (e.g., 'Mario Rossi' | '123456')", value: "last" },
+            { id: "separatorAll", label: "Split into multiple columns on separator", value: "separatorAll" },
+            { id: "separatorBinary", label: "Split into two columns on separator", value: "separatorBinary" },
+          ],
+        },
+        {
+          id: "binaryDirection",
+          label: "Split direction",
+          description: "Choose the direction where to split when creating two columns.",
+          inputType: "radio",
+          rules: ["required"],
+          options: [
+            { id: "left", label: "From left", value: "left" },
+            { id: "right", label: "From right", value: "right" },
           ],
         },
         {
