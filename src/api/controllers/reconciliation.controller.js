@@ -4,6 +4,7 @@ import reconciliationPipeline from "../services/reconciliation/reconciliation-pi
 import config from "../../config/index.js";
 import path from "path";
 import MantisService from "../services/reconciliation/mantis.service.js";
+import ColumnClassifierService from "../services/reconciliation/column-classifier.service.js";
 
 const __dirname = path.resolve();
 
@@ -25,26 +26,34 @@ const ReconciliationController = {
       next(err);
     }
   },
-  fullAnnoation: async (req, res, next) => {
+  automaticAnnotation: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    const data = req.body;
+    const { target, method } = req.body;
     const io = req.app.get("io");
 
     try {
-      const result = await MantisService.annotate(idDataset, idTable, data);
-      if (result.status === "Ok") {
-        await MantisService.trackAnnotationStatus({
-          io,
-          idDataset,
-          idTable,
-        });
+    // FULL TABLE → MANTIS
+      if (target === "fullTable" && method === "alligator") {
+        const result = await MantisService.annotate(idDataset, idTable, req.body);
+        if (result.status === "Ok") {
+          await MantisService.trackAnnotationStatus({ io, idDataset, idTable });
+          return res.json({
+            datasetId: idDataset,
+            tableId: idTable,
+            mantisStatus: "PENDING",
+          });
+        }
+      }
+      if (target === "schema" && method === "columnClassifier") {
+        await ColumnClassifierService.annotate({idDataset, idTable, io});
 
-        res.json({
+        return res.json({
           datasetId: idDataset,
           tableId: idTable,
-          mantisStatus: "PENDING",
+          schemaStatus: "PENDING",
         });
       }
+      return res.status(400).json({ error: "Unsupported annotation type" });
     } catch (err) {
       next(err);
     }
