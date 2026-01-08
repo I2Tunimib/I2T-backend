@@ -17,7 +17,7 @@ export default {
             '<li>Name, as string</li>' +
             '<li>Description, as string</li>' +
           '</ul>' +
-          '<strong>Output</strong>: One new column for each requested property, containing the corresponding Wikidata metadata.',
+          '<strong>Output</strong>: A new column for each selected property, containing the corresponding Wikidata metadata.',
         formParams: [
             {
                 id: 'labels',

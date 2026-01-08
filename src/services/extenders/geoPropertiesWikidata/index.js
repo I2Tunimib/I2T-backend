@@ -16,7 +16,7 @@ export default {
         "<li>Time zone</li>" +
         "<li>Postal code</li>" +
       "</ul>" +
-      "<strong>Output</strong>: One new column for each selected property, populated with the corresponding values " +
+      "<strong>Output</strong>: A new column for each selected property, populated with the corresponding values " +
       "retrieved from Wikidata.<br><br>" +
       "<strong>Note</strong>: Some entities may lack one or more of the requested properties in Wikidata.",
     formParams: [

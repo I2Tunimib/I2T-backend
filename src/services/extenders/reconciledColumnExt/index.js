@@ -14,7 +14,7 @@ export default {
         '<li>ID, in any supported format <code>prefix:id</code></li>' +
         '<li>Name, as string</li>' +
       '</ul>' +
-      '<strong>Output</strong>: One new column for each requested property, containing the ' +
+      '<strong>Output</strong>: A new column for each selected property, containing the ' +
       'extracted metadata from the reconciled entities.',
     formParams: [
       {
