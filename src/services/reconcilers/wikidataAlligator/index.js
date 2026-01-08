@@ -17,7 +17,7 @@ export default {
       "<strong>Note</strong>: Requires access to the Alligator API. More precise than OpenRefine-based " +
       "reconciliation.",
     relativeUrl: "/dataset",
-    prefix: "wdA",
+    prefix: "wd",
     uri: "https://www.wikidata.org/wiki/",
     searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
     searchTypesPattern: "https://www.wikidata.org/w/index.php?search={label}",
