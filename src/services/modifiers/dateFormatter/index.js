@@ -79,8 +79,8 @@ export default {
         inputType: "radio",
         defaultValue: "create",
         options: [
-          { id: "create", label: "Create new column", value: "create" },
-          { id: "edit", label: "Edit existing column values", value: "edit" },
+          { id: "create", label: "Create a new column", value: "create" },
+          { id: "edit", label: "Update the current column", value: "edit" },
         ],
       },
     ],
