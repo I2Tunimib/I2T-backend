@@ -17,6 +17,8 @@ export default {
     relativeUrl: "/dataset",
     prefix: "geoCoord",
     uri: "http://www.google.com/maps/place/",
+    listTypes: "http://www.geonames.org/export/codes.html",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: "ID",

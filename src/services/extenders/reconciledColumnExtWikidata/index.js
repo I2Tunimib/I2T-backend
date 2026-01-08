@@ -10,9 +10,14 @@ export default {
         description: 'An extender that extracts Wikidata metadata, such as <em>ID</em>, <em>URI</em>, <em>name</em>, ' +
           '<em>description</em>, from a reconciled column and populates them into new column(s).<br><br>' +
           '<strong>Input</strong>: A <em>column reconciled against Wikidata</em>, plus a <em>selection of the ' +
-          'properties</em> to extract (ID in Wikidata format e.g., <code>wd:Q42</code>, URI as full URL, name and ' +
-          'description as string).<br> <strong>Output</strong>: One new column for each requested property, ' +
-          'containing the corresponding Wikidata metadata.',
+          'properties</em>:' +
+          '<ul style="list-style-type: disc;">' +
+            '<li>ID, in Wikidata format <code>wd:Q42</code></li>' +
+            '<li>URI, as full URL</li>' +
+            '<li>Name, as string</li>' +
+            '<li>Description, as string</li>' +
+          '</ul>' +
+          '<strong>Output</strong>: A new column for each selected property, containing the corresponding Wikidata metadata.',
         formParams: [
             {
                 id: 'labels',

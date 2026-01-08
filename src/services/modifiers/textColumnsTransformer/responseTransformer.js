@@ -1,6 +1,7 @@
-export default async (req, res) => {
+export default async (req) => {
   const { items, props } = req.original;
-  const { operationType, columnToJoinSplit, separator, renameNewColumn, selectedColumns } = props;
+  const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns,
+    splitMode, binaryDirection, splitRenameMode } = props;
 
   const sep = separator || "; ";
   const response = { columns: {}, meta: {} };
@@ -10,14 +11,14 @@ export default async (req, res) => {
   }
 
   if (operationType === "joinOp") {
-    const allColumnsToJoin = [...selectedColumns, ...Object.keys(columnToJoinSplit || {})];
+    const allColumnsToJoin = [...selectedColumns, ...Object.keys(columnToJoin || {})];
 
     if (allColumnsToJoin.length < 2) {
       throw new Error("At least two columns must be selected for join operation.");
     }
 
-    const newColName = renameNewColumn && renameNewColumn.trim() !== ""
-      ? renameNewColumn.trim()
+    const newColName = renameJoinedColumn && renameJoinedColumn.trim() !== ""
+      ? renameJoinedColumn.trim()
       : `${allColumnsToJoin.join("_")}`;
 
     response.columns[newColName] = {
@@ -35,8 +36,8 @@ export default async (req, res) => {
           if (selectedColumns.includes(col)) {
             const cell = items[col]?.[rowId];
             return cell ? String(cell[0]) : "";
-          } else if (columnToJoinSplit?.[col]) {
-            const cell = columnToJoinSplit[col]?.[rowId];
+          } else if (columnToJoin?.[col]) {
+            const cell = columnToJoin[col]?.[rowId];
             return cell ? String(cell[0]) : "";
           }
           return "";
@@ -57,21 +58,61 @@ export default async (req, res) => {
       throw new Error("Selected column contains no data.");
     }
 
-    const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
-    if (!separatorFound) {
-      throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
-    }
+    let maxParts;
+    let extractParts;
 
-    const splitSamples = rowEntries.map(([_, val]) => String(val?.[0] ?? "").split(sep));
-    const maxParts = Math.max(...splitSamples.map((p) => p.length));
+    if (splitMode === "separatorAll") {
+      const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
+      if (!separatorFound) {
+        throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
+      }
+
+      const splitSamples = rowEntries.map(([_, val]) => String(val?.[0] ?? "").split(sep));
+      maxParts = Math.max(...splitSamples.map((p) => p.length));
+      extractParts = (raw) => raw.split(sep);
+
+    } else if (splitMode === "separatorBinary") {
+      maxParts = 2;
+
+      extractParts = raw => {
+        const value = String(raw);
+        let index = "";
+
+        if (!value.includes(sep)) {
+          return [value, ""];
+        }
+
+        if (binaryDirection === "left") {
+          index = value.indexOf(sep);
+        } else if (binaryDirection === "right") {
+          index = value.lastIndexOf(sep);
+        }
+        return [
+          value.slice(0, index),
+          value.slice(index + sep.length),
+        ];
+      };
+    }
 
     let splitNames = [];
-    if (renameNewColumn && renameNewColumn.trim() !== "") {
-      splitNames = renameNewColumn.split(",").map((n) => n.trim());
+    if (splitRenameMode === "custom") {
+      splitNames = renameNewColumnSplit
+        .split(",")
+        .map((n) => n.trim())
+        .filter(Boolean);
+
+      if (splitNames.length !== maxParts) {
+        throw new Error(
+          `Expected ${maxParts} column names based on the chosen separator, but got ${splitNames.length}.`
+        );
+      }
+    } else {
+      splitNames = Array.from(
+        {length: maxParts},
+        (_, i) => `${targetCol}_${i + 1}`
+      );
     }
-    while (splitNames.length < maxParts) {
-      splitNames.push(`${targetCol}_${splitNames.length + 1}`);
-    }
+
     splitNames.forEach((name) => {
       response.columns[name] = {
         label: name,
@@ -83,7 +124,7 @@ export default async (req, res) => {
 
     rowEntries.forEach(([rowId, val]) => {
       const raw = String(val?.[0] ?? "");
-      const parts = raw.split(sep);
+      const parts = extractParts(raw);
       splitNames.forEach((colName, i) => {
         response.columns[colName].cells[rowId] = {
           label: parts[i] ?? "",

@@ -18,6 +18,9 @@ export default {
     relativeUrl: "/dataset",
     prefix: "geo",
     uri: "http://www.geonames.org/",
+    searchPattern: "https://www.geonames.org/search.html?q={label}",
+    listTypes: "http://www.geonames.org/export/codes.html",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: "ID",

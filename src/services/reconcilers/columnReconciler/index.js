@@ -15,6 +15,8 @@ export default {
       "<strong>Output</strong>: Local links between matching cells, enriched with the selected URI prefix. <br><br>" +
       "<strong>Note</strong>: External APIs are called only to retrieve types and descriptions for the linked entities.",
     uri: "",
+    searchTypesPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: "ID",

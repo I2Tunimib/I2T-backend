@@ -17,6 +17,7 @@ export default {
     relativeUrl: "/here",
     prefix: "georss",
     uri: "http://www.google.com/maps/place/",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: "ID",

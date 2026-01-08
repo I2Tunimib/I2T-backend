@@ -6,7 +6,7 @@ const router = Router();
 
 // Define routes for Configuration
 router.get('/list', asyncMiddleware(ReconciliationController.list));
-router.post('/*/dataset/:idDataset/table/:idTable', asyncMiddleware(ReconciliationController.fullAnnoation));
+router.post('/automatic/dataset/:idDataset/table/:idTable', asyncMiddleware(ReconciliationController.automaticAnnotation));
 router.post('/*', asyncMiddleware(ReconciliationController.reconcile));
 
 export default router;
