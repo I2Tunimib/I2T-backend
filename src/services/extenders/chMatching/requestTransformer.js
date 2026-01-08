@@ -12,11 +12,34 @@ async function makeRequest(endpoint, payload, row) {
 export default async (req) => {
   const { items } = req.original;
 
-  return Promise.all(
+  console.log("=== CH Matching Request Transformer ===");
+  console.log("Total columns to process:", Object.keys(items).length);
+
+  const columnIds = Object.keys(items);
+  columnIds.forEach((colId) => {
+    const rowIds = Object.keys(items[colId]);
+    console.log(`Column ${colId}: ${rowIds.length} rows to process`);
+    console.log(
+      `First 3 row samples:`,
+      rowIds.slice(0, 3).map((rowId) => ({
+        rowId,
+        value: items[colId][rowId]?.value,
+        kbId: items[colId][rowId]?.kbId,
+        matchingType: items[colId][rowId]?.matchingType,
+      })),
+    );
+  });
+
+  const results = await Promise.all(
     Object.keys(items).map(async (data) => {
-      return Promise.all(
-        Object.keys(items[data]).map(async (row) => {
-          const company_name = items[data][row].value;
+      const rowIds = Object.keys(items[data]);
+      console.log(`Processing ${rowIds.length} rows for column ${data}`);
+
+      const rowResults = await Promise.all(
+        rowIds.map(async (row) => {
+          const rowData = items[data][row];
+          const company_name = rowData?.value || "";
+
           // Build address object from additionalColumns
           const address = {};
 
@@ -36,7 +59,6 @@ export default async (req) => {
               ) {
                 const value =
                   req.original.props.additionalColumns[colId][row][0];
-                console.log("*** debug value address ***: ", value);
                 // Map columns to address fields based on order
                 if (index === 0) address.line_1 = value;
                 else if (index === 1) address.line_2 = value;
@@ -51,10 +73,19 @@ export default async (req) => {
           if (Object.keys(address).length > 0) {
             payload.address = address;
           }
+
           let res = await makeRequest(endpoint, payload, row);
           return res;
         }),
       );
+
+      console.log(`Received ${rowResults.length} responses for column ${data}`);
+      return rowResults;
     }),
   );
+
+  console.log("=== CH Matching Request Transformer Complete ===");
+  console.log("Total results returned:", results.flat().length);
+
+  return results;
 };

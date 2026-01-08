@@ -1,5 +1,36 @@
 export default async (req, res) => {
-  const column_to_extend = Object.keys(req.processed.items)[0];
+  console.log("=== CH Matching Response Transformer ===");
+
+  // Get column from original request (not processed, to ensure we have all rows)
+  const column_to_extend = Object.keys(req.original.items)[0];
+  console.log(`Column to extend: ${column_to_extend}`);
+
+  // Get all original row IDs that were sent in the request
+  const originalRowIds = req.original.items[column_to_extend]
+    ? Object.keys(req.original.items[column_to_extend])
+    : [];
+  console.log(`Total rows in original request: ${originalRowIds.length}`);
+  console.log(`Sample original row IDs:`, originalRowIds.slice(0, 5));
+
+  // Log the structure of the response from the service
+  console.log(`Response structure: Array.isArray(res)=${Array.isArray(res)}`);
+  if (Array.isArray(res)) {
+    console.log(`Response length: ${res.length}`);
+    if (res.length > 0) {
+      console.log(`Response[0] is array: ${Array.isArray(res[0])}`);
+      if (Array.isArray(res[0])) {
+        console.log(`Response[0] length: ${res[0].length}`);
+        console.log(
+          `Sample response items:`,
+          res[0].slice(0, 3).map((item) => ({
+            row: item?.row,
+            hasData: !!item,
+            keys: item ? Object.keys(item) : [],
+          })),
+        );
+      }
+    }
+  }
 
   let response = {
     columns: {},
@@ -215,15 +246,41 @@ export default async (req, res) => {
       property: colProperty,
     });
 
-    // Populate cells with data from API response
-    res[0].forEach((row) => {
-      const value = row[prop] !== undefined ? row[prop].toString() : "";
+    /**
+     * Ensure all rows are present in the output (including non-reconciled ones).
+     * First initialize all cells for the target column with empty values, then
+     * overwrite them with any data returned by the CH Matching API.
+     */
+    const allRowIds =
+      req.original && req.original.items && req.original.items[column_to_extend]
+        ? Object.keys(req.original.items[column_to_extend])
+        : [];
 
-      response.columns[label_column].cells[row["row"]] = {
-        label: value,
-        metadata: [],
-      };
+    // Initialize every row with an empty value so non-reconciled rows are included
+    allRowIds.forEach((rId) => {
+      response.columns[label_column].cells[rId] = { label: "", metadata: [] };
     });
+
+    // Overwrite defaults with actual responses from the service (if any)
+    if (Array.isArray(res[0])) {
+      res[0].forEach((row) => {
+        const value =
+          row[prop] !== undefined && row[prop] !== null
+            ? String(row[prop])
+            : "";
+        response.columns[label_column].cells[row["row"]] = {
+          label: value,
+          metadata: [],
+        };
+      });
+    }
+  });
+
+  console.log("=== CH Matching Response Transformer Complete ===");
+  console.log(`Total columns created: ${Object.keys(response.columns).length}`);
+  Object.keys(response.columns).forEach((colName) => {
+    const cellCount = Object.keys(response.columns[colName].cells).length;
+    console.log(`  ${colName}: ${cellCount} cells`);
   });
 
   return response;

@@ -37,6 +37,10 @@ const loadExtenders = async () => {
     (extender) => !services.exclude?.extenders?.includes(extender),
   );
 
+  console.log(
+    `[Config] Loading ${extenders.length} extenders from ${basePath}`,
+  );
+
   return extenders.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`;
 
@@ -47,6 +51,16 @@ const loadExtenders = async () => {
     const { default: responseTransformer } = await import(
       `file:///${servicePath}/responseTransformer.js`
     );
+
+    // Log CH Matching service specifically
+    if (info.public.name === "CH Matching") {
+      console.log(`[Config] Loading CH Matching extender (${serviceKey}):`, {
+        name: info.public.name,
+        skipFiltering: info.public.skipFiltering,
+        allValues: info.public.allValues,
+        relativeUrl: info.public.relativeUrl,
+      });
+    }
 
     (await acc)[serviceKey] = {
       info,
@@ -90,7 +104,6 @@ const loadReconcilers = async () => {
   }, {});
 };
 
-
 /**
  * Load modifiers services in memory
  */
@@ -100,7 +113,7 @@ const loadModifiers = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/modifiers`;
 
   const modifiers = readdirSync(basePath).filter(
-      (modifier) => !services.exclude?.modifiers?.includes(modifier)
+    (modifier) => !services.exclude?.modifiers?.includes(modifier),
   );
 
   return modifiers.reduce(async (acc, serviceKey) => {
@@ -108,11 +121,11 @@ const loadModifiers = async () => {
 
     const { default: info } = await import(`file:///${servicePath}/index.js`);
     const { default: requestTransformer } = await import(
-        `file:///${servicePath}/requestTransformer.js`
-        );
+      `file:///${servicePath}/requestTransformer.js`
+    );
     const { default: responseTransformer } = await import(
-        `file:///${servicePath}/responseTransformer.js`
-        );
+      `file:///${servicePath}/responseTransformer.js`
+    );
 
     (await acc)[serviceKey] = {
       info,
@@ -122,7 +135,6 @@ const loadModifiers = async () => {
     return acc;
   }, {});
 };
-
 
 /**
  * Load helper functions in memory
