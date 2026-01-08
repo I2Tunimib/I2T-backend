@@ -9,7 +9,7 @@ export default {
     description: 'An extender that adds Wikidata properties for entities in the selected column.<br><br>' +
       '<strong>Input</strong>: A <em>reconciled column</em> with entities; plus a <em>list of Wikidata properties</em> ' +
       'to retrieve, separated by space (e.g., P625 P2044).<br>' +
-      '<strong>Output</strong>: One new column for each requested property, headed with the property\'s ' +
+      '<strong>Output</strong>: A new column for each selected property, headed with the property\'s ' +
       'official Wikidata label, containing the corresponding value(s) for each entity.<br><br>' +
       '<strong>Notes</strong>: Some properties may be missing for certain entities in Wikidata. The Suggest button ' +
       'can be used to retrieve a list of available properties along with their frequencies.',

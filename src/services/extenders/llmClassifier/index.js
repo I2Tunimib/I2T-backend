@@ -13,8 +13,12 @@ export default {
       "The classification is based on the organization's name, description, country, and Wikidata metadata.<br><br>" +
       "<strong>Input</strong>: Organization details including <em>name</em>, <em>description</em>, <em>country</em> " +
       "and optional <em>Wikidata fields</em> such as description or type.<br>" +
-      "<strong>Output</strong>: A JSON object containing the predicted COFOG category (<code>cofog_label: 01-10</code>), " +
-      "confidence level (high/medium/low) and reasoning notes.",
+      "<strong>Output</strong>: New columns containing:" +
+      "<ul style='list-style-type: disc;'>" +
+        "<li>Predicted COFOG category (<code>cofog_label: 01-10</code>). </li>" +
+        "<li>Confidence level (high/medium/low). </li>" +
+        "<li>Reasoning notes</li>" +
+      "</ul>",
     formParams: [
       {
         id: "description",

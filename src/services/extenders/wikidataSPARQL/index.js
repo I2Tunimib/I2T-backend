@@ -8,10 +8,14 @@ export default {
     relativeUrl: "/wikidata/entities",
     description: 'An extender that executes SPARQL queries on Wikidata for the entities in the selected column.<br><br>' +
       '<strong>Input</strong>: A <em>reconciled column</em> with Wikidata entities; plus the variables and body of the ' +
-      'SPARQL query. Specify the variables for the SELECT clause (e.g., <code>?elevation ?unit ?unitLabel' +
-      '</code>). The variable <code>?item</code> is automatically included with the values from the selected column. ' +
-      'Provide the body of the query (e.g., <code>?item wdt:P2044 ?elevation</code>). The VALUES clause is automatically ' +
-      'added. Optionally, specify ORDER BY and LIMIT clauses.<br>' +
+      'SPARQL query. Specify the variables for the' +
+      '<ul style="list-style-type: disc;">' +
+        '<li>SELECT clause (e.g., <code>?elevation ?unit ?unitLabel</code>).</li>' +
+        '<li>Body of the query (e.g., <code>?item wdt:P2044 ?elevation</code>).</li>' +
+        '<li>ORDER BY and LIMIT clause (optionally).</li>' +
+      '</ul>' +
+      'While the variable <code>?item</code> is automatically included with the values from the selected column, and' +
+      'also the VALUES clause is automatically added.<br>'+
       '<strong>Output</strong>: A new column for each selected variable containing the retrieved property values ' +
       'for each entity, returned as strings or numbers according to Wikidata property types.<br><br>' +
       '<strong>Notes</strong>: Some properties may be missing for certain entities in Wikidata. ' +
