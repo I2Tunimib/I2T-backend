@@ -7,7 +7,7 @@ export default {
   public: {
     allValues: true,
     name: "Linking: Wikidata (LionLinker)",
-    prefix: "wdL",
+    prefix: "wd",
     relativeUrl: "/lionlinker",
     description:
       "A reconciliation service using LionLinker for table annotation, linking mentions to Wikidata entities. " +
