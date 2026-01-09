@@ -1,7 +1,7 @@
 export default async (req) => {
   const { items, props } = req.original;
   const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns,
-    splitMode, binaryDirection, splitRenameMode } = props;
+    splitMode, splitDirection, splitRenameMode } = props;
 
   const sep = separator || "; ";
   const response = { columns: {}, meta: {} };
@@ -71,7 +71,7 @@ export default async (req) => {
       maxParts = Math.max(...splitSamples.map((p) => p.length));
       extractParts = (raw) => raw.split(sep);
 
-    } else if (splitMode === "separatorBinary") {
+    } else if (splitMode === "separatorSingle") {
       maxParts = 2;
 
       extractParts = raw => {
@@ -82,9 +82,9 @@ export default async (req) => {
           return [value, ""];
         }
 
-        if (binaryDirection === "left") {
+        if (splitDirection === "left") {
           index = value.indexOf(sep);
-        } else if (binaryDirection === "right") {
+        } else if (splitDirection === "right") {
           index = value.lastIndexOf(sep);
         }
         return [
