@@ -45,19 +45,19 @@ export default {
           inputType: "radio",
           rules: ["required"],
           options: [
-            { id: "separatorAll", label: "Split into multiple columns on separator", value: "separatorAll" },
-            { id: "separatorBinary", label: "Split into two columns on separator", value: "separatorBinary" },
+            { id: "separatorAll", label: "Split at every occurrence", value: "separatorAll" },
+            { id: "separatorSingle", label: "Split at a single occurrence", value: "separatorSingle" },
           ],
         },
         {
-          id: "binaryDirection",
+          id: "splitDirection",
           label: "Split direction",
           description: "Choose the direction where to split when creating two columns.",
           inputType: "radio",
           rules: ["required"],
           options: [
-            { id: "left", label: "From left", value: "left" },
-            { id: "right", label: "From right", value: "right" },
+            { id: "left", label: "From left (first occurrence)", value: "left" },
+            { id: "right", label: "From right (last occurrence)", value: "right" },
           ],
         },
         {

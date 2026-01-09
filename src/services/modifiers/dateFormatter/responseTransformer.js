@@ -275,7 +275,7 @@ export default async (req, res) => {
       };
     });
   } else {
-    const columnToProcess = Object.keys(items)[0];
+    const columnToProcess = selectedColumns[0];
     const columnData = items[columnToProcess];
     const newColumnName = outputMode === "edit" ? columnToProcess : `formatted_${columnToProcess}`;
 
