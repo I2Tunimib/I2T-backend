@@ -14,7 +14,7 @@ export default {
       "providing context to improve reconciliation accuracy.<br>" +
       "<strong>Output</strong>: Metadata associated with body and schema cells in W3C compliant format, including " +
       "<em> IDs</em>, <em> labels</em>, <em> descriptions</em>, <em> types</em> and <em> properties</em>.<br><br>" +
-      "<strong>Note</strong>: Requires access to the Alligator API. More precise than OpenRefine-based " +
+      "<strong>Note</strong>: Requires access to the Alligator service. More precise than OpenRefine-based " +
       "reconciliation.",
     relativeUrl: "/dataset",
     prefix: "wd",
