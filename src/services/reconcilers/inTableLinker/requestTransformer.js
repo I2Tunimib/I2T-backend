@@ -231,7 +231,7 @@ export default async (req) => {
     result: result.filter(Boolean),
     error: null,
     reconciliator: {
-      id: "columnReconciler",
+      id: "inTableLinker",
       name: "Linking: Column Reconciler",
       prefix,
       uri: targetUri,
