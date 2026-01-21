@@ -17,7 +17,7 @@ export default {
     relativeUrl: "/dataset",
     prefix: "geoCoord",
     uri: "http://www.google.com/maps/place/",
-    searchPattern: "https://www.google.com/maps/place/{label}/",
+    searchPattern: "https://www.google.com/maps/search/?api=1&query={label}/",
     listTypes: "http://www.geonames.org/export/codes.html",
     listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {

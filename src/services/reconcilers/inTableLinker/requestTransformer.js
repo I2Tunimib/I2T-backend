@@ -232,7 +232,7 @@ export default async (req) => {
     error: null,
     reconciliator: {
       id: "inTableLinker",
-      name: "Linking: Column Reconciler",
+      name: "Linking: In-Table Linking",
       prefix,
       uri: targetUri,
       relativeUrl: targetRelativeUrl,
