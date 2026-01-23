@@ -59,7 +59,7 @@ export default async (req) => {
     case "wikidataAlligator":
       fetchMetadata = async (refValue) => {
         try {
-          const cleanId = refValue.replace(/^wdA:/, "").trim();
+          const cleanId = refValue.replace(/^wd:/, "").trim();
           const url = `https://www.wikidata.org/wiki/Special:EntityData/${cleanId}.json`;
           console.log("Wikidata (via Alligator) fetch URL:", url);
 
@@ -94,7 +94,7 @@ export default async (req) => {
       fetchMetadata = async (label, refValue) => {
         try {
           const cleanName = label;
-          const cleanId = refValue.replace(/^wdL:/, "").trim();
+          const cleanId = refValue.replace(/^wd:/, "").trim();
           const retrieverEndpoint = process.env.RETRIEVER_ENDPOINT
             || "https://lamapi.hel.sintef.cloud/lookup/entity-retrieval";
           const token = process.env.RETRIEVER_TOKEN || "lamapi_demo_2023";
