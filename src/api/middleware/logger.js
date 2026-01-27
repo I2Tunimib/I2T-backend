@@ -4,6 +4,7 @@ import LoggerService from "../services/logger/logger.service.js";
 const OPERATION_TYPES = {
   RECONCILIATION: "RECONCILIATION",
   EXTENSION: "EXTENSION",
+  MODIFICATION: "MODIFICATION",
   SAVE: "SAVE_TABLE",
   GET_TABLE: "GET_TABLE",
 };
@@ -13,6 +14,8 @@ const ROUTE_PATTERNS = {
   SAVE: /^\/api\/dataset\/\d+\/table\/\d+\/?$/,
   RECONCILERS: "/api/reconcilers",
   EXTENDERS: "/api/extenders",
+  MODIFIERS: "/api/modifiers",
+  EXPORT: "/export",
 };
 
 // Raw body capture
@@ -84,15 +87,29 @@ async function routeLogs(req) {
     await handleReconciliationRoute(req, url);
   } else if (url.includes(ROUTE_PATTERNS.EXTENDERS)) {
     await handleExtenderRoute(req, url);
+  } else if (url.includes(ROUTE_PATTERNS.MODIFIERS)) {
+    await handleModificationRoute(req, url);
   } else if (ROUTE_PATTERNS.SAVE.test(url)) {
     await handleSaveRoute(req, method);
+  } else if (url.includes(ROUTE_PATTERNS.EXPORT)) {
+    handleExportOperation(req, url);
   }
 }
-
+async function handleExportOperation(req, url) {
+  try {
+    const taskInfos = await getTaskInfos(req);
+    const [tableId, datasetId] = taskInfos;
+    const format = req.query.format;
+    console.log("*** request obj", format);
+    LoggerService.logExportTable(datasetId, tableId, format);
+  } catch (error) {
+    console.error("error handling export logging", error);
+  }
+}
 async function handleReconciliationRoute(req, url) {
   const requestedReconciliation = extractServiceFromUrl(
     url,
-    ROUTE_PATTERNS.RECONCILERS
+    ROUTE_PATTERNS.RECONCILERS,
   );
   const taskInfos = await getTaskInfos(req);
 
@@ -122,7 +139,7 @@ async function handleExtenderRoute(req, url) {
     const [tableId, datasetId, columnName] = taskInfos;
 
     console.log(
-      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`
+      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
     );
 
     LoggerService.logExtension({
@@ -130,6 +147,31 @@ async function handleExtenderRoute(req, url) {
       tableId,
       columnName,
       service: requestedExtender,
+      additionalData: req._rawBody || req.body,
+    });
+  }
+}
+
+async function handleModificationRoute(req, url) {
+  let requestedModifier = extractServiceFromUrl(url, ROUTE_PATTERNS.MODIFIERS);
+  if (req.body && req.body.serviceId) {
+    requestedModifier += `-${req.body.serviceId}`;
+  }
+  const taskInfos = await getTaskInfos(req);
+  console.log("modification taskinfos", taskInfos);
+  // Only log if we have all the required information
+  if (taskInfos && taskInfos.length === 3) {
+    const [tableId, datasetId, columnName] = taskInfos;
+
+    console.log(
+        `📋 MODIFICATION LOGGED - Function: ${requestedModifier} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`
+    );
+
+    LoggerService.logModification({
+      datasetId,
+      tableId,
+      columnName,
+      service: requestedModifier,
       additionalData: req._rawBody || req.body,
     });
   }

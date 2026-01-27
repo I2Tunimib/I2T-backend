@@ -11,17 +11,17 @@ if (process.env.ENV === "DEV" && env.error) {
 }
 if (!CONFIG.datasetFilesPath) {
   throw new Error(
-    "⚠️  You must provide a path to the dataset files in config.js ⚠️"
+    "⚠️  You must provide a path to the dataset files in config.js ⚠️",
   );
 }
 if (!CONFIG.datasetDbPath) {
   throw new Error(
-    "⚠️  You must provide a path to the dataset db in config.js ⚠️"
+    "⚠️  You must provide a path to the dataset db in config.js ⚠️",
   );
 }
 if (!CONFIG.tablesDbPath) {
   throw new Error(
-    "⚠️  You must provide a path to the tables db in config.js ⚠️"
+    "⚠️  You must provide a path to the tables db in config.js ⚠️",
   );
 }
 
@@ -34,10 +34,57 @@ const loadExtenders = async () => {
   const basePath = `${process.env.PWD}/src${services.path}/extenders`;
 
   const extenders = readdirSync(basePath).filter(
-    (extender) => !services.exclude?.extenders?.includes(extender)
+    (extender) => !services.exclude?.extenders?.includes(extender),
+  );
+
+  console.log(
+    `[Config] Loading ${extenders.length} extenders from ${basePath}`,
   );
 
   return extenders.reduce(async (acc, serviceKey) => {
+    const servicePath = `${basePath}/${serviceKey}`;
+
+    const { default: info } = await import(`file:///${servicePath}/index.js`);
+    const { default: requestTransformer } = await import(
+      `file:///${servicePath}/requestTransformer.js`
+    );
+    const { default: responseTransformer } = await import(
+      `file:///${servicePath}/responseTransformer.js`
+    );
+
+    // Log CH Matching service specifically
+    if (info.public.name === "CH Matching") {
+      console.log(`[Config] Loading CH Matching extender (${serviceKey}):`, {
+        name: info.public.name,
+        skipFiltering: info.public.skipFiltering,
+        allValues: info.public.allValues,
+        relativeUrl: info.public.relativeUrl,
+      });
+    }
+
+    (await acc)[serviceKey] = {
+      info,
+      requestTransformer,
+      responseTransformer,
+    };
+    return acc;
+  }, {});
+};
+
+/**
+ * Load reconcilers services in memory
+ */
+const loadReconcilers = async () => {
+  const { services } = CONFIG;
+
+  const basePath = `${process.env.PWD}/src${services.path}/reconcilers`;
+
+  const reconcilers = readdirSync(basePath).filter(
+    (reconciler) => !services.exclude?.reconcilers?.includes(reconciler),
+  );
+
+  return reconcilers.reduce(async (acc, serviceKey) => {
+    //TODO: non fare crashare se mancano i file
     const servicePath = `${basePath}/${serviceKey}`;
 
     const { default: info } = await import(`file:///${servicePath}/index.js`);
@@ -58,19 +105,18 @@ const loadExtenders = async () => {
 };
 
 /**
- * Load reconcilers services in memory
+ * Load modifiers services in memory
  */
-const loadReconcilers = async () => {
+const loadModifiers = async () => {
   const { services } = CONFIG;
 
-  const basePath = `${process.env.PWD}/src${services.path}/reconcilers`;
+  const basePath = `${process.env.PWD}/src${services.path}/modifiers`;
 
-  const reconcilers = readdirSync(basePath).filter(
-    (reconciler) => !services.exclude?.reconcilers?.includes(reconciler)
+  const modifiers = readdirSync(basePath).filter(
+    (modifier) => !services.exclude?.modifiers?.includes(modifier),
   );
 
-  return reconcilers.reduce(async (acc, serviceKey) => {
-    //TODO: non fare crashare se mancano i file
+  return modifiers.reduce(async (acc, serviceKey) => {
     const servicePath = `${basePath}/${serviceKey}`;
 
     const { default: info } = await import(`file:///${servicePath}/index.js`);
@@ -104,6 +150,12 @@ const loadHelperFunctions = async () => {
     getUsersPath: () => `${process.env.PWD}${usersPath}`,
   };
 };
+/**
+ * Load error map in memory
+ */
+const loadErrors = () => {
+  return CONFIG.errors ?? {};
+};
 
 /**
  * Load initial configuration
@@ -111,8 +163,9 @@ const loadHelperFunctions = async () => {
 const loadConfig = async () => {
   const reconcilers = await loadReconcilers();
   const extenders = await loadExtenders();
+  const modifiers = await loadModifiers();
   const helpers = await loadHelperFunctions();
-
+  const errors = loadErrors();
   if (!existsSync(helpers.getTmpPath())) {
     await mkdir(helpers.getTmpPath());
   }
@@ -121,7 +174,7 @@ const loadConfig = async () => {
     log("db", "Create tables DB");
     await safeWriteFileToPath(
       helpers.getTablesDbPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2)
+      JSON.stringify({ meta: { lastIndex: -1 }, tables: {} }, null, 2),
     );
   }
 
@@ -129,7 +182,7 @@ const loadConfig = async () => {
     log("db", "Create dataset DB");
     await safeWriteFileToPath(
       helpers.getDatasetDbPath(),
-      JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2)
+      JSON.stringify({ meta: { lastIndex: -1 }, datasets: {} }, null, 2),
     );
   }
 
@@ -152,22 +205,22 @@ const loadConfig = async () => {
 
     await safeWriteFileToPath(
       helpers.getUsersPath(),
-      JSON.stringify(initialUsersDb, null, 2)
+      JSON.stringify(initialUsersDb, null, 2),
     );
     log(
       "db",
-      "Created users DB with default test user (username: test, password: test)"
+      "Created users DB with default test user (username: test, password: test)",
     );
   } else {
     // Check if default test user exists, if not add it
     try {
       const usersData = JSON.parse(
         await import("fs").then((fs) =>
-          fs.promises.readFile(helpers.getUsersPath(), "utf8")
-        )
+          fs.promises.readFile(helpers.getUsersPath(), "utf8"),
+        ),
       );
       const hasTestUser = Object.values(usersData.users || {}).some(
-        (user) => user.username === "test" && user.password === "test"
+        (user) => user.username === "test" && user.password === "test",
       );
 
       if (!hasTestUser) {
@@ -190,11 +243,11 @@ const loadConfig = async () => {
 
         await safeWriteFileToPath(
           helpers.getUsersPath(),
-          JSON.stringify(updatedUsersDb, null, 2)
+          JSON.stringify(updatedUsersDb, null, 2),
         );
         log(
           "db",
-          "Added default test user to existing users DB (username: test, password: test)"
+          "Added default test user to existing users DB (username: test, password: test)",
         );
       }
     } catch (err) {
@@ -212,7 +265,9 @@ const loadConfig = async () => {
     RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
     reconcilers,
     extenders,
+    modifiers,
     helpers,
+    errors,
     mantisObjs: {
       cronsMap: {},
     },

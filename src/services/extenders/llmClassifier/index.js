@@ -6,12 +6,19 @@ export default {
   public: {
     name: "COFOG Classifier",
     relativeUrl: "",
-    description:
-      "Classifies a government department or public organization into a single, top-level COFOG (Classification of the Functions of Government) category based on provided information. " +
-      "Uses organization name, description, country, and Wikidata details to determine the most appropriate category among ten COFOG options. " +
-      "Returns a JSON object with the selected category, confidence level, and reasoning for the classification. " +
-      "<br><strong>Input</strong>: Organization details including name, description, country, Wikidata description, and type." +
-      "<br><strong>Output</strong>: JSON with fields: cofog_label (01-10), confidence (high/medium/low), and reasoning.",
+    description: "A classification service that assigns a government department or public organization to the most " +
+      "appropriate category among the ten top-level COFOG (Classification of the Functions of Government - For more " +
+      "details, click <a href='https://en.wikipedia.org/wiki/Classification_of_the_Functions_of_Government' " +
+      "target='_blank'>here</a>.) options. " +
+      "The classification is based on the organization's name, description, country, and Wikidata metadata.<br><br>" +
+      "<strong>Input</strong>: Organization details including <em>name</em>, <em>description</em>, <em>country</em> " +
+      "and optional <em>Wikidata fields</em> such as description or type.<br>" +
+      "<strong>Output</strong>: New columns containing:" +
+      "<ul style='list-style-type: disc;'>" +
+        "<li>Predicted COFOG category (<code>cofog_label: 01-10</code>). </li>" +
+        "<li>Confidence level (high/medium/low). </li>" +
+        "<li>Reasoning notes</li>" +
+      "</ul>",
     formParams: [
       {
         id: "description",

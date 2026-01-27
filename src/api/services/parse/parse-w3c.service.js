@@ -163,6 +163,14 @@ const ParseW3C = {
   updateReconcilersCount: (metadata, column, columns) => {
     if (metadata.length > 0) {
       const [prefix, _] = metadata[0].id.split(":");
+      if (!columns[column].context[prefix]) {
+        columns[column].context[prefix] = {
+          prefix: `${prefix}:`,
+          uri: KG_INFO[prefix] ? KG_INFO[prefix].uri : "",
+          total: 0,
+          reconciliated: 0,
+        };
+      }
       const { total, reconciliated } = columns[column].context[prefix];
 
       columns[column].context[prefix] = {

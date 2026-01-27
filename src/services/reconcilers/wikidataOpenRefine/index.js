@@ -7,11 +7,16 @@ export default {
     name: 'Linking: Wikidata (OpenRefine)',
     prefix: 'wd',
     relativeUrl: '/wikidata',
-    description: 'A general-purpose reconciliation service based on OpenRefine API. Add Wikidata IDs, labels and ' +
-        'descriptions. <br>' +
-        '<br><strong>Input</strong>: A column with mentions (strings) to reconcile. ' +
-        '<br><strong>Output</strong>: Metadata associated with mentions in row cells and schema headers in W3C compliant format.',
+    description: 'A general purpose reconciliation service using the OpenRefine service, adding Wikidata IDs, labels, ' +
+      'and descriptions.<br><br> <strong>Input</strong>: A <em>column of mentions</em> (strings) to reconcile.<br>' +
+      '<strong>Output</strong>: Metadata associated with mentions in row cells and schema headers, including ' +
+      '<em>ID</em>, <em>label</em> and <em>description</em> in W3C-compliant format.<br><br>' +
+      '<strong>Note</strong>: Requires access to the OpenRefine reconciliation service; Reconciliation is performed ' +
+      'without using other columns for context, which may reduce accuracy compared to other services.',
     uri: 'https://www.wikidata.org/wiki/',
+    searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    searchTypesPattern: "https://www.wikidata.org/w/index.php?search={label}",
+    listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {
         label: 'ID',

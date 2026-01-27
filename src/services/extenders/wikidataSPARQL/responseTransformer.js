@@ -3,12 +3,12 @@ export default async (req, res) => {
 
   let response = {
     columns: {},
-    meta: {}
+    meta: {},
   };
 
   // Extract row mapping from columnName
   const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
-  console.log("********** response Column name:", columnName)
+  console.log("********** response Column name:", columnName);
   const rowMapping = {};
   Object.entries(items[columnName]).forEach(([rowKey, itemValue]) => {
     // Extract the Qxxx part from the "wd:Qxxx" format
@@ -16,17 +16,18 @@ export default async (req, res) => {
     rowMapping[itemId] = rowKey;
   });
 
+  // Check if res is undefined or empty
+  if (!res || !Array.isArray(res) || res.length === 0) {
+    console.warn("No results returned from SPARQL query");
+    return response;
+  }
+
   // Iterate over the array `res` to populate columns
   res.forEach((entry) => {
     Object.entries(entry).forEach(([key, value]) => {
-      if (key === "item") {
-        // Map item to its row (skip column creation for "item")
-        const itemId = value.split("/").pop(); // Extract Qxxx from the URL
-        const rowKey = rowMapping[itemId];
-        if (!rowKey) {
-          console.warn(`Item ${itemId} not found in row mapping.`);
-        }
-        return; // Skip further processing for "item" key
+      // Skip source column variables - these should not be returned as new columns
+      if (key === "item" || key === "itemLabel" || key === "itemDescription") {
+        return; // Skip processing for source column variables
       }
 
       // Ensure the column exists
@@ -34,7 +35,7 @@ export default async (req, res) => {
         response.columns[key] = {
           label: key,
           metadata: [],
-          cells: {}
+          cells: {},
         };
       }
 
@@ -44,7 +45,7 @@ export default async (req, res) => {
       if (rowKey) {
         response.columns[key].cells[rowKey] = {
           label: value,
-          metadata: []
+          metadata: [],
         };
       }
     });

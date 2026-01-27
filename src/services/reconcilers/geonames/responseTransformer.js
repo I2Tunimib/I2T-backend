@@ -2,12 +2,12 @@ import config from "./index.js";
 import fs from "fs";
 
 export default async (req, res) => {
-  // fs.writeFile('../../fileSemTUI/response-geonames-filtered.json', JSON.stringify(res), function (err) {
+  const { result, labelDict, error } = res;
+  // fs.writeFile('../../fileSemTUI/response-geonames-filtered.json', JSON.stringify(result), function (err) {
   //   if (err) throw err;
   //   console.log('File ../../fileSemTUI/response-geonames-filtered.json saved!');
   // });
 
-  const result = res.result;
   const prefix = config.public.prefix;
   let response = [
     {
@@ -47,17 +47,23 @@ export default async (req, res) => {
     }),
   ];
 
-  // const header = {
-  //   id: req.original.items[0].id,
-  //   metadata: [],
-  // };
+  // Check if no reconciliation results were found
+  const hasResults = response.some((item) => {
+    if (item.id && item.metadata && item.metadata.length > 0) {
+      // For cells, check if any metadata has match
+      return item.metadata.some((meta) => meta.match);
+    }
+    return false;
+  });
 
-  // response.splice(0, 1, header);
+  if (!hasResults) {
+    res.error = req.config.errors.reconciler["02"];
+  }
 
   // fs.writeFile('../../fileSemTUI/response-geonames-returned-to-UI.json', JSON.stringify(response), function (err) {
   //   if (err) throw err;
   //   console.log('File ../../fileSemTUI/response-geonames-returned-to-UI.json saved!');
   // });
 
-  return response;
+  return { ...response, error: res.error };
 };

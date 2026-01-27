@@ -1,3 +1,4 @@
+import { table } from "console";
 import fs from "fs";
 import path from "path";
 
@@ -9,11 +10,23 @@ class LoggerService {
   static OPERATION_TYPES = {
     RECONCILIATION: "RECONCILIATION",
     EXTENSION: "EXTENSION",
+    MODIFICATION: "MODIFICATION",
     SAVE: "SAVE_TABLE",
     GET_TABLE: "GET_TABLE",
     PROPAGATE_TYPE: "PROPAGATE_TYPE",
+    EXPORT: "EXPORT",
   };
 
+  static logExportTable(datasetId, tableId, format) {
+    console.log("*** logging export table", datasetId, tableId, format);
+    return LoggerService.#writeLog({
+      datasetId,
+      tableId,
+      operationType: LoggerService.OPERATION_TYPES.EXPORT,
+      options: { format },
+      additionalData: { format },
+    });
+  }
   /**
    * Log a type propagation operation.
    * @param {Object} params
@@ -87,6 +100,31 @@ class LoggerService {
   }
 
   /**
+   * Log an modification operation.
+   * @param {Object} params
+   * @param {string|number} params.datasetId
+   * @param {string|number} params.tableId
+   * @param {string} params.columnName
+   * @param {string} params.service
+   * @param {Object} [params.additionalData]
+   */
+  static logModification({
+    datasetId,
+    tableId,
+    columnName,
+    service,
+    additionalData = {},
+  }) {
+    return LoggerService.#writeLog({
+      datasetId,
+      tableId,
+      operationType: LoggerService.OPERATION_TYPES.MODIFICATION,
+      options: { columnName, service },
+      additionalData,
+    });
+  }
+
+  /**
    * Log a table save operation.
    * @param {Object} params
    * @param {string|number} params.datasetId
@@ -136,6 +174,7 @@ class LoggerService {
     additionalData = null,
   }) {
     try {
+      console.log("*** write log params", datasetId, tableId);
       const timestamp = new Date().toISOString();
       const logMessage = LoggerService.#buildLogMessage(
         timestamp,
@@ -174,10 +213,12 @@ class LoggerService {
     if (options.columnName) {
       message += ` -| ColumnName: ${options.columnName}`;
     }
-    const serviceLabel =
-      operationType === LoggerService.OPERATION_TYPES.RECONCILIATION
-        ? "Reconciler"
-        : "Extender";
+    const labels = {
+      [LoggerService.OPERATION_TYPES.RECONCILIATION]: "Reconciler",
+      [LoggerService.OPERATION_TYPES.EXTENSION]: "Extender",
+      [LoggerService.OPERATION_TYPES.MODIFICATION]: "Modifier",
+    };
+    const serviceLabel = labels[operationType] || "Unknown";
     if (additionalData && additionalData.serviceId) {
       message += ` -| ${serviceLabel}: ${additionalData.serviceId}`;
     } else if (options.service) {

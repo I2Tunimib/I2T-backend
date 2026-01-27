@@ -7,24 +7,30 @@ export default {
   public: {
     name: 'Geo Route (HERE)',
     relativeUrl: '',
-    description: 'Compute the route between the geo points in the column (origin) to the locations the selected columns ' +
-        '(destination).<br>' +
-        '<br><strong>Input</strong>: A column reconciled with latitute and longitude + a second ' +
-        'column with labels of point of interests (POI) or geo coordinates.' +
-        '<br><strong>Input format</strong>: geo coordinates IDs, like "georss:52.51604,13.37691", or strings for POI.' +
-        '<br><strong>Output</strong>: A new column for every requested property.',
+    description: 'An extender that computes the route between the geographic points in the selected column <em>origin</em>' +
+      'and those in the selected <em>destination</em> column.<br><br>' +
+      '<strong>Input</strong>: A <em>column reconciled with latitute and longitude</em>; another <em>column containing ' +
+      'either geo coordinates</em> (e.g., <code>georss:52.51604,13.37691</code>) or text labels of <em>Points of Interest ' +
+      '(POI)</em>, plus a <em>selection of properties</em>:' +
+      '<ul style="list-style-type: disc;">' +
+        '<li>Route duration in minute</li>' +
+        '<li>Route length in km</li>' +
+        '<li>Route path from origin to destination in polyline format</li>' +
+      '</ul>' +
+      '<strong>Output</strong>: A new column for each selected route property.<br><br>' +
+      '<strong>Notes</strong>: If the destination column contains POIs, enable the corresponding option so the ' +
+      'service can resolve textual POI labels to geographic coordinates before computing the route.',
     formParams: [
       {
         id: 'end',
-        description: 'Select a <b>destination</b> column:',
-        label: 'Select a column with destination locations',
-        infoText: 'Select a column with destination locations.',
+        description: 'Select the column containing <b>destination</b> locations:',
+        label: 'Destination column',
         inputType: 'selectColumns',
         rules: ['required']
       },
       {
         id: 'poi_property',
-        description: 'Select if destinations are <strong>POI</strong>s:',
+        description: 'Specify whether the destination column contains <strong>Points of Interest (POI)</strong>:\'',
         label: 'poi_property',
         inputType: 'checkbox',
         rules: [],
@@ -38,7 +44,7 @@ export default {
       },
       {
         id: 'property',
-        description: 'Select one or more <strong>property</strong>:',
+        description: 'Select one or more <strong>properties</strong>:',
         label: 'Property',
         inputType: 'checkbox',
         rules: ['required'],
@@ -55,7 +61,7 @@ export default {
           },
           {
             id: 'route',
-            label: 'Route path between origin to destination in polyline format',
+            label: 'Route path from origin to destination in polyline format',
             value: 'route'
           }
         ]

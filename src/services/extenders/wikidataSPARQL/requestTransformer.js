@@ -20,8 +20,16 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
   // Construct the VALUES clause
   const itemsClause = items.map((item) => `wd:${item}`).join(" ");
 
-  // Construct the full query
+  // Construct the full query with required PREFIX declarations
   const sparqlQuery = `
+    PREFIX wd: <http://www.wikidata.org/entity/>
+    PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+    PREFIX wikibase: <http://wikiba.se/ontology#>
+    PREFIX p: <http://www.wikidata.org/prop/>
+    PREFIX ps: <http://www.wikidata.org/prop/statement/>
+    PREFIX psv: <http://www.wikidata.org/prop/statement/value/>
+    PREFIX bd: <http://www.bigdata.com/rdf#>
+
     SELECT ${[...uniqueVariables].join(" ")} WHERE {
       VALUES ?item { ${itemsClause} }
       ${sparqlQueryBody}
@@ -32,7 +40,9 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
 
   try {
     // Send the query to Wikidata
-    const response = await axios.get(endpoint, {
+    // Remove '?query=' from endpoint if present since axios params will add it
+    const cleanEndpoint = endpoint.replace(/\?query=$/, "");
+    const response = await axios.get(cleanEndpoint, {
       params: { query: sparqlQuery, format: "json" },
       headers: { "User-Agent": "Node.js SPARQL Client" },
     });
@@ -52,6 +62,13 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
     return results;
   } catch (error) {
     console.error("Error during SPARQL query:", error.message);
+    if (error.response) {
+      console.error("Response status:", error.response.status);
+      console.error(
+        "Response data:",
+        JSON.stringify(error.response.data, null, 2),
+      );
+    }
     throw error;
   }
 }
@@ -69,13 +86,27 @@ export default async (req) => {
   // });
 
   const { items, props } = req.processed;
+
+  // Check if items exists and has at least one key
+  if (!items || Object.keys(items).length === 0) {
+    console.error("Error: No items found in request");
+    return [];
+  }
+
   const { variables: variablesString, body } = props;
 
   // Extract entities (Qxxx) from items.columnName
   const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
   console.log("********** Column name:", columnName);
+
+  // Check if the column exists in items
+  if (!items[columnName]) {
+    console.error(`Error: Column "${columnName}" not found in items`);
+    return [];
+  }
+
   const entities = Object.keys(items[columnName]).map(
-    (label) => label.split(":")[1]
+    (label) => label.split(":")[1],
   );
 
   // Extract variables from the string and add ?item if it is not included
@@ -103,6 +134,6 @@ export default async (req) => {
     return results;
   } catch (error) {
     console.error("Error:", error.message);
-    // throw error;
+    return [];
   }
 };
