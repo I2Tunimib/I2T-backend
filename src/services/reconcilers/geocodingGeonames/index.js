@@ -13,10 +13,11 @@ export default {
       "other columns providing context to improve reconciliation accuracy.<br>" +
       "<strong>Output</strong>: Annotations for each matched mention, including <em> ID</em>, <em> latitude</em>," +
       "<em> longitude</em>, <em> label</em> and <em> description </em> in a W3C-compliant format.<br><br>" +
-      "<strong>Note</strong>: Requires access to the GeoNames API",
+      "<strong>Note</strong>: Requires access to the GeoNames service",
     relativeUrl: "/dataset",
     prefix: "geoCoord",
     uri: "http://www.google.com/maps/place/",
+    searchPattern: "https://www.google.com/maps/search/?api=1&query={label}/",
     listTypes: "http://www.geonames.org/export/codes.html",
     listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {

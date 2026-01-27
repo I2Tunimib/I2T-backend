@@ -14,7 +14,7 @@ export default {
       "from other columns providing context to improve reconciliation accuracy.<br>" +
       "<strong>Output</strong>: Annotations for each matched mention, including <em> ID</em> (formatted as " +
       "<code>geoCoord:lat,lon</code>), <em> label</em> and <em> description </em> in a W3C-compliant format.<br><br>" +
-      "<strong>Note</strong>: Requires access to the GeoNames API.",
+      "<strong>Note</strong>: Requires access to the GeoNames service.",
     relativeUrl: "/dataset",
     prefix: "geo",
     uri: "http://www.geonames.org/",
