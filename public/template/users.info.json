@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "lastIndex": 8
+  },
+  "users": {
+    "4": {
+      "id": 4,
+      "username": "test33sdsdsd@tt.com",
+      "email": "test33sdsdsd@tt.com",
+      "password": "np6xl6LTiG",
+      "createdAt": "2025-05-05T09:20:32.695Z"
+    },
+    "5": {
+      "id": 5,
+      "username": "agazzi.ruben99@gmail.com",
+      "email": "agazzi.ruben99@gmail.com",
+      "password": "Gu_yaU-MvG",
+      "createdAt": "2025-05-05T09:25:57.979Z"
+    },
+    "7": {
+      "id": 7,
+      "username": "flavio.depaoli@gmail.it",
+      "email": "flavio.depaoli@gmail.it",
+      "password": "7l_7Tfhbqy",
+      "createdAt": "2025-05-07T07:41:38.851Z"
+    },
+    "8": {
+      "id": 8,
+      "username": "flavio.depaoli@gmail.com",
+      "email": "flavio.depaoli@gmail.com",
+      "password": "Ra5SzT5una",
+      "createdAt": "2025-05-07T07:42:50.584Z"
+    }
+  }
+}

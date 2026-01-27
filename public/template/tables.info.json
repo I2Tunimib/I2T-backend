@@ -1,0 +1,790 @@
+{
+  "meta": {
+    "lastIndex": 82
+  },
+  "tables": {
+    "0": {
+      "id": "0",
+      "idDataset": "0",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-03-17T16:33:08.600Z"
+    },
+    "1": {
+      "id": "1",
+      "idDataset": "0",
+      "name": "table_2",
+      "nCols": 11,
+      "nRows": 20,
+      "nCells": 220,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-04-29T13:20:20.780Z"
+    },
+    "2": {
+      "id": "2",
+      "idDataset": "0",
+      "name": "sample_dataset_jot_AB",
+      "nCols": 7,
+      "nRows": 30,
+      "nCells": 210,
+      "nCellsReconciliated": 30,
+      "lastModifiedDate": "2025-04-18T08:01:53.600Z",
+      "minMetaScore": 0,
+      "maxMetaScore": 195.96559143066406
+    },
+    "5": {
+      "id": "5",
+      "idDataset": "0",
+      "name": "JOT data geocoded",
+      "nCols": 7,
+      "nRows": 30,
+      "nCells": 210,
+      "nCellsReconciliated": 30,
+      "lastModifiedDate": "2025-04-09T13:10:45.148Z"
+    },
+    "6": {
+      "id": "6",
+      "idDataset": "0",
+      "name": "Museums",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 13,
+      "lastModifiedDate": "2025-05-02T09:15:46.949Z",
+      "minMetaScore": 0,
+      "maxMetaScore": 100
+    },
+    "7": {
+      "id": "7",
+      "idDataset": "0",
+      "name": "table_5 football geolocation",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 108,
+      "lastModifiedDate": "2025-04-30T14:24:53.297Z"
+    },
+    "8": {
+      "id": "8",
+      "idDataset": "1",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-05T09:19:29.683Z"
+    },
+    "9": {
+      "id": "9",
+      "idDataset": "1",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-05T09:19:29.826Z"
+    },
+    "10": {
+      "id": "10",
+      "idDataset": "2",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-05T09:20:32.704Z"
+    },
+    "11": {
+      "id": "11",
+      "idDataset": "2",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-05T09:20:32.754Z"
+    },
+    "12": {
+      "id": "12",
+      "idDataset": "3",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-05T09:21:38.010Z"
+    },
+    "13": {
+      "id": "13",
+      "idDataset": "3",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-05T09:21:38.088Z"
+    },
+    "14": {
+      "id": "14",
+      "idDataset": "4",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-05T09:25:57.993Z"
+    },
+    "15": {
+      "id": "15",
+      "idDataset": "4",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-05T09:25:58.025Z"
+    },
+    "16": {
+      "id": "16",
+      "idDataset": "5",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:39:04.159Z"
+    },
+    "17": {
+      "id": "17",
+      "idDataset": "5",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-07T07:39:04.286Z"
+    },
+    "18": {
+      "id": "18",
+      "idDataset": "6",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:41:38.862Z"
+    },
+    "19": {
+      "id": "19",
+      "idDataset": "6",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-07T07:41:38.928Z"
+    },
+    "20": {
+      "id": "20",
+      "idDataset": "7",
+      "name": "table_1",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 17,
+      "lastModifiedDate": "2025-05-16T08:35:38.862Z",
+      "minMetaScore": 0,
+      "maxMetaScore": 0.981
+    },
+    "21": {
+      "id": "21",
+      "idDataset": "7",
+      "name": "table_2",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 63,
+      "lastModifiedDate": "2025-05-07T07:42:50.625Z"
+    },
+    "22": {
+      "id": "22",
+      "idDataset": "8",
+      "name": "Museums",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 20,
+      "lastModifiedDate": "2025-05-20T07:48:23.675Z",
+      "minMetaScore": 0,
+      "maxMetaScore": 100
+    },
+    "23": {
+      "id": "23",
+      "idDataset": "8",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:52:57.490Z"
+    },
+    "24": {
+      "id": "24",
+      "idDataset": "8",
+      "name": "JOT data source",
+      "nCols": 0,
+      "nRows": 0,
+      "nCells": 0,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:52:57.492Z"
+    },
+    "25": {
+      "id": "25",
+      "idDataset": "8",
+      "name": "__MACOSX/",
+      "nCols": 0,
+      "nRows": 0,
+      "nCells": 0,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:52:57.493Z"
+    },
+    "26": {
+      "id": "26",
+      "idDataset": "9",
+      "name": "table_4 football",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:46.861Z"
+    },
+    "27": {
+      "id": "27",
+      "idDataset": "9",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:46.873Z"
+    },
+    "28": {
+      "id": "28",
+      "idDataset": "9",
+      "name": "table_4 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-07T07:56:46.912Z"
+    },
+    "29": {
+      "id": "29",
+      "idDataset": "9",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:46.914Z"
+    },
+    "30": {
+      "id": "30",
+      "idDataset": "9",
+      "name": "table_5 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-07T07:56:46.941Z"
+    },
+    "31": {
+      "id": "31",
+      "idDataset": "9",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:46.943Z"
+    },
+    "32": {
+      "id": "32",
+      "idDataset": "9",
+      "name": "Table_3",
+      "nCols": 7,
+      "nRows": 20,
+      "nCells": 140,
+      "nCellsReconciliated": 26,
+      "lastModifiedDate": "2025-05-07T16:04:40.109Z",
+      "minMetaScore": 0,
+      "maxMetaScore": 100
+    },
+    "33": {
+      "id": "33",
+      "idDataset": "9",
+      "name": "__MACOSX/",
+      "nCols": 0,
+      "nRows": 0,
+      "nCells": 0,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:46.989Z"
+    },
+    "34": {
+      "id": "34",
+      "idDataset": "9",
+      "name": "Table_2",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 13,
+      "lastModifiedDate": "2025-05-07T07:56:47.008Z"
+    },
+    "35": {
+      "id": "35",
+      "idDataset": "9",
+      "name": "__MACOSX/",
+      "nCols": 0,
+      "nRows": 0,
+      "nCells": 0,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:47.014Z"
+    },
+    "36": {
+      "id": "36",
+      "idDataset": "9",
+      "name": "Table_1",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:47.016Z"
+    },
+    "37": {
+      "id": "37",
+      "idDataset": "9",
+      "name": "__MACOSX/",
+      "nCols": 0,
+      "nRows": 0,
+      "nCells": 0,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-07T07:56:47.017Z"
+    },
+    "40": {
+      "id": "40",
+      "idDataset": "9",
+      "name": "table_4 football Alligator_bak",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-07T08:17:27.621Z"
+    },
+    "43": {
+      "id": "43",
+      "idDataset": "9",
+      "name": "Table_3_bak",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 13,
+      "lastModifiedDate": "2025-05-07T09:44:17.382Z"
+    },
+    "44": {
+      "id": "44",
+      "idDataset": "7",
+      "name": "table_1_2",
+      "nCols": 4,
+      "nRows": 9,
+      "nCells": 36,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-16T09:10:51.286Z"
+    },
+    "45": {
+      "id": "45",
+      "idDataset": "8",
+      "name": "table_0 movies",
+      "nCols": 6,
+      "nRows": 25,
+      "nCells": 150,
+      "nCellsReconciliated": 42,
+      "lastModifiedDate": "2025-05-16T13:14:29.047Z",
+      "mantisStatus": "DONE",
+      "minMetaScore": 0,
+      "maxMetaScore": 0.98
+    },
+    "46": {
+      "id": "46",
+      "idDataset": "10",
+      "name": "table_4 football",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.469Z"
+    },
+    "47": {
+      "id": "47",
+      "idDataset": "10",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.472Z"
+    },
+    "48": {
+      "id": "48",
+      "idDataset": "10",
+      "name": "table_4 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-19T10:21:27.590Z"
+    },
+    "49": {
+      "id": "49",
+      "idDataset": "10",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.592Z"
+    },
+    "50": {
+      "id": "50",
+      "idDataset": "10",
+      "name": "table_5 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-19T10:21:27.614Z"
+    },
+    "51": {
+      "id": "51",
+      "idDataset": "10",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.616Z"
+    },
+    "52": {
+      "id": "52",
+      "idDataset": "10",
+      "name": "Table_3",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 20,
+      "lastModifiedDate": "2025-05-19T10:21:27.650Z"
+    },
+    "53": {
+      "id": "53",
+      "idDataset": "10",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.653Z"
+    },
+    "54": {
+      "id": "54",
+      "idDataset": "10",
+      "name": "Table_2",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 13,
+      "lastModifiedDate": "2025-05-19T10:21:27.668Z"
+    },
+    "55": {
+      "id": "55",
+      "idDataset": "10",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.670Z"
+    },
+    "56": {
+      "id": "56",
+      "idDataset": "10",
+      "name": "Table_1",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.673Z"
+    },
+    "57": {
+      "id": "57",
+      "idDataset": "10",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-19T10:21:27.675Z"
+    },
+    "58": {
+      "id": "58",
+      "idDataset": "10",
+      "name": "sample_dataset_cities_date_jot alligator",
+      "nCols": 5,
+      "nRows": 30,
+      "nCells": 150,
+      "nCellsReconciliated": 42,
+      "lastModifiedDate": "2025-05-20T11:30:39.272Z"
+    },
+    "59": {
+      "id": "59",
+      "idDataset": "11",
+      "name": "table_4 football",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.512Z"
+    },
+    "60": {
+      "id": "60",
+      "idDataset": "11",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.517Z"
+    },
+    "61": {
+      "id": "61",
+      "idDataset": "11",
+      "name": "table_4 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-21T08:15:37.681Z"
+    },
+    "62": {
+      "id": "62",
+      "idDataset": "11",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.684Z"
+    },
+    "63": {
+      "id": "63",
+      "idDataset": "11",
+      "name": "table_5 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-21T08:15:37.716Z"
+    },
+    "64": {
+      "id": "64",
+      "idDataset": "11",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.718Z"
+    },
+    "65": {
+      "id": "65",
+      "idDataset": "11",
+      "name": "Table_3",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 20,
+      "lastModifiedDate": "2025-05-21T08:15:37.749Z"
+    },
+    "66": {
+      "id": "66",
+      "idDataset": "11",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.751Z"
+    },
+    "67": {
+      "id": "67",
+      "idDataset": "11",
+      "name": "Table_2",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 13,
+      "lastModifiedDate": "2025-05-21T08:15:37.775Z"
+    },
+    "68": {
+      "id": "68",
+      "idDataset": "11",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.776Z"
+    },
+    "69": {
+      "id": "69",
+      "idDataset": "11",
+      "name": "Table_1",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.780Z"
+    },
+    "70": {
+      "id": "70",
+      "idDataset": "11",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T08:15:37.782Z"
+    },
+    "71": {
+      "id": "71",
+      "idDataset": "12",
+      "name": "table_4 football",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.001Z"
+    },
+    "72": {
+      "id": "72",
+      "idDataset": "12",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.006Z"
+    },
+    "73": {
+      "id": "73",
+      "idDataset": "12",
+      "name": "table_4 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-21T14:15:03.176Z"
+    },
+    "74": {
+      "id": "74",
+      "idDataset": "12",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.178Z"
+    },
+    "75": {
+      "id": "75",
+      "idDataset": "12",
+      "name": "table_5 football Alligator",
+      "nCols": 8,
+      "nRows": 20,
+      "nCells": 160,
+      "nCellsReconciliated": 102,
+      "lastModifiedDate": "2025-05-21T14:15:03.217Z"
+    },
+    "76": {
+      "id": "76",
+      "idDataset": "12",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.221Z"
+    },
+    "77": {
+      "id": "77",
+      "idDataset": "12",
+      "name": "Table_3",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 20,
+      "lastModifiedDate": "2025-05-21T14:15:03.255Z"
+    },
+    "78": {
+      "id": "78",
+      "idDataset": "12",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.257Z"
+    },
+    "79": {
+      "id": "79",
+      "idDataset": "12",
+      "name": "Table_2",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 13,
+      "lastModifiedDate": "2025-05-21T14:15:03.275Z"
+    },
+    "80": {
+      "id": "80",
+      "idDataset": "12",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.279Z"
+    },
+    "81": {
+      "id": "81",
+      "idDataset": "12",
+      "name": "Table_1",
+      "nCols": 6,
+      "nRows": 20,
+      "nCells": 120,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.282Z"
+    },
+    "82": {
+      "id": "82",
+      "idDataset": "12",
+      "name": "__MACOSX/",
+      "nCols": 1,
+      "nRows": 2,
+      "nCells": 2,
+      "nCellsReconciliated": 0,
+      "lastModifiedDate": "2025-05-21T14:15:03.284Z"
+    }
+  }
+}
