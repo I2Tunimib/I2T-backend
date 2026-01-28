@@ -1,6 +1,15 @@
 import atokaPeopleExtender from "./src/services/extenders/atokaPeopleExtender/index.js";
 
 export default {
+  //Keycloak configuration
+  keycloak: {
+    enabled: true,
+    realmUrl: process.env.KEYCLOAK_REALM_URL || null,
+    jwksUri: process.env.KEYCLOAK_JWKS_URI || null,
+    issuer: process.env.KEYCLOAK_ISSUER || null,
+    backendClientId: process.env.KEYCLOAK_BACKEND_CLIENT_ID || "I2T-backend",
+    frontendClientId: process.env.KEYCLOAK_FRONTEND_CLIENT_ID || "I2T-frontend",
+  },
   // path to dataset files relative to root folder
   datasetFilesPath: "/public/datasets",
   // path to dataset db relative to root folder
