@@ -4,7 +4,10 @@ export default {
   //Keycloak configuration
   keycloak: {
     enabled: true,
-    realmUrl: process.env.KEYCLOAK_REALM_URL || null,
+    // Prefer explicit KEYCLOAK_REALM_URL, but fall back to KEYCLOAK_ISSUER when only that is provided.
+    // This avoids requiring duplicate env vars (KEYCLOAK_REALM_URL + KEYCLOAK_ISSUER).
+    realmUrl:
+      process.env.KEYCLOAK_REALM_URL || process.env.KEYCLOAK_ISSUER || null,
     jwksUri: process.env.KEYCLOAK_JWKS_URI || null,
     issuer: process.env.KEYCLOAK_ISSUER || null,
     backendClientId: process.env.KEYCLOAK_BACKEND_CLIENT_ID || "I2T-backend",
