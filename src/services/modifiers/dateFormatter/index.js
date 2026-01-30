@@ -77,7 +77,7 @@ export default {
         label: "Output mode",
         description: "Choose whether to create a new column or overwrite existing values.",
         inputType: "radio",
-        defaultValue: "create",
+        defaultValue: "edit",
         options: [
           { id: "create", label: "Create a new column", value: "create" },
           { id: "edit", label: "Update the current column", value: "edit" },
