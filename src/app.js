@@ -36,7 +36,49 @@ const isProd = (req, res, next) => {
 };
 
 app.disable("etag");
-app.use(cors());
+const FRONTEND_ORIGIN = String(
+  process.env.FRONTEND_URL || "http://vm.chronos.disco.unimib.it:3001",
+).replace(/\/+$/, "");
+
+/**
+ * Normalize an origin string to a canonical origin without trailing slash.
+ * Accepts values like 'http://host:port/' or 'http://host:port' and returns 'http://host:port'.
+ */
+function normalizeOrigin(origin) {
+  if (!origin) return "";
+  try {
+    const u = new URL(String(origin));
+    return `${u.protocol}//${u.host}`.replace(/\/+$/, "");
+  } catch (e) {
+    // fallback: trim trailing slashes
+    return String(origin).replace(/\/+$/, "");
+  }
+}
+
+const corsOptions = {
+  origin: function (incomingOrigin, callback) {
+    // Allow no-origin requests (e.g. curl, some same-origin navigation cases)
+    if (!incomingOrigin) return callback(null, true);
+
+    const reqOrigin = normalizeOrigin(incomingOrigin);
+    const allowedOrigin = normalizeOrigin(FRONTEND_ORIGIN);
+
+    // Allow if normalized origins match (tolerant to trailing slash differences)
+    if (reqOrigin === allowedOrigin) {
+      return callback(null, true);
+    }
+
+    // Otherwise reject
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization", "x-table-dataset-info"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+};
+
+// Use configured CORS options and ensure preflight (OPTIONS) uses same logic
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(
   morgan((tokens, req, res) => {
     const url = tokens.url(req, res);

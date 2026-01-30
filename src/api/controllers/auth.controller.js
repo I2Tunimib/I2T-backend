@@ -255,9 +255,9 @@ const AuthController = {
 
       // Build callback URL to this server (will be /api/auth/keycloak/callback)
       const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const host = req.get("host");
-      const callbackUrl = `${protocol}://${host}/api/auth/keycloak/callback`;
-
+      const host = process.env.BACKEND_URL;
+      const callbackUrl = `${host}api/auth/keycloak/callback`;
+      console.log("callback uri", callbackUrl);
       // generate code_verifier and code_challenge (S256)
       const verifier = crypto
         .randomBytes(64)
@@ -303,6 +303,7 @@ const AuthController = {
   keycloakCallback: async (req, res, next) => {
     try {
       const { code, state } = req.query;
+      console.log("received callbacl data", req);
       if (!code || !state) {
         return res.status(400).send("Missing code or state");
       }
@@ -336,27 +337,30 @@ const AuthController = {
         m && m[1] ? m[1] : pathname.split("/").filter(Boolean).pop();
       const basePath =
         pathname.substring(0, pathname.indexOf("/realms/")) || "";
-      const kcBase = `${parsed.origin}${basePath}`.replace(/\/+$/, "");
+      const kcBase = process.env.KEYCLOAK_ISSUER_INTERNAL;
 
       const clientId = process.env.KEYCLOAK_BACKEND_CLIENT_ID;
       ("I2T-BACKEND");
 
       const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-      const host = req.get("host");
-      const callbackUrl = `${protocol}://${host}/api/auth/keycloak/callback`;
+      const host = process.env.BACKEND_URL;
+      const callbackUrl = `${host}api/auth/keycloak/callback`;
 
-      const tokenUrl = `${kcBase}/realms/${encodeURIComponent(realm)}/protocol/openid-connect/token`;
-
+      const tokenUrl = `${kcBase}/protocol/openid-connect/token`;
+      console.log("tokenUrl", tokenUrl);
       const body = new URLSearchParams();
       body.set("grant_type", "authorization_code");
       body.set("code", code);
       body.set("redirect_uri", callbackUrl);
       body.set("client_id", clientId);
       body.set("code_verifier", verifier);
-
+      console.log("sending tokenresp");
       const tokenResp = await axios.post(tokenUrl, body.toString(), {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       });
+      console.log("sending tokenresp answer", tokenResp);
 
       const data = tokenResp.data || {};
       // Set HTTP-only cookies for tokens (adjust options for production)
@@ -384,8 +388,23 @@ const AuthController = {
 
       // Redirect back to SPA root (frontend should read authentication state from server or rely on cookies)
       // Prefer FRONTEND_URL env variable when set (allows redirecting to the SPA host), fallback to '/'
-      const postLoginRedirect = process.env.FRONTEND_URL + "datasets" || "/";
-      return res.redirect(postLoginRedirect);
+      // Simplest no-env approach: append the access_token in the URL fragment so the SPA can read it
+      // (NOTE: this exposes the token to browser JS — use only as a compatibility fallback).
+      const postLoginRedirect =
+        (process.env.FRONTEND_URL || `${host}`) + "datasets";
+      // Append token as fragment so client-side JS can pick it up if cookies are unavailable
+      let redirectWithToken = postLoginRedirect;
+      if (data && data.access_token) {
+        try {
+          redirectWithToken += `#access_token=${encodeURIComponent(
+            data.access_token,
+          )}`;
+        } catch (e) {
+          // ignore encoding errors
+        }
+      }
+      console.log("redirect uri", redirectWithToken);
+      return res.redirect(redirectWithToken);
     } catch (err) {
       next(err);
     }
@@ -443,7 +462,7 @@ const AuthController = {
         const kcBase = `${parsed.origin}${basePath}`.replace(/\/+$/, "");
 
         const protocol = req.headers["x-forwarded-proto"] || req.protocol;
-        const host = req.get("host");
+        const host = process.env.BACKEND_URL;
 
         // Determine the post_logout_redirect_uri preference:
         // 1) candidate from req.query.post_logout_redirect_uri if present and allowed
@@ -481,7 +500,7 @@ const AuthController = {
         } else if (envFrontend) {
           postLogoutRedirect = envFrontend;
         } else {
-          postLogoutRedirect = `${protocol}://${host}/`;
+          postLogoutRedirect = `${host}/`;
         }
 
         let endSessionUrl =
@@ -560,21 +579,44 @@ const AuthController = {
     }
   },
 
-  // Return decoded payload from kc_access_token cookie (if present)
+  // Return decoded payload from kc_access_token cookie (if present) or other fallback locations
   keycloakMe: async (req, res, next) => {
     try {
-      // Read token from cookies set by keycloakCallback
-      const token =
-        (req.cookies &&
-        (req.cookies.kc_access_token || req.cookies.kc_access_token === "")
-          ? req.cookies.kc_access_token
-          : null) ||
-        (req.cookies && req.cookies.kcAccessToken) ||
-        null;
+      console.log("keycloak me request", req);
+      // Accept token from cookie (preferred), Authorization header, query or body (fallbacks)
+      let token = null;
+      if (req.cookies && req.cookies.kc_access_token) {
+        token = req.cookies.kc_access_token;
+      } else if (req.cookies && req.cookies.kcAccessToken) {
+        token = req.cookies.kcAccessToken;
+      } else if (
+        req.headers &&
+        typeof req.headers.authorization === "string" &&
+        req.headers.authorization.startsWith("Bearer ")
+      ) {
+        token = req.headers.authorization.slice(7);
+      } else if (req.query && req.query.token) {
+        token = req.query.token;
+      } else if (req.body && req.body.token) {
+        token = req.body.token;
+      }
+
       if (!token) {
-        return res
-          .status(401)
-          .json({ loggedIn: false, error: "No access token cookie" });
+        // Log limited debug info (do not log tokens in production)
+        try {
+          console.warn(
+            "keycloakMe: no token found. cookies:",
+            req.cookies ? Object.keys(req.cookies) : null,
+            "auth:",
+            req.headers && req.headers.authorization ? "[present]" : "[absent]",
+          );
+        } catch (e) {
+          // ignore logging errors
+        }
+        return res.status(401).json({
+          loggedIn: false,
+          error: "No access token provided",
+        });
       }
 
       // Decode JWT payload without verifying (we only need the claims to return to the frontend)
@@ -594,13 +636,16 @@ const AuthController = {
       try {
         payload = JSON.parse(payloadJson);
       } catch (e) {
-        return res
-          .status(500)
-          .json({ loggedIn: false, error: "Failed to parse token payload" });
+        console.error("keycloakMe: failed to parse token payload", e);
+        return res.status(500).json({
+          loggedIn: false,
+          error: "Failed to parse token payload",
+        });
       }
 
       return res.status(200).json({ loggedIn: true, tokenPayload: payload });
     } catch (err) {
+      console.error("keycloakMe error", err);
       next(err);
     }
   },
