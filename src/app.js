@@ -28,7 +28,9 @@ app.use(
 
 app.use(zipTmpFileMiddleware);
 const isProd = (req, res, next) => {
-  if (ENV === "DEV") {
+  // Only redirect to '/api' when running in production-like environments.
+  // When ENV is 'DEV' we must not redirect so the dev server and SPA dev tooling work.
+  if (ENV !== "DEV") {
     res.redirect("/api");
   } else {
     next();
@@ -123,6 +125,11 @@ app.use(function (req, res, next) {
 // error handler
 app.use(function (err, req, res, next) {
   console.log(err);
+  // If headers are already sent, delegate to the default Express error handler
+  // to avoid 'Cannot set headers after they are sent to the client'.
+  if (res.headersSent) {
+    return next(err);
+  }
   res.status(500).json({ error: err.message });
 });
 

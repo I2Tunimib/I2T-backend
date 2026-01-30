@@ -11,7 +11,9 @@ function latin1Safe(s) {
 }
 
 const openai = new OpenAI({
-  apiKey: latin1Safe("sk-localapikey"), // required
+  apiKey: latin1Safe(
+    process.env.LLM_KEY || process.env.OPENAI_API_KEY || "sk-localapikey",
+  ), // prefer env LLM_KEY or OPENAI_API_KEY
   baseURL: process.env.LLM_ADDRESS || "", // YOUR URL
 });
 

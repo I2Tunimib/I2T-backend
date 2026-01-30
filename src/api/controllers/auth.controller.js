@@ -573,7 +573,9 @@ const AuthController = {
         loggedIn: true,
         user: { id: user.id, username: user.username },
       });
-      return res.redirect("/");
+      // Response already sent as JSON. Do not perform an additional redirect which would attempt
+      // to set headers again and cause 'Cannot set headers after they are sent to the client'.
+      return;
     } catch (err) {
       next(err);
     }
@@ -646,7 +648,18 @@ const AuthController = {
       return res.status(200).json({ loggedIn: true, tokenPayload: payload });
     } catch (err) {
       console.error("keycloakMe error", err);
-      next(err);
+      // Avoid forwarding the error to the global error handler if headers were already sent.
+      // This prevents `Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client`
+      // which happens when an earlier response has already been sent for this request.
+      if (!res.headersSent) {
+        next(err);
+      } else {
+        // Headers are already sent; log and stop to avoid double responses.
+        console.error(
+          "Headers already sent - cannot forward error to global handler:",
+          err,
+        );
+      }
     }
   },
 };

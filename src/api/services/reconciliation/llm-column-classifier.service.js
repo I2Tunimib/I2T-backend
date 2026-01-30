@@ -62,7 +62,9 @@ class LLMColumnClassifierService {
 
       // Prepare OpenAI client (consistent with other LLM usages in the codebase)
       const openai = new OpenAI({
-        apiKey: latin1Safe("sk-localapikey"), // placeholder key used across project code
+        apiKey: latin1Safe(
+          process.env.LLM_KEY || process.env.OPENAI_API_KEY || "sk-localapikey",
+        ), // prefer env LLM_KEY or OPENAI_API_KEY
         baseURL: process.env.LLM_ADDRESS || "",
       });
 
