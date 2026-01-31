@@ -1,4 +1,5 @@
-import { spawn } from "child_process";
+import { existsSync } from "fs";
+import { execSync, spawn } from "child_process";
 import path from "path";
 import { readFile, writeFile } from "fs/promises";
 
@@ -17,6 +18,16 @@ const {
 } = config;
 
 class ColumnClassifierService {
+  static async ensurePythonEnv() {
+    const venvPath = path.join(path.resolve(), "venv");
+
+    if (!existsSync(venvPath)) {
+      console.log("[Python Setup] Virtual environment not found. Creating it...");
+      execSync("python3 -m venv venv && ./venv/bin/pip install column-classifier pandas");
+      console.log("[Python Setup] Environment ready.");
+    }
+  }
+
   static async annotate({ idDataset, idTable, io }) {
     await this.setSchemaStatus(idTable, "PENDING");
     console.log(`[annotate] Launching classifier for dataset ${idDataset}, table ${idTable}`);
@@ -25,6 +36,8 @@ class ColumnClassifierService {
 
   static async runClassifier({ idDataset, idTable, io }) {
     try {
+      await this.ensurePythonEnv();
+      const PYTHON_PATH = path.join(path.resolve(), "venv", "bin", "python3");
       const table = await FileSystemService.findTable(idDataset, idTable);
       const formattedColumns = {};
       for (const colName of Object.keys(table.columns)) {
