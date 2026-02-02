@@ -26,7 +26,7 @@ class ColumnClassifierService {
         "[Python Setup] Virtual environment not found. Creating it...",
       );
       execSync(
-        "python3 -m venv venv && ./venv/bin/pip install column-classifier pandas",
+        "python3 -m venv venv && ./venv/bin/pip install --upgrade pip setuptools wheel && ./venv/bin/pip install pandas spacy column-classifier && ./venv/bin/python -m spacy download en_core_web_sm",
       );
       console.log("[Python Setup] Environment ready.");
     }
