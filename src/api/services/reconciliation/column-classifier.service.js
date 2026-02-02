@@ -10,7 +10,7 @@ const __dirname = path.resolve();
 const PYTHON_PATH = "python3";
 const SCRIPT_PATH = path.join(
   __dirname,
-  "../I2T-backend/py-scripts/column_classifier_runner.py"
+  "py-scripts/column_classifier_runner.py",
 );
 
 const {
@@ -22,15 +22,21 @@ class ColumnClassifierService {
     const venvPath = path.join(path.resolve(), "venv");
 
     if (!existsSync(venvPath)) {
-      console.log("[Python Setup] Virtual environment not found. Creating it...");
-      execSync("python3 -m venv venv && ./venv/bin/pip install column-classifier pandas");
+      console.log(
+        "[Python Setup] Virtual environment not found. Creating it...",
+      );
+      execSync(
+        "python3 -m venv venv && ./venv/bin/pip install column-classifier pandas",
+      );
       console.log("[Python Setup] Environment ready.");
     }
   }
 
   static async annotate({ idDataset, idTable, io }) {
     await this.setSchemaStatus(idTable, "PENDING");
-    console.log(`[annotate] Launching classifier for dataset ${idDataset}, table ${idTable}`);
+    console.log(
+      `[annotate] Launching classifier for dataset ${idDataset}, table ${idTable}`,
+    );
     this.runClassifier({ idDataset, idTable, io });
   }
 
@@ -43,7 +49,7 @@ class ColumnClassifierService {
       for (const colName of Object.keys(table.columns)) {
         const cleanName = colName.replace(/^\uFEFF/, "");
         formattedColumns[cleanName] = Object.values(table.rows).map(
-          (row) => row.cells[colName]?.label ?? ""
+          (row) => row.cells[colName]?.label ?? "",
         );
       }
 
@@ -58,13 +64,18 @@ class ColumnClassifierService {
 
         try {
           await this.setSchemaStatus(idTable, "DONE");
-          const tableData = await FileSystemService.findTable(idDataset, idTable);
+          const tableData = await FileSystemService.findTable(
+            idDataset,
+            idTable,
+          );
           io?.emit("schema-done", {
             table: tableData.table,
             result,
           });
 
-          console.log(`[finish] Emitted schema-done patch for table ${idTable}`);
+          console.log(
+            `[finish] Emitted schema-done patch for table ${idTable}`,
+          );
         } catch (err) {
           console.error("[finish] Error emitting schema-done:", err);
         }
@@ -83,7 +94,10 @@ class ColumnClassifierService {
       py.on("close", async (code) => {
         console.log(`[runClassifier] Python process closed with code ${code}`);
         if (code !== 0) {
-          console.error("[runClassifier] Python process returned error:", stderr);
+          console.error(
+            "[runClassifier] Python process returned error:",
+            stderr,
+          );
           return finish("ERROR");
         }
 
@@ -93,7 +107,11 @@ class ColumnClassifierService {
           await this.applyResult(idDataset, idTable, result);
           await finish("DONE", result);
         } catch (err) {
-          console.error("[runClassifier] Error parsing Python output:", err, stdout);
+          console.error(
+            "[runClassifier] Error parsing Python output:",
+            err,
+            stdout,
+          );
           await finish("ERROR");
         }
       });
@@ -133,7 +151,10 @@ class ColumnClassifierService {
         id: cleanId,
         label: col.label?.replace(/^\uFEFF/, "").trim() ?? cleanId,
         kind: result.kind_classification?.[cleanId] ?? col.kind ?? "unknown",
-        nerClassification: result.ner_classification?.[cleanId] ?? col.nerClassification ?? "unknown",
+        nerClassification:
+          result.ner_classification?.[cleanId] ??
+          col.nerClassification ??
+          "unknown",
       };
     });
 
@@ -168,7 +189,9 @@ class ColumnClassifierService {
   }
 
   static async setSchemaStatus(idTable, status) {
-    console.log(`[setSchemaStatus] Updating table ${idTable} status to ${status}`);
+    console.log(
+      `[setSchemaStatus] Updating table ${idTable} status to ${status}`,
+    );
     const dbPath = getTablesDbPath();
     const { meta, tables } = JSON.parse(await readFile(dbPath));
 
