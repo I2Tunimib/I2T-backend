@@ -1,5 +1,5 @@
 import { readFile, mkdir, writeFile, rm, readdir } from "fs/promises";
-import { createReadStream, createWriteStream, existsSync, lstatSync } from "fs";
+import { createReadStream, createWriteStream } from "fs";
 import { queue } from "async";
 import unzipper from "unzipper";
 import { spawn } from "child_process";
@@ -11,7 +11,6 @@ import { KG_INFO } from "../../../utils/constants.js";
 import { log } from "../../../utils/log.js";
 import ParseW3C from "../parse/parse-w3c.service.js";
 import { nanoid } from "nanoid";
-import fs from "fs";
 
 const __dirname = path.resolve();
 
@@ -255,7 +254,10 @@ const FileSystemService = {
 
     const writeTempFile = async (readStream) => {
       const id = nanoid();
-      const ws = createWriteStream(`tmp/${id}`, { flags: "a" });
+      // ensure tmp path exists and use configured tmp path
+      await mkdir(getTmpPath(), { recursive: true });
+      const tmpFilePath = `${getTmpPath()}/${id}`;
+      const ws = createWriteStream(tmpFilePath, { flags: "a" });
       readStream.pipe(ws);
 
       return new Promise((resolve, reject) => {
@@ -297,52 +299,71 @@ const FileSystemService = {
 
             // unzip and write each file
             for await (const entry of zip) {
-              const { path, type } = entry;
+              const { path: entryPath, type } = entry;
               // Skip macOS metadata entries and dotfiles, drain their contents and continue
               if (
-                typeof path === "string" &&
-                (path.startsWith("__MACOSX/") ||
-                  path.startsWith(".") ||
-                  path.includes("/."))
+                typeof entryPath === "string" &&
+                (entryPath.startsWith("__MACOSX/") ||
+                  entryPath.startsWith(".") ||
+                  entryPath.includes("/."))
               ) {
                 entry.autodrain();
                 continue;
               }
-              // Skip non-file entries or files inside subfolders, drain and continue
-              if (type !== "File" || path.includes("/")) {
+
+              // We accept files even if they're inside subfolders.
+              // Only skip directories and non-file entries.
+              if (type !== "File") {
                 entry.autodrain();
                 continue;
               }
-              // skip non compatible file formats (drain before continuing)
-              if (!path.endsWith(".csv") && !path.endsWith(".json")) {
+
+              // Determine base filename and perform case-insensitive extension check
+              const baseName = entryPath ? path.basename(entryPath) : "";
+              const lower = baseName.toLowerCase();
+              if (!lower.endsWith(".csv") && !lower.endsWith(".json")) {
                 entry.autodrain();
                 continue;
               }
-              const tableName = path.split(".")[0] || "Unnamend";
+
+              const tableName = baseName.replace(/\.[^.]+$/, "") || "Unnamend";
 
               const tmpEntryId = await writeTempFile(entry);
+              const tmpEntryPath = `${getTmpPath()}/${tmpEntryId}`;
 
-              metaTables.lastIndex += 1;
-              nFiles += 1;
-              // transform to app format and write to file
-              const data = await ParseService.parse(`tmp/${tmpEntryId}`);
-              await writeFile(
-                `${datasetFolderPath}/${metaTables.lastIndex}.json`,
-                JSON.stringify(data),
-              );
+              try {
+                // transform to app format and write to file
+                const data = await ParseService.parse(tmpEntryPath);
 
-              newTables[`${metaTables.lastIndex}`] = {
-                id: `${metaTables.lastIndex}`,
-                idDataset: `${metaDatasets.lastIndex}`,
-                name: tableName,
-                nCols: Object.keys(data.columns).length,
-                nRows: Object.keys(data.rows).length,
-                nCells: data.nCells,
-                nCellsReconciliated: data.nCellsReconciliated,
-                lastModifiedDate: new Date().toISOString(),
-              };
+                metaTables.lastIndex += 1;
+                nFiles += 1;
 
-              await rm(`tmp/${tmpEntryId}`);
+                await writeFile(
+                  `${datasetFolderPath}/${metaTables.lastIndex}.json`,
+                  JSON.stringify(data),
+                );
+
+                newTables[`${metaTables.lastIndex}`] = {
+                  id: `${metaTables.lastIndex}`,
+                  idDataset: `${metaDatasets.lastIndex}`,
+                  name: tableName,
+                  nCols: Object.keys(data.columns).length,
+                  nRows: Object.keys(data.rows).length,
+                  nCells: data.nCells,
+                  nCellsReconciliated: data.nCellsReconciliated,
+                  lastModifiedDate: new Date().toISOString(),
+                };
+              } catch (err) {
+                console.error("Error parsing zip entry:", err);
+                // continue processing other entries
+              } finally {
+                // cleanup temp entry
+                try {
+                  await rm(tmpEntryPath);
+                } catch (e) {
+                  // ignore cleanup errors
+                }
+              }
             }
           } catch (err) {
             console.error("Error processing zip file:", err);
@@ -382,9 +403,13 @@ const FileSystemService = {
             2,
           ),
         );
-        // delete temp file if it exists
+        // delete temp uploaded zip if it exists
         if (filePath) {
-          await rm(filePath);
+          try {
+            await rm(filePath);
+          } catch (e) {
+            // ignore
+          }
         }
       } catch (err) {
         console.log(err);
@@ -436,7 +461,13 @@ const FileSystemService = {
         );
 
         // remove files
-        await rm(`${getDatasetFilesPath()}/${datasetId}`, { recursive: true });
+        try {
+          await rm(`${getDatasetFilesPath()}/${datasetId}`, {
+            recursive: true,
+          });
+        } catch (e) {
+          // ignore
+        }
       } catch (err) {
         console.log(err);
       }
@@ -513,7 +544,7 @@ const FileSystemService = {
           .map((table) => table.name);
 
         const uniqueTableName = generateUniqueTableName(
-          tableName,
+          tableName || "table",
           existingTableNames,
         );
 
@@ -523,7 +554,10 @@ const FileSystemService = {
 
         const writeTempFile = async (readStream) => {
           const id = nanoid();
-          const ws = createWriteStream(`tmp/${id}`, { flags: "a" });
+          // use configured tmp path
+          await mkdir(getTmpPath(), { recursive: true });
+          const tmpFilePath = `${getTmpPath()}/${id}`;
+          const ws = createWriteStream(tmpFilePath, { flags: "a" });
           readStream.pipe(ws);
 
           return new Promise((resolve, reject) => {
@@ -538,56 +572,75 @@ const FileSystemService = {
 
         // unzip and write each file
         for await (const entry of zip) {
-          const { path, type } = entry;
+          const { path: entryPath, type } = entry;
 
           // Skip macOS metadata entries and dotfiles, drain and continue
           if (
-            typeof path === "string" &&
-            (path.startsWith("__MACOSX/") ||
-              path.startsWith(".") ||
-              path.includes("/."))
+            typeof entryPath === "string" &&
+            (entryPath.startsWith("__MACOSX/") ||
+              entryPath.startsWith(".") ||
+              entryPath.includes("/."))
           ) {
             entry.autodrain();
             continue;
           }
 
-          // Skip non-file entries or files inside subfolders, drain and continue
-          if (type !== "File" || path.includes("/")) {
+          // Skip non-file entries (directories), drain and continue
+          if (type !== "File") {
             entry.autodrain();
             continue;
           }
 
+          // Accept files in subfolders: use basename
+          const baseName = entryPath ? path.basename(entryPath) : "";
+          const lower = baseName.toLowerCase();
+          if (!lower.endsWith(".csv") && !lower.endsWith(".json")) {
+            entry.autodrain();
+            continue;
+          }
+
+          const tableBaseName =
+            baseName.replace(/\.[^.]+$/, "") || uniqueTableName;
+
           const tmpEntryId = await writeTempFile(entry);
+          const tmpEntryPath = `${getTmpPath()}/${tmpEntryId}`;
 
-          metaTables.lastIndex += 1;
-          // transform to app format and write to file
-          const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+          try {
+            metaTables.lastIndex += 1;
+            // transform to app format and write to file
+            const data = await ParseService.parse(tmpEntryPath);
 
-          await writeFile(
-            `${datasetFolderPath}/${metaTables.lastIndex}.json`,
-            JSON.stringify(data),
-          );
+            await writeFile(
+              `${datasetFolderPath}/${metaTables.lastIndex}.json`,
+              JSON.stringify(data),
+            );
 
-          newTables[`${metaTables.lastIndex}`] = {
-            id: `${metaTables.lastIndex}`,
-            idDataset,
-            name: uniqueTableName,
-            nCols: Object.keys(data.columns).length,
-            nRows: Object.keys(data.rows).length,
-            nCells: data.nCells,
-            nCellsReconciliated: data.nCellsReconciliated,
-            lastModifiedDate: new Date().toISOString(),
-          };
+            newTables[`${metaTables.lastIndex}`] = {
+              id: `${metaTables.lastIndex}`,
+              idDataset,
+              name: tableBaseName,
+              nCols: Object.keys(data.columns).length,
+              nRows: Object.keys(data.rows).length,
+              nCells: data.nCells,
+              nCellsReconciliated: data.nCellsReconciliated,
+              lastModifiedDate: new Date().toISOString(),
+            };
 
-          datasets[idDataset] = {
-            ...datasets[idDataset],
-            nTables: datasets[idDataset].nTables + 1,
-          };
-
-          await rm(`tmp/${tmpEntryId}`);
+            datasets[idDataset] = {
+              ...datasets[idDataset],
+              nTables: datasets[idDataset].nTables + 1,
+            };
+          } catch (err) {
+            console.error("Error parsing zip entry for addTable:", err);
+            // continue processing others
+          } finally {
+            try {
+              await rm(tmpEntryPath);
+            } catch (e) {}
+          }
         }
 
-        // add dataset entry
+        // add dataset entry (if needed) and table entries
         await writeFile(
           getDatasetDbPath(),
           JSON.stringify(
@@ -599,7 +652,6 @@ const FileSystemService = {
             2,
           ),
         );
-        // add table entries
         await writeFile(
           getTablesDbPath(),
           JSON.stringify(
@@ -611,8 +663,12 @@ const FileSystemService = {
             2,
           ),
         );
-        // delete temp files
-        await rm(filePath);
+        // delete uploaded temp zip
+        try {
+          await rm(filePath);
+        } catch (e) {
+          // ignore
+        }
       } catch (err) {
         console.log(err);
       }
@@ -636,9 +692,6 @@ const FileSystemService = {
     } = tableInstance;
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
-
-    console.log("DEBUG: updateTable received columnOrder:", columnOrder);
-    console.log("DEBUG: updateTable received allIdsCols:", allIdsCols);
 
     const pathToTable = `${getDatasetFilesPath()}/${datasetId}/${tableId}`;
 
@@ -672,9 +725,6 @@ const FileSystemService = {
       const tableDataToSave = { columns, rows };
       if (columnOrder && Array.isArray(columnOrder)) {
         tableDataToSave.columnOrder = columnOrder;
-        console.log("DEBUG: Saving columnOrder to file:", columnOrder);
-      } else {
-        console.log("DEBUG: No columnOrder to save");
       }
 
       // write updated table
