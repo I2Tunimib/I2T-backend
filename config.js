@@ -51,6 +51,7 @@ export default {
       ],
       reconcilers: [
         ".DS_Store",
+        "lionLinker",
         "asiaKeywordsMatcher",
         "asiaWikifier",
         "atokaMatch2",
