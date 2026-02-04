@@ -53,9 +53,8 @@ export default async (req) => {
   const { items, props } = req.original;
   const operation =
     props.decrypt && props.decrypt.length > 0 ? "decrypt" : "encrypt";
-
+  const columnToProcess = props.selectedColumns[0];
   // Get the first column (the one to be processed)
-  const columnToProcess = Object.keys(items)[0];
   const columnData = items[columnToProcess];
   console.log(
     "**number of rows to anonymize***",
@@ -63,7 +62,7 @@ export default async (req) => {
   );
   // Make requests for all rows based on operation
   const processingPromises = Object.keys(columnData).map(async (rowId) => {
-    const originalValue = columnData[rowId].value || columnData[rowId];
+    const originalValue = columnData[rowId][0] || columnData[rowId];
     let result;
 
     if (operation === "encrypt") {
