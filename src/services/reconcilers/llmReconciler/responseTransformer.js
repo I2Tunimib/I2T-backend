@@ -19,12 +19,6 @@ export default async (req, res) => {
   // Process each LLM response
   const response = llmResponses.map((result) => {
     const { id, entityId, name, description, score, match } = result;
-
-    console.log(`\n>>> Processing result for ${id}:`);
-    console.log(`    Raw entityId from LLM: "${entityId}"`);
-    console.log(`    Name: "${name}"`);
-    console.log(`    Prefix to use: "${prefix}"`);
-
     // Create metadata array for this cell
     const metadata = [];
 

@@ -4,6 +4,7 @@ export default {
     processRequest: true,
   },
   public: {
+    group: "Gen AI",
     name: "LLM Reconciler",
     description:
       "A flexible LLM-powered reconciliation service that matches text values to entities based on custom instructions. " +

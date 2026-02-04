@@ -4,6 +4,7 @@ export default {
     processRequest: true,
   },
   public: {
+    group: "Gen AI",
     relativeUrl: "",
     allValues: true,
     skipFiltering: true,

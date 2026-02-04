@@ -4,6 +4,7 @@ export default {
     processRequest: true,
   },
   public: {
+    group: "Gen AI",
     name: "LLM Extender",
     relativeUrl: "",
     allValues: true,
