@@ -259,11 +259,14 @@ const FileSystemService = {
       readStream.pipe(ws);
 
       return new Promise((resolve, reject) => {
-        readStream.on("end", () => {
+        ws.on("finish", () => {
           resolve(id);
         });
-        readStream.on("error", () => {
-          reject("Error writing temp file");
+        ws.on("error", (err) => {
+          reject(new Error(`Error writing temp file: ${err.message}`));
+        });
+        readStream.on("error", (err) => {
+          reject(new Error(`Error reading stream: ${err.message}`));
         });
       });
     };
@@ -291,6 +294,7 @@ const FileSystemService = {
         // Check if filePath is provided for zip file processing
         if (filePath) {
           try {
+            console.log("[DEBUG] Starting zip file processing for:", filePath);
             const zip = createReadStream(filePath).pipe(
               unzipper.Parse({ forceStream: true }),
             );
@@ -298,6 +302,12 @@ const FileSystemService = {
             // unzip and write each file
             for await (const entry of zip) {
               const { path, type } = entry;
+              console.log(
+                "[DEBUG] Processing entry - path:",
+                path,
+                "type:",
+                type,
+              );
               // Skip macOS metadata entries and dotfiles, drain their contents and continue
               if (
                 typeof path === "string" &&
@@ -305,30 +315,51 @@ const FileSystemService = {
                   path.startsWith(".") ||
                   path.includes("/."))
               ) {
+                console.log("[DEBUG] Skipping macOS/dotfile:", path);
                 entry.autodrain();
                 continue;
               }
-              // Skip non-file entries or files inside subfolders, drain and continue
-              if (type !== "File" || path.includes("/")) {
+              // Skip non-file entries (directories)
+              if (type !== "File") {
+                console.log(
+                  "[DEBUG] Skipping non-file entry:",
+                  path,
+                  "type:",
+                  type,
+                );
                 entry.autodrain();
                 continue;
               }
               // skip non compatible file formats (drain before continuing)
               if (!path.endsWith(".csv") && !path.endsWith(".json")) {
+                console.log("[DEBUG] Skipping non-CSV/JSON file:", path);
                 entry.autodrain();
                 continue;
               }
               const tableName = path.split(".")[0] || "Unnamend";
+              console.log("[DEBUG] Processing valid table file:", tableName);
 
               const tmpEntryId = await writeTempFile(entry);
+              console.log("[DEBUG] Temp file written with id:", tmpEntryId);
 
               metaTables.lastIndex += 1;
               nFiles += 1;
               // transform to app format and write to file
+              console.log("[DEBUG] Parsing file tmp/" + tmpEntryId);
               const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+              console.log(
+                "[DEBUG] Parse complete. Columns:",
+                Object.keys(data.columns).length,
+                "Rows:",
+                Object.keys(data.rows).length,
+              );
               await writeFile(
                 `${datasetFolderPath}/${metaTables.lastIndex}.json`,
                 JSON.stringify(data),
+              );
+              console.log(
+                "[DEBUG] Table file written:",
+                `${datasetFolderPath}/${metaTables.lastIndex}.json`,
               );
 
               newTables[`${metaTables.lastIndex}`] = {
@@ -343,11 +374,18 @@ const FileSystemService = {
               };
 
               await rm(`tmp/${tmpEntryId}`);
+              console.log("[DEBUG] Table added successfully:", tableName);
             }
+            console.log(
+              "[DEBUG] Zip processing complete. Total tables:",
+              nFiles,
+            );
           } catch (err) {
             console.error("Error processing zip file:", err);
-            // Continue execution to create an empty dataset even if zip processing fails
+            throw new Error(`Failed to process zip file: ${err.message}`);
           }
+        } else {
+          console.log("[DEBUG] No filePath provided, creating empty dataset");
         }
 
         // add dataset entry
@@ -359,6 +397,10 @@ const FileSystemService = {
           lastModifiedDate: new Date().toISOString(),
         };
         // add dataset entry
+        console.log(
+          "[DEBUG] Writing dataset to DB. New datasets:",
+          Object.keys(newDatasets),
+        );
         await writeFile(
           getDatasetDbPath(),
           JSON.stringify(
@@ -371,6 +413,10 @@ const FileSystemService = {
           ),
         );
         // add table entries
+        console.log(
+          "[DEBUG] Writing tables to DB. New tables:",
+          Object.keys(newTables),
+        );
         await writeFile(
           getTablesDbPath(),
           JSON.stringify(
@@ -387,7 +433,8 @@ const FileSystemService = {
           await rm(filePath);
         }
       } catch (err) {
-        console.log(err);
+        console.error("Error in addDataset:", err);
+        throw err;
       }
     });
     return { datasets: newDatasets, tables: newTables };
@@ -633,6 +680,7 @@ const FileSystemService = {
       nCellsReconciliated,
       minMetaScore,
       maxMetaScore,
+      compliance,
     } = tableInstance;
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
@@ -656,6 +704,7 @@ const FileSystemService = {
         minMetaScore,
         maxMetaScore,
         lastModifiedDate: new Date().toISOString(),
+        ...(compliance && { compliance }), // Preserve compliance data if present
       };
 
       // update table entry
