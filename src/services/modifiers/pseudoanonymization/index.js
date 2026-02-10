@@ -23,6 +23,20 @@ export default {
           },
         ],
       },
+      {
+        id: "createNewColumn",
+        description:
+          "Choose whether to replace the current column or create a new one:",
+        label: "Column behavior",
+        inputType: "checkbox",
+        options: [
+          {
+            id: "createNewColumn",
+            label: "Create a new column (default: replace current column)",
+            value: "createNewColumn",
+          },
+        ],
+      },
     ],
   },
 };

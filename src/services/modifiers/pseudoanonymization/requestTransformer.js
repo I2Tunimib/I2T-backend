@@ -53,6 +53,8 @@ export default async (req) => {
   const { items, props } = req.original;
   const operation =
     props.decrypt && props.decrypt.length > 0 ? "decrypt" : "encrypt";
+  const createNewColumn =
+    props.createNewColumn && props.createNewColumn.length > 0;
   const columnToProcess = props.selectedColumns[0];
   // Get the first column (the one to be processed)
   const columnData = items[columnToProcess];
@@ -96,6 +98,7 @@ export default async (req) => {
   return {
     columnName: columnToProcess,
     operation: operation,
+    createNewColumn: createNewColumn,
     results: results,
   };
 };
