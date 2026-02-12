@@ -6,87 +6,149 @@ export default {
   public: {
     name: "Text to columns / Columns to text",
     relativeUrl: "",
-      description:
-        "A transformation function that allows joining multiple columns into one or splitting a single column into " +
-        "multiple columns using a separator defined by the user or by extracting the first or last portion of the cell value.",
-      skipFiltering: true,
-      formParams: [
-        {
-          id: "operationType",
-          label: "Operation type",
-          description: "Select the operation to perform on the selected columns.",
-          inputType: "radio",
-          rules: ["required"],
-          options: [
-            { id: "joinOp", label: "Join multiple columns into a single one", value: "joinOp" },
-            { id: "splitOp", label: "Split a single column into multiple ones", value: "splitOp" },
+    description:
+      "A transformation function that allows joining multiple columns into one or splitting a single column into " +
+      "multiple columns using a separator defined by the user or by extracting the first or last portion of the cell value.",
+    skipFiltering: true,
+    formParams: [
+      {
+        id: "operationType",
+        label: "Operation type",
+        description: "Select the operation to perform on the selected columns.",
+        inputType: "radio",
+        rules: ["required"],
+        options: [
+          {
+            id: "joinOp",
+            label: "Join multiple columns into a single one",
+            value: "joinOp",
+          },
+          {
+            id: "splitOp",
+            label: "Split a single column into multiple ones",
+            value: "splitOp",
+          },
+        ],
+      },
+      {
+        id: "columnToJoin",
+        label: "Additional columns to join",
+        description:
+          "<strong>Optional:</strong> Specify one or more additional columns to include in the join operation, " +
+          "in addition to the columns already selected in the main interface.",
+        infoText: "",
+        inputType: "multipleColumnSelect",
+        dependsOn: {
+          field: "operationType",
+          value: "joinOp",
+        },
+      },
+      {
+        id: "separator",
+        label: "Separator",
+        description:
+          "Specify the separator to use for joining or splitting values.",
+        infoText: "",
+        inputType: "text",
+        rules: ["required"],
+        dependsOn: {
+          field: "operationType",
+          value: ["joinOp", "splitOp"],
+        },
+      },
+      {
+        id: "splitMode",
+        label: "Split mode",
+        description: "Choose how to split the selected column.",
+        inputType: "radio",
+        rules: ["required"],
+        options: [
+          {
+            id: "separatorAll",
+            label: "Split at every occurrence",
+            value: "separatorAll",
+          },
+          {
+            id: "separatorSingle",
+            label: "Split at a single occurrence",
+            value: "separatorSingle",
+          },
+        ],
+        dependsOn: {
+          field: "operationType",
+          value: "splitOp",
+        },
+      },
+      {
+        id: "splitDirection",
+        label: "Split direction",
+        description:
+          "Choose the direction where to split when creating two columns.",
+        inputType: "radio",
+        rules: ["required"],
+        options: [
+          { id: "left", label: "From left (first occurrence)", value: "left" },
+          {
+            id: "right",
+            label: "From right (last occurrence)",
+            value: "right",
+          },
+        ],
+        dependsOn: {
+          and: [
+            { field: "operationType", value: "splitOp" },
+            { field: "splitMode", value: "separatorSingle" },
           ],
         },
-        {
-          id: "columnToJoin",
-          label: "Additional columns to join",
-          description: "<strong>Optional:</strong> Specify one or more additional columns to include in the join operation, " +
-            "in addition to the columns already selected in the main interface.",
-          infoText: "",
-          inputType: "multipleColumnSelect",
+      },
+      {
+        id: "splitRenameMode",
+        label: "Naming for split columns",
+        description: "Choose the naming mode for the new generated columns.",
+        inputType: "radio",
+        rules: ["required"],
+        options: [
+          {
+            id: "auto",
+            label: "Use default names (e.g., columnName_1, columnName_2, etc.)",
+            value: "auto",
+          },
+          { id: "custom", label: "Rename new columns", value: "custom" },
+        ],
+        dependsOn: {
+          field: "operationType",
+          value: "splitOp",
         },
-        {
-          id: "separator",
-          label: "Separator",
-          description: "Specify the separator to use for joining or splitting values.",
-          infoText: "",
-          inputType: "text",
-          rules: ["required"],
-        },
-        {
-          id: "splitMode",
-          label: "Split mode",
-          description: "Choose how to split the selected column.",
-          inputType: "radio",
-          rules: ["required"],
-          options: [
-            { id: "separatorAll", label: "Split at every occurrence", value: "separatorAll" },
-            { id: "separatorSingle", label: "Split at a single occurrence", value: "separatorSingle" },
+      },
+      {
+        id: "renameNewColumnSplit",
+        label: "Rename new columns",
+        description:
+          "Specify a list of new column names separated by commas (e.g. full name, ID student).",
+        infoText:
+          "Provide one name for each column generated by the split operation.",
+        inputType: "text",
+        rules: ["required"],
+        dependsOn: {
+          and: [
+            { field: "operationType", value: "splitOp" },
+            { field: "splitRenameMode", value: "custom" },
           ],
         },
-        {
-          id: "splitDirection",
-          label: "Split direction",
-          description: "Choose the direction where to split when creating two columns.",
-          inputType: "radio",
-          rules: ["required"],
-          options: [
-            { id: "left", label: "From left (first occurrence)", value: "left" },
-            { id: "right", label: "From right (last occurrence)", value: "right" },
-          ],
+      },
+      {
+        id: "renameJoinedColumn",
+        label: "Rename joined column",
+        description:
+          "<strong>Optional:</strong> Specify a custom name for the resulting joined column. " +
+          "If left blank, a default name in the format 'col1_col2' will be applied.",
+        infoText: "",
+        inputType: "text",
+        dependsOn: {
+          field: "operationType",
+          value: "joinOp",
         },
-        {
-          id: "splitRenameMode",
-          label: "Naming for split columns",
-          description: "Choose the naming mode for the new generated columns.",
-          inputType: "radio",
-          rules: ["required"],
-          options: [
-            { id: "auto", label: "Use default names (e.g., columnName_1, columnName_2, etc.)", value: "auto" },
-            { id: "custom", label: "Rename new columns", value: "custom" },
-          ],
-        },
-        {
-          id: "renameNewColumnSplit",
-          label: "Rename new columns",
-          description: "Specify a list of new column names separated by commas (e.g. full name, ID student).",
-          infoText: "Provide one name for each column generated by the split operation.",
-          inputType: "text",
-          rules: ["required"],
-        },
-        {
-          id: "renameJoinedColumn",
-          label: "Rename joined column",
-          description: "<strong>Optional:</strong> Specify a custom name for the resulting joined column. " +
-            "If left blank, a default name in the format 'col1_col2' will be applied.",
-          infoText: "",
-          inputType: "text",
-        },
-      ],
+      },
+    ],
   },
 };
