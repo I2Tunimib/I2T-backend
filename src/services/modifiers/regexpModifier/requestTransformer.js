@@ -8,6 +8,8 @@ export default async (req) => {
     flags,
     matchCount,
     matchIndex,
+    outputMode,
+    newColumnName,
   } = props;
 
   return {
@@ -19,6 +21,8 @@ export default async (req) => {
       flags: flags || "g",
       matchCount: matchCount || "",
       matchIndex: matchIndex || "",
+      outputMode: outputMode || "replace",
+      newColumnName: newColumnName || "",
     },
   };
 };

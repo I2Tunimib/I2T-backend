@@ -8,6 +8,8 @@ export default async (req, res) => {
     flags,
     matchCount,
     matchIndex,
+    outputMode,
+    newColumnName,
   } = props;
 
   console.log("[RegexpModifier] Starting with:", {
@@ -15,6 +17,8 @@ export default async (req, res) => {
     pattern,
     flags,
     selectedColumns,
+    outputMode,
+    newColumnName,
   });
 
   const response = { columns: {}, meta: {} };
@@ -63,8 +67,25 @@ export default async (req, res) => {
   }
 
   selectedColumns.forEach((col) => {
-    response.columns[col] = {
-      label: col,
+    // Determine the output column name based on outputMode
+    const outputColumn = outputMode === "newColumn" ? newColumnName : col;
+
+    // Validate new column name if creating a new column
+    if (outputMode === "newColumn") {
+      if (!newColumnName || newColumnName.trim() === "") {
+        throw new Error(
+          "New column name is required when creating a new column.",
+        );
+      }
+      if (items[newColumnName]) {
+        throw new Error(
+          `Column '${newColumnName}' already exists in the dataset.`,
+        );
+      }
+    }
+
+    response.columns[outputColumn] = {
+      label: outputColumn,
       kind: "",
       metadata: [],
       cells: {},
@@ -76,7 +97,7 @@ export default async (req, res) => {
     }
 
     console.log(
-      `[RegexpModifier] Processing column '${col}' with ${Object.keys(columnData).length} rows`,
+      `[RegexpModifier] Processing column '${col}' with ${Object.keys(columnData).length} rows, output to '${outputColumn}'`,
     );
 
     Object.entries(columnData).forEach(([rowId, val]) => {
@@ -219,7 +240,7 @@ export default async (req, res) => {
           throw new Error(`Unknown operation type: ${operationType}`);
       }
 
-      response.columns[col].cells[rowId] = {
+      response.columns[outputColumn].cells[rowId] = {
         label: transformed,
         metadata: [],
       };

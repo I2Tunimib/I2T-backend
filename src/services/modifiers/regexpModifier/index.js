@@ -119,6 +119,40 @@ export default {
           value: "extractUpToN",
         },
       },
+      {
+        id: "outputMode",
+        label: "Output mode",
+        description:
+          "Choose whether to replace the existing column or create a new one.",
+        inputType: "radio",
+        rules: ["required"],
+        options: [
+          {
+            id: "replace",
+            label: "Replace values in current column",
+            value: "replace",
+          },
+          {
+            id: "newColumn",
+            label: "Create new column with results",
+            value: "newColumn",
+          },
+        ],
+      },
+      {
+        id: "newColumnName",
+        label: "New column name",
+        description: "Specify the name for the new column.",
+        infoText:
+          "Enter a unique name for the new column that will contain the transformation results.",
+        inputType: "text",
+        placeholder: "e.g., extracted_values",
+        rules: ["required"],
+        dependsOn: {
+          field: "outputMode",
+          value: "newColumn",
+        },
+      },
     ],
   },
 };
