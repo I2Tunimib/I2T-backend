@@ -166,26 +166,55 @@ Given the specified purpose, determine if the csv table below is GDPR compliant.
 
 Assess whether it contains personal data (Art. 4 GDPR).
 
+IMPORTANT: Carefully examine both the column names AND the actual data values to determine if data has already been pseudonymized or anonymized:
+
+Examples of ALREADY PSEUDONYMIZED/ANONYMIZED data (action should be "noChange"):
+- Names: "USR_12345", "a3f8d9e2", "Patient_042", "User_XYZ789" instead of "John Smith"
+- Hashed values: "5d41402abc4b2a76b9719d911017c592", long alphanumeric strings
+- Column names suggesting pseudonymization: "user_id", "hash", "code", "pseudonym", "anonymized_name", "identifier"
+- Location with reduced precision:
+  * Coordinates: "45.46, 9.19" (2 decimals ~1km precision) instead of "45.464203, 9.191383" (full precision ~10m)
+  * Only city/country level: "Milan, Italy" instead of full street addresses
+- Dates/timestamps truncated: "2024", "2024-01", "Q1 2024" instead of "2024-01-15 14:32:05"
+- Aggregated age ranges: "30-40" instead of exact age "35"
+- Encoded/obfuscated data: incomprehensible strings, masked values (e.g., "***-**-1234" for IDs)
+- K-anonymity: data generalized to ensure at least k individuals share the same characteristics
+
+Examples of PERSONAL DATA that needs action:
+- Full names: "John Smith", "Maria Garcia"
+- Email addresses: "john.smith@example.com"
+- Phone numbers: "+39 123 456 7890"
+- Precise coordinates: "45.464203, 9.191383" (6+ decimals)
+- Full addresses: "Via Roma 123, 20100 Milano"
+- Exact timestamps with person context: "2024-01-15 14:32:05" when combined with user activity
+
+If data is ALREADY pseudonymized or anonymized, classify it as "anonymousData" or "nonPersonalData" with action "noChange".
+
 Evaluate if one or more columns:
 - Directly identify a natural person (personalData)
-  (e.g., name, email, phone, tax ID, user ID, IP address, etc.)
+  (e.g., full name, email, phone, tax ID, precise address, IP address, etc.)
 - Indirectly identify a person through combinations (quasiIdentifiers)
   (e.g., age + location + role, timestamp + location, etc.)
+- Are already pseudonymized but could still identify someone with additional data (pseudoGDPR)
+- Are truly anonymous and cannot identify anyone (noGDPR)
 
 Determine if the table is:
-- noGDPR: outside the scope of GDPR (truly anonymous data)
-- yesGDPR: subject to GDPR
-- pseudoGDPR: pseudonymized but not anonymous (GDPR still applies)
+- noGDPR: outside the scope of GDPR (truly anonymous data, already properly anonymized)
+- yesGDPR: subject to GDPR (contains identifiable personal data)
+- pseudoGDPR: pseudonymized but not anonymous (GDPR still applies but reduced risk)
 
 Provide reasoning for the decision and a confidence score.
 
 Classify each column as:
-- personalData
-- quasiIdentifiers
-- nonPersonalData
-- anonymousData (if already anonymous)
+- personalData (direct identifiers that need action)
+- quasiIdentifiers (indirect identifiers that may need action)
+- nonPersonalData (organizational or non-identifying data)
+- anonymousData (already properly anonymized or truly anonymous)
 
-For each column, suggest what action to take to make the table compliant, using three options: "noChange", "remove", "pseudonymize"
+For each column, suggest what action to take to make the table compliant, using three options:
+- "noChange": if data is already compliant (anonymized, pseudonymized, or non-personal)
+- "remove": if the data is identifiable and not needed for the purpose
+- "pseudonymize": if the data is identifiable but needed and can be pseudonymized
 
 For each column, provide reasoning for the decision and a confidence score.
 
