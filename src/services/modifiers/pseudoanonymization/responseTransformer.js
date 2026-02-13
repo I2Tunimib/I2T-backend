@@ -1,5 +1,5 @@
 export default async (req, res) => {
-  const { columnName, operation, results } = res;
+  const { columnName, operation, createNewColumn, results } = res;
 
   // Create the response structure
   let response = {
@@ -7,15 +7,22 @@ export default async (req, res) => {
     meta: {},
   };
 
-  // Create the new column name based on operation
-  const newColumnName =
-    operation === "encrypt"
-      ? `pseudoanonymized_${columnName}`
-      : `deanonymized_${columnName}`;
+  // Determine the column name to use
+  let targetColumnName;
+  if (createNewColumn) {
+    // Create a new column with a descriptive name
+    targetColumnName =
+      operation === "encrypt"
+        ? `pseudoanonymized_${columnName}`
+        : `deanonymized_${columnName}`;
+  } else {
+    // Replace the current column (default behavior)
+    targetColumnName = columnName;
+  }
 
-  // Initialize the new column
-  response.columns[newColumnName] = {
-    label: newColumnName,
+  // Initialize the column
+  response.columns[targetColumnName] = {
+    label: targetColumnName,
     kind: "literal",
     metadata: [],
     cells: {},
@@ -49,7 +56,7 @@ export default async (req, res) => {
     }
 
     // Add the cell data
-    response.columns[newColumnName].cells[rowId] = {
+    response.columns[targetColumnName].cells[rowId] = {
       label: processedValue,
       metadata: [],
     };

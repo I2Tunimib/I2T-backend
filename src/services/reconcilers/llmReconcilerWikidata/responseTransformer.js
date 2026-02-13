@@ -8,8 +8,8 @@ import config from "./index.js";
  * @returns {Object} - Formatted reconciliation results with metadata
  */
 export default async (req, res) => {
-  const { items, llmResponses, prefix, uri } = res;
-
+  const { items, llmResponses, prefix } = res;
+  const uri = "https://www.wikidata.org/wiki/";
   // Add header as first item (no metadata for header)
   const header = {
     id: items[0].id,
@@ -19,6 +19,7 @@ export default async (req, res) => {
   // Process each LLM response
   const response = llmResponses.map((result) => {
     const { id, entityId, name, description, score, match } = result;
+
     // Create metadata array for this cell
     const metadata = [];
 
@@ -29,7 +30,7 @@ export default async (req, res) => {
       if (!formattedId.includes(":")) {
         // If no prefix, add it (assume it's a Wikidata Q ID)
         const cleanId = formattedId.replace(/^Q?/, "Q"); // Ensure it starts with Q
-        formattedId = `${prefix}:${cleanId}`;
+        formattedId = `$wd:${cleanId}`;
         console.log(`    No prefix found, added prefix: "${formattedId}"`);
       } else {
         console.log(`    Prefix already exists: "${formattedId}"`);

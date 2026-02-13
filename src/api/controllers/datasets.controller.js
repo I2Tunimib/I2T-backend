@@ -1,5 +1,6 @@
 import DatasetsService from "../services/datasets/datasets.service.js";
 import ExportService from "../services/export/export.service.js";
+import ComplianceService from "../services/tables/compliance.service.js";
 import jwt from "jsonwebtoken";
 import config from "../../config/index.js";
 import AuthService from "../services/auth/auth.service.js";
@@ -180,6 +181,28 @@ const DatasetsController = {
 
     try {
       res.json(await DatasetsService.updateTable(data));
+    } catch (err) {
+      next(err);
+    }
+  },
+  makeCompliance: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { purpose } = req.body;
+    const io = req.app.get("io");
+
+    try {
+      await ComplianceService.startCompliance({
+        idDataset,
+        idTable,
+        purpose: purpose || "General data processing",
+        io,
+      });
+
+      return res.json({
+        datasetId: idDataset,
+        tableId: idTable,
+        complianceStatus: "PENDING",
+      });
     } catch (err) {
       next(err);
     }

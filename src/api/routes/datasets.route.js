@@ -21,6 +21,10 @@ router.get(
   asyncMiddleware(DatasetsController.exportTable),
 );
 router.get(
+  "/:idDataset/table/:idTable/export",
+  asyncMiddleware(DatasetsController.exportTable),
+);
+router.get(
   "/:idDataset/table/:idTable/code",
   asyncMiddleware(DatasetsController.exportTableCode),
 );
@@ -29,6 +33,10 @@ router.post("/:idDataset/table", asyncMiddleware(DatasetsController.addTable));
 router.post(
   "/track/:idDataset/:idTable",
   asyncMiddleware(DatasetsController.trackTable),
+);
+router.post(
+  "/:idDataset/table/:idTable/compliance",
+  asyncMiddleware(DatasetsController.makeCompliance),
 );
 router.put(
   "/:idDataset/table/:idTable",

@@ -50,6 +50,7 @@ export default async (req) => {
         error,
       };
     } catch (axiosErr) {
+      console.error("HERE error", axiosErr);
       error = errors.reconciler["01"];
       return {
         result: [],

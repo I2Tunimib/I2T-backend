@@ -4,11 +4,11 @@ export default {
     processRequest: true,
   },
   public: {
-    name: "Text to columns / Columns to text",
+    group: "Gen AI",
+    name: "LLM Modifier",
     relativeUrl: "",
     description:
-      "A transformation function that allows joining multiple columns into one or splitting a single column into " +
-      "multiple columns using a separator defined by the user or by extracting the first or last portion of the cell value.",
+      "A transformation service that allows to write a custom prompt to modify the values of a column ",
     skipFiltering: true,
     formParams: [
       {
@@ -28,6 +28,11 @@ export default {
             label: "Split a single column into multiple ones",
             value: "splitOp",
           },
+          {
+            id: "inPlace",
+            label: "Edit the column directly",
+            value: "inPlace",
+          },
         ],
       },
       {
@@ -43,64 +48,7 @@ export default {
           value: "joinOp",
         },
       },
-      {
-        id: "separator",
-        label: "Separator",
-        description:
-          "Specify the separator to use for joining or splitting values.",
-        infoText: "",
-        inputType: "text",
-        rules: ["required"],
-        dependsOn: {
-          field: "operationType",
-          value: ["joinOp", "splitOp"],
-        },
-      },
-      {
-        id: "splitMode",
-        label: "Split mode",
-        description: "Choose how to split the selected column.",
-        inputType: "radio",
-        rules: ["required"],
-        options: [
-          {
-            id: "separatorAll",
-            label: "Split at every occurrence",
-            value: "separatorAll",
-          },
-          {
-            id: "separatorSingle",
-            label: "Split at a single occurrence",
-            value: "separatorSingle",
-          },
-        ],
-        dependsOn: {
-          field: "operationType",
-          value: "splitOp",
-        },
-      },
-      {
-        id: "splitDirection",
-        label: "Split direction",
-        description:
-          "Choose the direction where to split when creating two columns.",
-        inputType: "radio",
-        rules: ["required"],
-        options: [
-          { id: "left", label: "From left (first occurrence)", value: "left" },
-          {
-            id: "right",
-            label: "From right (last occurrence)",
-            value: "right",
-          },
-        ],
-        dependsOn: {
-          and: [
-            { field: "operationType", value: "splitOp" },
-            { field: "splitMode", value: "separatorSingle" },
-          ],
-        },
-      },
+
       {
         id: "splitRenameMode",
         label: "Naming for split columns",
@@ -148,6 +96,14 @@ export default {
           field: "operationType",
           value: "joinOp",
         },
+      },
+      {
+        id: "prompt",
+        description:
+          "Write instructions for how to modify the values of the cells.",
+        label: "Reconciliation instructions",
+        inputType: "textArea",
+        rules: ["required"],
       },
     ],
   },

@@ -171,16 +171,37 @@ Make sure keys match the column names exactly as provided above.
       let candidate = fenceMatch ? fenceMatch[1].trim() : input.trim();
 
       const firstBrace = candidate.indexOf("{");
-      const lastBrace = candidate.lastIndexOf("}");
 
-      if (firstBrace === -1 || lastBrace === -1) {
+      if (firstBrace === -1) {
         throw new Error("No JSON object found in response");
       }
 
-      const jsonStr = candidate.slice(firstBrace, lastBrace + 1);
+      // Try to parse with balanced braces instead of just finding last }
+      let braceCount = 0;
+      let lastValidBrace = -1;
+
+      for (let i = firstBrace; i < candidate.length; i++) {
+        if (candidate[i] === "{") {
+          braceCount++;
+        } else if (candidate[i] === "}") {
+          braceCount--;
+          if (braceCount === 0) {
+            lastValidBrace = i;
+            break; // Found the matching closing brace
+          }
+        }
+      }
+
+      if (lastValidBrace === -1) {
+        throw new Error("No matching closing brace found");
+      }
+
+      const jsonStr = candidate.slice(firstBrace, lastValidBrace + 1);
+      console.log("[LLM extractJson] Attempting to parse:", jsonStr);
       return JSON.parse(jsonStr);
     } catch (err) {
       console.error("[LLM extractJson] Invalid JSON string:", err.message);
+      console.error("[LLM extractJson] Raw response:", input);
       return null;
     }
   }
