@@ -18,7 +18,7 @@ router.get("/wikidata", async (req, res) => {
     const data = await result.json();
     const entity = data.entities?.[cleanId];
     console.log("entity", entity);
-
+    const name = entity?.labels?.en?.value;
     const description = entity?.descriptions?.en?.value || "";
     console.log("description", description);
     const typeClaims = entity?.claims?.P31 || [];
@@ -37,7 +37,7 @@ router.get("/wikidata", async (req, res) => {
       }));
     }
 
-    res.json({ description, type });
+    res.json({ name, description, type });
   } catch (err) {
     res.status(500).json({ error: "Wikidata request failed" });
   }
@@ -61,6 +61,7 @@ router.get("/lionlinker", async (req, res) => {
       : null;
 
     res.json({
+      name: entity?.name || label || "",
       description: entity?.description || "",
       type: entity?.types || []
     });
@@ -87,7 +88,8 @@ router.get("/geonames", async (req, res) => {
       return { description: "", type: [] };
     }
     res.json({
-      description: item.toponymName || item.name || "",
+      name: item.name || "",
+      description: item.toponymName || "",
       type: [ { id: item.fcode, name: item.fcodeName } ]
     });
   } catch (e) {
@@ -112,7 +114,8 @@ router.get("/geonamesCoordinates", async (req, res) => {
     console.log("item", item);
 
     res.json({
-      description: item?.name || "",
+      name: item?.name || "",
+      description: item?.toponymName || "",
       type: [
         {
           id: item?.fcode || "",
