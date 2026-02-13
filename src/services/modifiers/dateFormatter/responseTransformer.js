@@ -8,6 +8,9 @@ export default async (req, res) => {
   const allowedTokens = ["dd","MM","MMMM","yyyy","HH","hh","mm","ss","a","SSS","XXX","z"];
 
   const dateFormats = [
+    "dd/MM/yy", "dd-MM-yy", "dd.MM.yy",
+    "MM/dd/yy", "MM-dd-yy", "MM.dd.yy",
+    "yy/MM/dd", "yy-MM-dd", "yy.MM.dd",
     "yyyy-MM-dd","yyyy/MM/dd","yyyy.MM.dd","yyyyMMdd",
     "yyyy-MM-dd","yyyy/MM/dd","yyyy.MM.dd","yyyyMMdd",
     "dd-MM-yyyy","dd/MM/yyyy","dd.MM.yyyy","ddMMyyyy",
