@@ -14,7 +14,7 @@ const {
 const DatasetsController = {
   getAllDatasets: async (req, res, next) => {
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
 
       res.json(await DatasetsService.findDatasetsByUser(user.id));
     } catch (err) {
@@ -25,7 +25,7 @@ const DatasetsController = {
     const { idDataset } = req.params;
 
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -40,7 +40,7 @@ const DatasetsController = {
   getAllTablesByDataset: async (req, res, next) => {
     const { idDataset } = req.params;
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -55,7 +55,7 @@ const DatasetsController = {
   getTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -76,7 +76,7 @@ const DatasetsController = {
     try {
       let user;
       try {
-        user = AuthService.verifyToken(req);
+        user = await AuthService.verifyToken(req);
       } catch (authError) {
         return res
           .status(401)
@@ -103,7 +103,7 @@ const DatasetsController = {
   removeDataset: async (req, res, next) => {
     const { idDataset } = req.params;
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -123,7 +123,7 @@ const DatasetsController = {
     const { idDataset } = req.params;
 
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -155,7 +155,7 @@ const DatasetsController = {
   removeTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -206,7 +206,7 @@ const DatasetsController = {
     const { idDataset, idTable } = req.params;
     const { format = "python" } = req.query;
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (dataset.userId !== user.id) {
@@ -238,7 +238,7 @@ const DatasetsController = {
   search: async (req, res, next) => {
     const { query } = req.query;
     try {
-      const user = AuthService.verifyToken(req);
+      const user = await AuthService.verifyToken(req);
 
       const tables = await DatasetsService.findTablesByNameAndUser(
         query,

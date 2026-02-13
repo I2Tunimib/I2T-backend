@@ -13,10 +13,11 @@ export default {
       "from other columns providing context to improve reconciliation accuracy.<br>" +
       "<strong>Output</strong>: Annotations for each matched mention, including <em> ID</em> (formatted as " +
       "<code>georss:lat,lon</code>), <em> name</em> (official Latin name of the address) and " +
-      "<em> description </em>.<br><br> <strong>Note</strong>: Requires access to the HERE API",
+      "<em> description </em>.<br><br> <strong>Note</strong>: Requires access to the HERE service",
     relativeUrl: "/here",
     prefix: "georss",
     uri: "http://www.google.com/maps/place/",
+    searchPattern: "https://www.google.com/maps/search/?api=1&query={label}/",
     listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {

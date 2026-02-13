@@ -13,7 +13,9 @@ function latin1Safe(s) {
 }
 
 const openai = new OpenAI({
-  apiKey: latin1Safe("sk-localapikey"), // required
+  apiKey: latin1Safe(
+    process.env.LLM_KEY || process.env.OPENAI_API_KEY || "sk-localapikey",
+  ), // prefer env LLM_KEY or OPENAI_API_KEY
   baseURL: process.env.LLM_ADDRESS || "", // YOUR URL
 });
 
@@ -81,9 +83,11 @@ function getMostPopularForMissing(missingItemWikidataId, fullResponse) {
 }
 
 async function callAll(prompts, model = process.env.LLM_MODEL || "phi4-mini") {
+  console.log("creating promises");
   return await Promise.all(
     prompts.map(async (prompt, index) => {
       try {
+        console.log("sending prompt to openai");
         const completion = await openai.chat.completions.create({
           model,
           messages: [{ role: "user", content: prompt.prompt }],
@@ -169,17 +173,49 @@ export default async (req) => {
   const countryCol = props.country
     ? Object.keys(props.country).map((key) => props.country[key][0])
     : [];
+  console.log("fetching wikidata info if available");
 
   const fullRows = await Promise.all(
     Object.keys(itemCol).map(async (rowId, index) => {
-      const wikidataInfo = await fetchWikidataInformation(itemCol[rowId].kbId);
+      const cell = itemCol[rowId] || {};
+      const name = cell.value ? String(cell.value) : "";
+      const country = countryCol[index] ? countryCol[index] : "";
+      const description = descriptionCol[index] ? descriptionCol[index] : "";
+
+      // If we have a kbId, try to fetch richer wikidata information.
+      if (cell.kbId) {
+        try {
+          const wikidataInfo = await fetchWikidataInformation(cell.kbId);
+          return {
+            ...wikidataInfo,
+            wikidataId: String(cell.kbId)
+              .replace("wdA:", "")
+              .replace("wd:", ""),
+            name,
+            country,
+            description,
+            rowId,
+          };
+        } catch (err) {
+          // If fetching Wikidata fails, fall through and return a minimal record.
+          console.error("Error fetching wikidata info for", cell.kbId, err);
+        }
+      } else {
+        // Log absence of kbId to help debugging
+        console.log(
+          `No kbId for row ${rowId} — proceeding with minimal record`,
+        );
+      }
+
+      // Return a minimal record so the LLM is still invoked even when Wikidata info is missing.
       return {
-        ...wikidataInfo,
-        wikidataId: itemCol[rowId].kbId.replace("wdA:", "").replace("wd:", ""),
-        name: itemCol[rowId].value ? itemCol[rowId].value : "",
-        country: countryCol[index] ? countryCol[index] : "",
-        description: descriptionCol[index] ? descriptionCol[index] : "",
-        rowId: rowId,
+        wikidataId: null,
+        wikidataDescription: "",
+        wikidataType: "",
+        name,
+        country,
+        description,
+        rowId,
       };
     }),
   );

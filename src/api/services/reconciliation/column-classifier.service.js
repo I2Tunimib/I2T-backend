@@ -1,4 +1,5 @@
-import { spawn } from "child_process";
+import { existsSync } from "fs";
+import { execSync, spawn } from "child_process";
 import path from "path";
 import { readFile, writeFile } from "fs/promises";
 
@@ -9,7 +10,7 @@ const __dirname = path.resolve();
 const PYTHON_PATH = "python3";
 const SCRIPT_PATH = path.join(
   __dirname,
-  "../I2T-backend/py-scripts/column_classifier_runner.py"
+  "py-scripts/column_classifier_runner.py",
 );
 
 const {
@@ -17,20 +18,38 @@ const {
 } = config;
 
 class ColumnClassifierService {
+  static async ensurePythonEnv() {
+    const venvPath = path.join(path.resolve(), "venv");
+
+    if (!existsSync(venvPath)) {
+      console.log(
+        "[Python Setup] Virtual environment not found. Creating it...",
+      );
+      execSync(
+        "python3 -m venv venv && ./venv/bin/pip install --upgrade pip setuptools wheel && ./venv/bin/pip install pandas spacy column-classifier && ./venv/bin/python -m spacy download en_core_web_sm",
+      );
+      console.log("[Python Setup] Environment ready.");
+    }
+  }
+
   static async annotate({ idDataset, idTable, io }) {
     await this.setSchemaStatus(idTable, "PENDING");
-    console.log(`[annotate] Launching classifier for dataset ${idDataset}, table ${idTable}`);
+    console.log(
+      `[annotate] Launching classifier for dataset ${idDataset}, table ${idTable}`,
+    );
     this.runClassifier({ idDataset, idTable, io });
   }
 
   static async runClassifier({ idDataset, idTable, io }) {
     try {
+      await this.ensurePythonEnv();
+      const PYTHON_PATH = path.join(path.resolve(), "venv", "bin", "python3");
       const table = await FileSystemService.findTable(idDataset, idTable);
       const formattedColumns = {};
       for (const colName of Object.keys(table.columns)) {
         const cleanName = colName.replace(/^\uFEFF/, "");
         formattedColumns[cleanName] = Object.values(table.rows).map(
-          (row) => row.cells[colName]?.label ?? ""
+          (row) => row.cells[colName]?.label ?? "",
         );
       }
 
@@ -45,13 +64,18 @@ class ColumnClassifierService {
 
         try {
           await this.setSchemaStatus(idTable, "DONE");
-          const tableData = await FileSystemService.findTable(idDataset, idTable);
+          const tableData = await FileSystemService.findTable(
+            idDataset,
+            idTable,
+          );
           io?.emit("schema-done", {
             table: tableData.table,
             result,
           });
 
-          console.log(`[finish] Emitted schema-done patch for table ${idTable}`);
+          console.log(
+            `[finish] Emitted schema-done patch for table ${idTable}`,
+          );
         } catch (err) {
           console.error("[finish] Error emitting schema-done:", err);
         }
@@ -70,7 +94,10 @@ class ColumnClassifierService {
       py.on("close", async (code) => {
         console.log(`[runClassifier] Python process closed with code ${code}`);
         if (code !== 0) {
-          console.error("[runClassifier] Python process returned error:", stderr);
+          console.error(
+            "[runClassifier] Python process returned error:",
+            stderr,
+          );
           return finish("ERROR");
         }
 
@@ -80,7 +107,11 @@ class ColumnClassifierService {
           await this.applyResult(idDataset, idTable, result);
           await finish("DONE", result);
         } catch (err) {
-          console.error("[runClassifier] Error parsing Python output:", err, stdout);
+          console.error(
+            "[runClassifier] Error parsing Python output:",
+            err,
+            stdout,
+          );
           await finish("ERROR");
         }
       });
@@ -120,7 +151,10 @@ class ColumnClassifierService {
         id: cleanId,
         label: col.label?.replace(/^\uFEFF/, "").trim() ?? cleanId,
         kind: result.kind_classification?.[cleanId] ?? col.kind ?? "unknown",
-        nerClassification: result.ner_classification?.[cleanId] ?? col.nerClassification ?? "unknown",
+        nerClassification:
+          result.ner_classification?.[cleanId] ??
+          col.nerClassification ??
+          "unknown",
       };
     });
 
@@ -155,7 +189,9 @@ class ColumnClassifierService {
   }
 
   static async setSchemaStatus(idTable, status) {
-    console.log(`[setSchemaStatus] Updating table ${idTable} status to ${status}`);
+    console.log(
+      `[setSchemaStatus] Updating table ${idTable} status to ${status}`,
+    );
     const dbPath = getTablesDbPath();
     const { meta, tables } = JSON.parse(await readFile(dbPath));
 

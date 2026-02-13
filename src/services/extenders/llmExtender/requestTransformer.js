@@ -11,7 +11,9 @@ function latin1Safe(s) {
 }
 
 const openai = new OpenAI({
-  apiKey: latin1Safe("sk-localapikey"), // required
+  apiKey: latin1Safe(
+    process.env.LLM_KEY || process.env.OPENAI_API_KEY || "sk-localapikey",
+  ), // prefer env LLM_KEY or OPENAI_API_KEY
   baseURL: process.env.LLM_ADDRESS || "", // YOUR URL
 });
 
@@ -77,79 +79,96 @@ async function callAll(
   columnNames,
   model = process.env.LLM_MODEL || "phi4-mini",
 ) {
-  return await Promise.all(
-    prompts.map(async (prompt, index) => {
-      try {
-        console.log(`\n========== LLM REQUEST #${index} ==========`);
-        console.log("PROMPT SENT TO LLM:");
-        console.log(prompt.prompt);
-        console.log("==========================================\n");
+  // Sequential processing: make one request at a time to the LLM to avoid parallel timeouts
+  // Per-call timeout and optional inter-call delay can be configured via env:
+  //   LLM_TIMEOUT_MS (default 30000)
+  //   LLM_DELAY_MS (default 100)
+  const results = [];
+  const perCallTimeout = Number(process.env.LLM_TIMEOUT_MS) || 30000;
+  const delayMs = Number(process.env.LLM_DELAY_MS) || 100;
 
-        const startTime = Date.now();
-        const completion = await Promise.race([
-          openai.chat.completions.create({
-            model,
-            messages: [{ role: "user", content: prompt.prompt }],
-          }),
-          new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error("LLM request timeout after 30s")),
-              30000,
-            ),
+  for (let index = 0; index < prompts.length; index++) {
+    const prompt = prompts[index];
+    try {
+      console.log(`\n========== LLM REQUEST #${index} ==========`);
+      console.log("PROMPT SENT TO LLM:");
+      console.log(prompt.prompt);
+      console.log("==========================================\n");
+
+      const startTime = Date.now();
+
+      const completion = await Promise.race([
+        openai.chat.completions.create({
+          model,
+          messages: [{ role: "user", content: prompt.prompt }],
+        }),
+        new Promise((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `LLM request timeout after ${Math.round(perCallTimeout / 1000)}s`,
+                ),
+              ),
+            perCallTimeout,
           ),
-        ]);
-        const duration = Date.now() - startTime;
-        console.log(`LLM request #${index} completed in ${duration}ms`);
+        ),
+      ]);
 
-        const raw = completion.choices[0]?.message?.content;
+      const duration = Date.now() - startTime;
+      console.log(`LLM request #${index} completed in ${duration}ms`);
 
-        console.log(`\n========== LLM RESPONSE #${index} ==========`);
-        console.log("RAW RESPONSE FROM LLM:");
-        console.log(raw);
-        console.log("==========================================\n");
-        if (!raw) {
-          throw new Error(
-            `OpenAI returned empty response for prompt #${index}`,
-          );
-        }
+      const raw = completion.choices[0]?.message?.content;
 
-        const parsed = extractJson(raw);
-        if (!parsed) {
-          console.error(
-            `Failed to parse LLM response for prompt #${index}. Raw response:`,
-            raw,
-          );
-          // Return null values for all columns
-          const emptyResult = { rowId: prompt.rowId };
-          columnNames.forEach((col) => {
-            emptyResult[col] = null;
-          });
-          return emptyResult;
-        }
+      console.log(`\n========== LLM RESPONSE #${index} ==========`);
+      console.log("RAW RESPONSE FROM LLM:");
+      console.log(raw);
+      console.log("==========================================\n");
 
-        return {
-          ...parsed,
-          rowId: prompt.rowId,
-        };
-      } catch (err) {
+      if (!raw) {
+        throw new Error(`OpenAI returned empty response for prompt #${index}`);
+      }
+
+      const parsed = extractJson(raw);
+      if (!parsed) {
         console.error(
-          `Error processing LLM request for prompt #${index}:`,
-          err,
+          `Failed to parse LLM response for prompt #${index}. Raw response:`,
+          raw,
         );
-        // Return null values for all columns
+        // Return null values for all columns for this row
         const emptyResult = { rowId: prompt.rowId };
         columnNames.forEach((col) => {
           emptyResult[col] = null;
         });
-        return emptyResult;
+        results.push(emptyResult);
+      } else {
+        results.push({
+          ...parsed,
+          rowId: prompt.rowId,
+        });
       }
-    }),
-  );
+    } catch (err) {
+      console.error(`Error processing LLM request for prompt #${index}:`, err);
+      // Return null values for all columns for this row
+      const emptyResult = { rowId: prompt.rowId };
+      columnNames.forEach((col) => {
+        emptyResult[col] = null;
+      });
+      results.push(emptyResult);
+    }
+
+    // Optional delay between calls to avoid rate-limits / burst throttling
+    if (index < prompts.length - 1 && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return results;
 }
 
 export default async (req) => {
   const { items, props } = req.original;
-
+  console.log("llm extender items: ", items);
   // Get the column names from user input (comma-separated)
   const columnNamesInput = props.columnNames || "";
   const columnNames = columnNamesInput

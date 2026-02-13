@@ -15,7 +15,7 @@ export default {
       "providing context to improve reconciliation accuracy.<br>" +
       "<strong>Output</strong>: Annotations for each matched mention, including <em>ID</em>, <em>name</em>, " +
       "<em>description</em> and <em>types</em>.<br><br>" +
-      "<strong>Note</strong>: Requires access to the LionLinker API. More precise than OpenRefine-based " +
+      "<strong>Note</strong>: Requires access to the LionLinker service. More precise than OpenRefine-based " +
       "reconciliation.",
     uri: "https://www.wikidata.org/wiki/",
     searchPattern: "https://www.wikidata.org/w/index.php?search={label}",
