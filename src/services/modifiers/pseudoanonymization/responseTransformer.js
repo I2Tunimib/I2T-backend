@@ -1,5 +1,15 @@
 export default async (req, res) => {
-  const { columnName, operation, createNewColumn, results } = res;
+  // Support both legacy and new properties in the transformer payload.
+  // The caller may provide either a boolean `createNewColumn` or an `outputMode` string
+  // and an optional `newColumnName`. Prefer `outputMode` when present.
+  const {
+    columnName,
+    operation,
+    createNewColumn: legacyCreateNewColumn,
+    outputMode,
+    newColumnName,
+    results,
+  } = res;
 
   // Create the response structure
   let response = {
@@ -7,14 +17,31 @@ export default async (req, res) => {
     meta: {},
   };
 
-  // Determine the column name to use
+  // Determine whether we should create a new column.
+  // Prefer explicit outputMode when provided; otherwise fall back to legacy boolean.
+  const willCreateNew =
+    typeof outputMode === "string"
+      ? outputMode === "newColumn"
+      : !!legacyCreateNewColumn;
+
+  // Determine the column name to use.
+  // If a new column is requested and the user provided a `newColumnName`, use it.
+  // Otherwise default to original column name with suffix `_anonymized` or `_deanonymized`.
   let targetColumnName;
-  if (createNewColumn) {
-    // Create a new column with a descriptive name
-    targetColumnName =
-      operation === "encrypt"
-        ? `pseudoanonymized_${columnName}`
-        : `deanonymized_${columnName}`;
+  if (willCreateNew) {
+    if (
+      newColumnName &&
+      typeof newColumnName === "string" &&
+      newColumnName.trim().length > 0
+    ) {
+      targetColumnName = newColumnName.trim();
+    } else {
+      // Use suffix at the end of the original name as requested
+      targetColumnName =
+        operation === "encrypt"
+          ? `${columnName}_anonymized`
+          : `${columnName}_deanonymized`;
+    }
   } else {
     // Replace the current column (default behavior)
     targetColumnName = columnName;

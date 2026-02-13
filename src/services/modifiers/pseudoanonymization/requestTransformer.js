@@ -51,10 +51,18 @@ async function makeDecryptionRequest(valueToDecrypt) {
 
 export default async (req) => {
   const { items, props } = req.original;
+  // Determine operation (encrypt / decrypt)
   const operation =
     props.decrypt && props.decrypt.length > 0 ? "decrypt" : "encrypt";
-  const createNewColumn =
-    props.createNewColumn && props.createNewColumn.length > 0;
+
+  // Support new outputMode/newColumnName props:
+  // outputMode: 'replace' | 'newColumn' (default to 'newColumn' per UI change)
+  // newColumnName: optional user-provided name for the new column
+  const outputMode =
+    props.outputMode || (props.createNewColumn ? "newColumn" : "replace");
+  const createNewColumn = outputMode === "newColumn";
+  const newColumnName = props.newColumnName || "";
+
   const columnToProcess = props.selectedColumns[0];
   // Get the first column (the one to be processed)
   const columnData = items[columnToProcess];
@@ -62,6 +70,7 @@ export default async (req) => {
     "**number of rows to anonymize***",
     Object.keys(columnData).length,
   );
+
   // Make requests for all rows based on operation
   const processingPromises = Object.keys(columnData).map(async (rowId) => {
     const originalValue = columnData[rowId][0] || columnData[rowId];
@@ -99,6 +108,8 @@ export default async (req) => {
     columnName: columnToProcess,
     operation: operation,
     createNewColumn: createNewColumn,
+    outputMode: outputMode,
+    newColumnName: newColumnName,
     results: results,
   };
 };
