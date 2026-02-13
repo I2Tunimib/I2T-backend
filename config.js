@@ -1,6 +1,18 @@
 import atokaPeopleExtender from "./src/services/extenders/atokaPeopleExtender/index.js";
 
 export default {
+  //Keycloak configuration
+  keycloak: {
+    enabled: true,
+    // Prefer explicit KEYCLOAK_REALM_URL, but fall back to KEYCLOAK_ISSUER when only that is provided.
+    // This avoids requiring duplicate env vars (KEYCLOAK_REALM_URL + KEYCLOAK_ISSUER).
+    realmUrl:
+      process.env.KEYCLOAK_REALM_URL || process.env.KEYCLOAK_ISSUER || null,
+    jwksUri: process.env.KEYCLOAK_JWKS_URI || null,
+    issuer: process.env.KEYCLOAK_ISSUER || null,
+    backendClientId: process.env.KEYCLOAK_BACKEND_CLIENT_ID || "I2T-backend",
+    frontendClientId: process.env.KEYCLOAK_FRONTEND_CLIENT_ID || "I2T-frontend",
+  },
   // path to dataset files relative to root folder
   datasetFilesPath: "/public/datasets",
   // path to dataset db relative to root folder
@@ -39,6 +51,7 @@ export default {
       ],
       reconcilers: [
         ".DS_Store",
+        "lionLinker",
         "asiaKeywordsMatcher",
         "asiaWikifier",
         "atokaMatch2",

@@ -5,6 +5,7 @@ import config from "../../config/index.js";
 import path from "path";
 import MantisService from "../services/reconciliation/mantis.service.js";
 import ColumnClassifierService from "../services/reconciliation/column-classifier.service.js";
+import LLMColumnClassifierService from "../services/reconciliation/llm-column-classifier.service.js";
 
 const __dirname = path.resolve();
 
@@ -16,7 +17,7 @@ const ReconciliationController = {
       Object.keys(reconcilers).map((key) => ({
         id: key,
         ...reconcilers[key].info.public,
-      }))
+      })),
     );
   },
   reconcile: async (req, res, next) => {
@@ -32,9 +33,13 @@ const ReconciliationController = {
     const io = req.app.get("io");
 
     try {
-    // FULL TABLE → MANTIS
+      // FULL TABLE → MANTIS
       if (target === "fullTable" && method === "alligator") {
-        const result = await MantisService.annotate(idDataset, idTable, req.body);
+        const result = await MantisService.annotate(
+          idDataset,
+          idTable,
+          req.body,
+        );
         if (result.status === "Ok") {
           await MantisService.trackAnnotationStatus({ io, idDataset, idTable });
           return res.json({
@@ -45,7 +50,22 @@ const ReconciliationController = {
         }
       }
       if (target === "schema" && method === "columnClassifier") {
-        await ColumnClassifierService.annotate({idDataset, idTable, io});
+        await ColumnClassifierService.annotate({ idDataset, idTable, io });
+
+        return res.json({
+          datasetId: idDataset,
+          tableId: idTable,
+          schemaStatus: "PENDING",
+        });
+      }
+      if (
+        target === "schema" &&
+        (method === "llmClassifier" ||
+          method === "llmColumnClassifier" ||
+          method === "llm")
+      ) {
+        // Invoke the LLM-based column classifier service which mirrors the python classifier output
+        await LLMColumnClassifierService.annotate({ idDataset, idTable, io });
 
         return res.json({
           datasetId: idDataset,
@@ -96,7 +116,7 @@ const ReconciliationController = {
       try {
         // get candidate entities from LamAPI (Limit entities to 25)
         const lamRes = await axios.get(
-          `${CONFIG.LAMAPI_BASE}/labels?name=${item.label}&limit=25&token=${CONFIG.LAMAPI_TOKEN}`
+          `${CONFIG.LAMAPI_BASE}/labels?name=${item.label}&limit=25&token=${CONFIG.LAMAPI_TOKEN}`,
         );
         if (lamRes.data) {
           response.items.push({
