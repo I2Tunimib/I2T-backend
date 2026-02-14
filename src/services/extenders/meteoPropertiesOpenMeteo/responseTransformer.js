@@ -43,7 +43,7 @@ export default async (req, res) => {
         response.columns[colId].cells = {
           ...response.columns[colId].cells,
           [rowId]: {
-            label: fixedValue,
+            label: fixedValue || '0',
             metadata: [],
           },
         };
