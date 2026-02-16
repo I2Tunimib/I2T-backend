@@ -36,10 +36,10 @@ class ComplianceService {
 
       // Prepare data for LLM
       const tableData = this.prepareTableData(table);
-
+      console.log("TableData", tableData);
       // Build GDPR compliance prompt
       const prompt = this.buildGDPRPrompt(tableData, purpose);
-
+      console.log("prompt", prompt);
       // Initialize OpenAI client
       const openai = new OpenAI({
         apiKey: latin1Safe(
@@ -161,7 +161,7 @@ class ComplianceService {
     const tableJson = JSON.stringify(tableData.sampleData, null, 2);
     const columnsInfo = `Columns: ${tableData.columns.join(", ")}`;
 
-    return latin1Safe(`
+    return `
 Given the specified purpose, determine if the csv table below is GDPR compliant.
 
 Assess whether it contains personal data (Art. 4 GDPR).
@@ -250,7 +250,7 @@ Table:
 ${tableJson}
 
 IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanations, or markdown formatting.
-`);
+`;
   }
 
   /**
