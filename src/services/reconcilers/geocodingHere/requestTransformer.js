@@ -2,7 +2,7 @@ import config from "./index.js";
 import axios from "axios";
 
 const { endpoint } = config.private;
-const { access_token } = config.private;
+const { access_token, here_key } = config.private;
 
 function getAddressFormat(items) {
   return { address: items };
@@ -41,7 +41,11 @@ export default async (req) => {
     });
 
     try {
-      const res = await axios.post(endpoint + "?token=" + access_token, {
+      let url = endpoint + "?token=" + access_token;
+      if (here_key) {
+        url += "&here_api_key=" + here_key;
+      }
+      const res = await axios.post(url, {
         json: addressList.slice(1),
       });
       return {
