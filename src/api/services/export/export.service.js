@@ -6,18 +6,37 @@ import axios from "axios";
 
 const ExportService = {
   rawJson: async ({ columns, rows }) => {
-    return Object.keys(rows).map((rowId) => {
-      const colIds = Object.keys(rows[rowId].cells);
+    // Be defensive: rows or individual row.cells may be missing. Produce one object per row
+    // using the available column labels. Missing cell values produce empty string.
+    const colKeys = Object.keys(columns || {});
+    return Object.keys(rows || {}).map((rowId) => {
+      const row = rows[rowId] || {};
+      const cells = row.cells || {};
 
-      return colIds.reduce((acc, colId) => {
-        acc[columns[colId].label] = rows[rowId].cells[colId].label;
+      return colKeys.reduce((acc, colId) => {
+        const colLabel =
+          columns[colId] && columns[colId].label ? columns[colId].label : colId;
+        const cell = cells[colId] || {};
+        const cellLabel =
+          cell && cell.label !== undefined && cell.label !== null
+            ? cell.label
+            : "";
+        acc[colLabel] = cellLabel;
         return acc;
       }, {});
     });
   },
-  csv: async ({ columns, rows, delimiter, quote, decimalSeparator, includeHeader }) => {
+  csv: async ({
+    columns,
+    rows,
+    delimiter,
+    quote,
+    decimalSeparator,
+    includeHeader,
+  }) => {
     const jsonData = await ExportService.rawJson({ columns, rows });
-    const includeHeaderFlag = includeHeader === true || includeHeader === "true";
+    const includeHeaderFlag =
+      includeHeader === true || includeHeader === "true";
     let csv = parse(jsonData, {
       delimiter,
       quote,
@@ -65,20 +84,32 @@ const ExportService = {
       }));
     };
 
-    const firstRow = Object.keys(columns).reduce((acc, colId, index) => {
-      const { id, status, context, metadata, annotationMeta, ...propsToKeep } =
-        columns[colId];
+    const firstRow = Object.keys(columns || {}).reduce((acc, colId, index) => {
+      const col = columns[colId] || {};
+      const {
+        id,
+        status,
+        context = {},
+        metadata = [],
+        annotationMeta,
+        ...propsToKeep
+      } = col;
 
-      const trimmedLabel = columns[colId].label.trim();
+      const trimmedLabel = (col.label || String(colId)).trim();
 
-      const standardContext = Object.keys(context).reduce((accCtx, prefix) => {
-        const { uri } = context[prefix];
-        return [...accCtx, { prefix: `${prefix}:`, uri }];
-      }, []);
+      // Guard context: it may be undefined or not an object
+      const standardContext = Object.keys(context || {}).reduce(
+        (accCtx, prefix) => {
+          const entry = context[prefix] || {};
+          const uri = entry.uri;
+          return [...accCtx, { prefix: `${prefix}:`, uri }];
+        },
+        [],
+      );
 
-      // Process column metadata
+      // Process column metadata safely
       let processedMetadata = [];
-      if (metadata.length > 0) {
+      if (Array.isArray(metadata) && metadata.length > 0) {
         const metaItem = { ...metadata[0] };
 
         // Convert scores in type array
@@ -108,11 +139,17 @@ const ExportService = {
       return acc;
     }, {});
 
-    const rest = Object.keys(rows).map((rowId) => {
-      const { cells } = rows[rowId];
-      return Object.keys(cells).reduce((acc, colId) => {
-        const { id, metadata, annotationMeta, ...propsToKeep } = cells[colId];
-        const trimmedLabel = columns[colId].label.trim();
+    const rest = Object.keys(rows || {}).map((rowId) => {
+      const row = rows[rowId] || {};
+      const cells = row.cells || {};
+      // Iterate over the column keys to ensure consistent order and presence even if a cell is missing.
+      const colKeys = Object.keys(columns || {});
+      return colKeys.reduce((acc, colId) => {
+        const cell = cells[colId] || {};
+        const { id, metadata = [], annotationMeta, ...propsToKeep } = cell;
+        const trimmedLabel = (
+          columns[colId] && columns[colId].label ? columns[colId].label : colId
+        ).trim();
 
         acc[trimmedLabel] = {
           ...propsToKeep,

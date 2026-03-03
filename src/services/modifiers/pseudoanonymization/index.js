@@ -24,18 +24,38 @@ export default {
         ],
       },
       {
-        id: "createNewColumn",
-        description:
-          "Choose whether to replace the current column or create a new one:",
+        id: "outputMode",
         label: "Column behavior",
-        inputType: "checkbox",
+        description:
+          "Choose whether to replace the current column or create a new one.",
+        inputType: "radio",
+        rules: ["required"],
+        // default to creating a new column (as requested)
+        defaultValue: "newColumn",
         options: [
           {
-            id: "createNewColumn",
-            label: "Create a new column (default: replace current column)",
-            value: "createNewColumn",
+            id: "replace",
+            label: "Replace values in current column",
+            value: "replace",
+          },
+          {
+            id: "newColumn",
+            label: "Create a new column with results",
+            value: "newColumn",
           },
         ],
+      },
+      {
+        id: "newColumnName",
+        label: "New column name",
+        description:
+          "If creating a new column, optionally specify the new column name. If left empty, the original column name will be used with '_anonymized' appended.",
+        inputType: "text",
+        placeholder: "Optional - e.g. address_anonymized",
+        dependsOn: {
+          field: "outputMode",
+          value: "newColumn",
+        },
       },
     ],
   },

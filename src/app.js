@@ -62,16 +62,10 @@ const corsOptions = {
     // Allow no-origin requests (e.g. curl, some same-origin navigation cases)
     if (!incomingOrigin) return callback(null, true);
 
-    const reqOrigin = normalizeOrigin(incomingOrigin);
-    const allowedOrigin = normalizeOrigin(FRONTEND_ORIGIN);
-
-    // Allow if normalized origins match (tolerant to trailing slash differences)
-    if (reqOrigin === allowedOrigin) {
-      return callback(null, true);
-    }
-
-    // Otherwise reject
-    return callback(new Error("Not allowed by CORS"));
+    // Allow any origin by reflecting the incoming origin.
+    // When `credentials: true` is set, the CORS middleware will echo the
+    // request Origin back in the Access-Control-Allow-Origin response header.
+    return callback(null, true);
   },
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization", "x-table-dataset-info"],
