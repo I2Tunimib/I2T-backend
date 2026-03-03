@@ -5,7 +5,7 @@ export default {
   },
   public: {
     group: "Gen AI",
-    name: "COFOG Classifier",
+    name: "COFOG (LLM Classifier)",
     relativeUrl: "",
     description:
       "A classification service that assigns a government department or public organization to the most " +
