@@ -9,6 +9,7 @@ export default {
     description:
       "A flexible LLM-powered reconciliation service that matches text values to entities based on a custom prompt. " +
       "Use the LLM to intelligently reconcile data to knowledge base entities with custom matching logic.<br><br>" +
+      `<strong>LLM model:</strong> ${process.env.LLM_MODEL || "phi4-mini"}<br><br>` +
       "<strong>Input</strong>: Column values to reconcile and custom instructions for matching.<br>" +
       "<strong>Output</strong>: Entity matches with IDs, labels, descriptions, types, and confidence scores.<br><br>" +
       "<strong>How to use:</strong><br>" +

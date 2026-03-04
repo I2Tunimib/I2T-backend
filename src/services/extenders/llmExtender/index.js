@@ -11,6 +11,7 @@ export default {
     description:
       "A flexible LLM-powered extension service that generates new columns based on a custom prompt. " +
       "Use the LLM to intelligently enrich your data by creating additional attributes derived from existing column values.<br><br>" +
+      `<strong>LLM model:</strong> ${process.env.LLM_MODEL || "phi4-mini"}<br><br>` +
       "<strong>Input</strong>: Column values to extend and custom instructions describing how to extend them.<br>" +
       "<strong>Output</strong>: New columns populated with LLM-generated content based on your specifications.<br><br>" +
       "<strong>How to use:</strong><br>" +

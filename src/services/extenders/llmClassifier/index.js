@@ -13,6 +13,7 @@ export default {
       "details, click <a href='https://en.wikipedia.org/wiki/Classification_of_the_Functions_of_Government' " +
       "target='_blank'>here</a>.) options. " +
       "The classification is based on the organization's name, description, country, and Wikidata metadata.<br><br>" +
+      `<strong>LLM model:</strong> ${process.env.LLM_MODEL || "phi4-mini"}<br><br>` +
       "<strong>Input</strong>: Organization details including <em>name</em>, <em>description</em>, <em>country</em> " +
       "and optional <em>Wikidata fields</em> such as description or type.<br>" +
       "<strong>Output</strong>: New columns containing:" +
