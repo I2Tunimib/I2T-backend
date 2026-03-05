@@ -25,36 +25,29 @@ export default {
       },
       {
         id: "outputMode",
-        label: "Column behavior",
+        label: "Output mode",
         description:
-          "Choose whether to replace the current column or create a new one.",
+          "Choose whether to update existing column values or create a new column.",
         inputType: "radio",
         rules: ["required"],
         // default to creating a new column (as requested)
-        defaultValue: "newColumn",
+        defaultValue: "create",
         options: [
-          {
-            id: "replace",
-            label: "Replace values in current column",
-            value: "replace",
-          },
-          {
-            id: "newColumn",
-            label: "Create a new column with results",
-            value: "newColumn",
-          },
+          { id: "update", label: "Update the current column", value: "update" },
+          { id: "create", label: "Create a new column", value: "create" },
         ],
       },
       {
         id: "newColumnName",
         label: "New column name",
         description:
-          "If creating a new column, optionally specify the new column name. If left empty, the original column name will be used with '_anonymized' appended.",
+          "<strong>Optional.</strong> Specify the new column name. If left empty, default name will be used (e.g., " +
+          "columnName_anonymized).",
         inputType: "text",
         placeholder: "Optional - e.g. address_anonymized",
         dependsOn: {
           field: "outputMode",
-          value: "newColumn",
+          value: "create",
         },
       },
     ],

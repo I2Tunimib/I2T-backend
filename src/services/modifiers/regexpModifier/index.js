@@ -123,20 +123,13 @@ export default {
         id: "outputMode",
         label: "Output mode",
         description:
-          "Choose whether to replace the existing column or create a new one.",
+          "Choose whether to update existing column values or create a new column.",
         inputType: "radio",
         rules: ["required"],
+        defaultValue: "update",
         options: [
-          {
-            id: "replace",
-            label: "Replace values in current column",
-            value: "replace",
-          },
-          {
-            id: "newColumn",
-            label: "Create new column with results",
-            value: "newColumn",
-          },
+          { id: "update", label: "Update the current column", value: "update" },
+          { id: "create", label: "Create a new column", value: "create" },
         ],
       },
       {
@@ -150,7 +143,7 @@ export default {
         rules: ["required"],
         dependsOn: {
           field: "outputMode",
-          value: "newColumn",
+          value: "create",
         },
       },
     ],

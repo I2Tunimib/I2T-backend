@@ -98,15 +98,15 @@ export default async (reqArg) => {
   const operation = isDecrypt ? "decrypt" : "encrypt";
 
   // Support new outputMode/newColumnName props:
-  // outputMode: 'replace' | 'newColumn' (default to 'newColumn' per UI change)
+  // outputMode: 'update' | 'create' (default to 'create' per UI change)
   // newColumnName: optional user-provided name for the new column
   const outputMode =
     typeof props.outputMode === "string"
       ? props.outputMode
       : props.createNewColumn
-        ? "newColumn"
-        : "replace";
-  const createNewColumn = outputMode === "newColumn";
+        ? "create"
+        : "update";
+  const createNewColumn = outputMode === "create";
   const newColumnName = props.newColumnName || "";
 
   // Resolve selected columns robustly. Accept either `selectedColumns` (array)

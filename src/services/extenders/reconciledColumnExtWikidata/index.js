@@ -23,7 +23,6 @@ export default {
                 id: 'labels',
                 description: 'Select one or more <strong>properties</strong>:',
                 label: 'wikidata labels',
-                infoText: 'Labels to extend the table',
                 inputType: 'checkbox',
                 rules: ['required'],
                 options: [

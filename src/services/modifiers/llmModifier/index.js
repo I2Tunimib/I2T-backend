@@ -65,24 +65,29 @@ export default {
           value: "joinOp",
         },
       },
-
       {
-        id: "splitRenameMode",
-        label: "Naming for split columns",
-        description: "Choose the naming mode for the new generated columns.",
+        id: "renameMode",
+        label: "Naming for join/split columns",
+        description: "Choose the naming mode for the new joined/generated columns.",
+        infoText: "Default names for join: columnName1_columnName2; for split: columnName_1, columnName_2, etc.",
         inputType: "radio",
         rules: ["required"],
         options: [
           {
             id: "auto",
-            label: "Use default names (e.g., columnName_1, columnName_2, etc.)",
+            label:
+              "Use default names (e.g., for join: columnName1_columnName2; for split: columnName_1, columnName_2, etc.)",
             value: "auto",
           },
-          { id: "custom", label: "Rename new columns", value: "custom" },
+          {
+            id: "custom",
+            label: "Rename new column(s)",
+            value: "custom",
+          },
         ],
         dependsOn: {
           field: "operationType",
-          value: "splitOp",
+          value: ["joinOp", "splitOp"],
         },
       },
       {
@@ -97,7 +102,7 @@ export default {
         dependsOn: {
           and: [
             { field: "operationType", value: "splitOp" },
-            { field: "splitRenameMode", value: "custom" },
+            { field: "renameMode", value: "custom" },
           ],
         },
       },
@@ -105,13 +110,15 @@ export default {
         id: "renameJoinedColumn",
         label: "Rename joined column",
         description:
-          "<strong>Optional:</strong> Specify a custom name for the resulting joined column. " +
-          "If left blank, a default name in the format 'col1_col2' will be applied.",
+          "Specify a custom name for the resulting joined column. ",
         infoText: "",
         inputType: "text",
+        rules:["required"],
         dependsOn: {
-          field: "operationType",
-          value: "joinOp",
+          and: [
+            { field: "operationType", value: "joinOp" },
+            { field: "renameMode", value: "custom" },
+          ],
         },
       },
       {

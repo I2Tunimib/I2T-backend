@@ -387,7 +387,7 @@ export default async (req) => {
     selectedColumns,
     renameJoinedColumn,
     renameNewColumnSplit,
-    splitRenameMode,
+    renameMode,
     prompt: userInstructions,
   } = props;
 
@@ -456,7 +456,7 @@ export default async (req) => {
         selectedColumns,
         renameJoinedColumn: renameJoinedColumn || "",
         renameNewColumnSplit: renameNewColumnSplit || "",
-        splitRenameMode: splitRenameMode || "",
+        renameMode: renameMode || "",
       },
     };
   }
@@ -511,6 +511,7 @@ export default async (req) => {
       operationType,
       selectedColumns,
       columnToJoin: columnToJoin || {},
+      renameMode: renameMode || "",
       renameJoinedColumn: renameJoinedColumn || "",
       llmResponses,
       props: {
@@ -519,7 +520,7 @@ export default async (req) => {
         selectedColumns,
         renameJoinedColumn: renameJoinedColumn || "",
         renameNewColumnSplit: renameNewColumnSplit || "",
-        splitRenameMode: splitRenameMode || "",
+        renameMode: renameMode || "",
       },
     };
   }
@@ -541,7 +542,7 @@ export default async (req) => {
 
     // Determine expected number of parts
     let expectedParts = 2;
-    if (splitRenameMode === "custom" && renameNewColumnSplit) {
+    if (renameMode === "custom" && renameNewColumnSplit) {
       const splitNames = renameNewColumnSplit
         .split(",")
         .map((n) => n.trim())
@@ -576,7 +577,7 @@ export default async (req) => {
     return {
       operationType,
       selectedColumns,
-      splitRenameMode: splitRenameMode || "auto",
+      renameMode: renameMode || "auto",
       renameNewColumnSplit: renameNewColumnSplit || "",
       expectedParts,
       llmResponses,
@@ -585,7 +586,7 @@ export default async (req) => {
         selectedColumns,
         renameJoinedColumn: renameJoinedColumn || "",
         renameNewColumnSplit: renameNewColumnSplit || "",
-        splitRenameMode: splitRenameMode || "",
+        renameMode: renameMode || "",
       },
     };
   }

@@ -68,7 +68,6 @@ export default {
         id: "weatherParams_daily",
         description: "Select one or more <b> daily weather </b> parameters:",
         label: "Daily weather parameters",
-        infoText: "Daily meteo parameters to extend the table",
         inputType: "checkbox",
         rules: ["required"],
         dependsOn: {
@@ -112,7 +111,6 @@ export default {
       {
         id: "weatherParams_hourly",
         description: "Select one or more <b> hourly weather </b> parameters:",
-        infoText: "Hourly meteo parameters to extend the table",
         label: "Hourly weather parameters",
         inputType: "checkbox",
         rules: ["required"],

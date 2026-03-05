@@ -21,7 +21,7 @@ export default async (req, res) => {
   // Prefer explicit outputMode when provided; otherwise fall back to legacy boolean.
   const willCreateNew =
     typeof outputMode === "string"
-      ? outputMode === "newColumn"
+      ? outputMode === "create"
       : !!legacyCreateNewColumn;
 
   // Determine the column name to use.
