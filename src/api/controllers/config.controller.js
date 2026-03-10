@@ -1,5 +1,6 @@
 import { error } from "console";
 import config from "../../config/index.js";
+import ComplianceService from "../services/tables/compliance.service.js";
 
 const {
   extenders: extConfig,
@@ -44,10 +45,12 @@ const ConfigController = {
     }
 
     try {
+      const complianceServices = [ComplianceService.getServiceMetadata()];
       res.json({
         reconcilers,
         extenders,
         modifiers,
+        complianceServices,
         errors,
       });
     } catch (err) {

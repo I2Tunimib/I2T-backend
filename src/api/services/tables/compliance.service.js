@@ -18,6 +18,56 @@ function latin1Safe(s) {
 }
 
 class ComplianceService {
+
+  static getServiceMetadata() {
+    return {
+      id: "gdpr-compliance-check",
+      name: "GDPR Check",
+      group: "Compliance",
+      description: `
+      <div>
+        <p>
+          An LLM-based service designed to evaluate the current state of a table's compliance with regulatory frameworks. 
+          By analyzing data samples and column headers through the lens of a specified processing purpose, the system 
+          determines whether the dataset falls under the scope of GDPR.
+        </p>
+        
+        <p style="margin-top: 10px;">
+          <strong>Input</strong>: The current table and a description of the data processing purpose.<br />
+          <strong>Output</strong>: A table overview (summary of GDPR status and confidence) and a detailed column analysis 
+          (classification, suggested action, reasoning).
+        </p>
+
+        <p style="margin-top: 10px;"><strong>The possible table GDPR statuses include:</strong></p>
+        <ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 10px;">
+          <li><strong>noGDPR</strong>: The table contains no personal data and is outside the scope of GDPR.</li>
+          <li><strong>yesGDPR</strong>: The table contains identifiable personal data and is subject to GDPR requirements.</li>
+          <li><strong>pseudoGDPR</strong>: The table contains pseudonymized data; GDPR still applies, but the risk is reduced.</li>
+        </ul>
+
+        <p><strong>Column classifications:</strong></p>
+        <ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 10px;">
+          <li><strong>personalData</strong>: Directly identifies an individual (e.g., name, email).</li>
+          <li><strong>quasiIdentifiers</strong>: Could indirectly identify a person when combined with other data.</li>
+          <li><strong>nonPersonalData</strong>: Organizational or contextual information.</li>
+          <li><strong>anonymousData</strong>: Fully anonymized data.</li>
+        </ul>
+
+        <p><strong>Suggested actions:</strong></p>
+        <ul style="list-style-type: disc; margin-left: 20px; margin-bottom: 10px;">
+          <li><strong>noChange</strong>: Data is already compliant.</li>
+          <li><strong>pseudonymize</strong>: Replace identifying values with pseudonyms or hashes.</li>
+          <li><strong>generalize</strong>: Reduce data specificity (e.g., exact dates to years).</li>
+          <li><strong>remove</strong>: Delete the column if unnecessary for the specified purpose.</li>
+        </ul>
+        
+        <div style="display: flex; justify-content: center; margin-top: 15px;">
+          PLACEHOLDER_COMPLIANCE_GIF
+        </div>
+      </div>
+    `
+    };
+  }
   /**
    * 1. ENTRY POINT
    */
