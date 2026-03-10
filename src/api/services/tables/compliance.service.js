@@ -68,6 +68,7 @@ class ComplianceService {
       });
 
       const raw = completion.choices[0]?.message?.content;
+      console.log("raw compliance results", raw);
       if (!raw) {
         console.error("[makeCompliance] Empty response from LLM");
         await this.finishWithError({ idDataset, idTable, io });
@@ -103,6 +104,9 @@ class ComplianceService {
         return;
       }
 
+      // Normalize format in case LLM returned { column_name: "...", classification: "..." }
+      finalResult = this.normalizeResult(finalResult);
+
       // Update table with compliance results
       await this.applyResult(idDataset, idTable, finalResult);
 
@@ -118,6 +122,41 @@ class ComplianceService {
         error: err.message,
       });
     }
+  }
+
+  /**
+   * 2b. NORMALIZE RESULT - Convert wrong LLM format to expected format
+   * Handles: { "column_name": "Foo", "classification": "..." }
+   * Converts to: { "Foo": { "classification": "..." } }
+   */
+  static normalizeResult(result) {
+    return result.map((item) => {
+      // Element 0 (table summary) is always correct — leave as-is
+      if (item.table) return item;
+
+      const keys = Object.keys(item);
+      // Already in correct format: single key whose value is an object with classification
+      if (
+        keys.length === 1 &&
+        item[keys[0]] &&
+        typeof item[keys[0]] === "object" &&
+        "classification" in item[keys[0]]
+      ) {
+        return item;
+      }
+
+      // Wrong format: { column_name: "Foo", classification: "...", action: "...", ... }
+      if ("column_name" in item) {
+        const { column_name, ...rest } = item;
+        console.log(
+          `[normalizeResult] Converting wrong format for column: ${column_name}`,
+        );
+        return { [column_name]: rest };
+      }
+
+      // Unknown shape — return as-is
+      return item;
+    });
   }
 
   /**
@@ -218,7 +257,13 @@ For each column, suggest what action to take to make the table compliant, using 
 
 For each column, provide reasoning for the decision and a confidence score.
 
-The response must be in JSON format with this structure:
+The response must be a JSON array where:
+- Element [0] is the table-level summary with key "table"
+- Each subsequent element is a single-key object where THE KEY IS THE EXACT COLUMN NAME (not a property called "column_name")
+
+CRITICAL FORMAT RULE: For column entries, the column name MUST be the JSON object key, not a value. Do NOT use a "column_name" property.
+
+Correct format (column name as key):
 [
   {
     "table": {
@@ -229,7 +274,7 @@ The response must be in JSON format with this structure:
     }
   },
   {
-    "column_name_1": {
+    "<exact column name here>": {
       "classification": "personalData",
       "action": "pseudonymize",
       "reasoning": "...",
@@ -237,6 +282,12 @@ The response must be in JSON format with this structure:
     }
   }
 ]
+
+WRONG format (never use this):
+{ "column_name": "Football Club", "classification": "nonPersonalData", ... }
+
+For the columns in this table (${tableData.columns.join(", ")}), element [1] must look like:
+{ "${tableData.columns[0]}": { "classification": "...", "action": "...", "reasoning": "...", "score": 0.0 } }
 
 Purpose: ${purpose}
 
