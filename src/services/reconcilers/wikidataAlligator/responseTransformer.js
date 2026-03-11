@@ -32,6 +32,7 @@ export default async (req, res) => {
   const { items } = req.original;
   const prefix = config.public.prefix;
   const { cea, cta, cpa } = result.semanticAnnotations;
+  console.log("content of semanti annotations", result.semanticAnnotations);
   // console.log(`*** response alligator *** items: ${JSON.stringify(items)}`);
   // console.log(`*** response alligator *** cea: ${JSON.stringify(cea)}`);
   const response = [];
@@ -39,11 +40,6 @@ export default async (req, res) => {
   const originalColsCta = cta.find((item) => item.idColumn === 0);
   const origianlColTypes = originalColsCta ? originalColsCta.types : [];
 
-  console.log(
-    `*** response alligator *** origianlColTypes: ${JSON.stringify(
-      origianlColTypes,
-    )}`,
-  );
   // NOTE: the header properties are not addressed by the frontend, types are computed by the frontend
   const header = {
     id: items.find((item) => !item.id.includes("$")).id,
@@ -102,11 +98,16 @@ export default async (req, res) => {
         const metadata = foundObj.entities;
         let semTUIMetadata = metadata
           .filter((meta) => meta.id !== "Q1229013")
-          .map(({ delta, types, ...rest }) => ({
+          .map(({ delta, features, types, name, ...rest }) => ({
             ...rest,
-            type: types || [], // Add the "type" field with an empty array
-            // type: [], // Add the "type" field with an empty array
-            id: `${prefix}:${rest.id}`, // Add 'wd:' in front of the id
+            type: (types || [])
+              .filter((t) => t.id)
+              .map((t) => ({ ...t, id: `${prefix}:${t.id}` })),
+            id: `${prefix}:${rest.id}`,
+            name: {
+              value: name,
+              uri: `https://www.wikidata.org/entity/${rest.id}`,
+            },
           }));
 
         const cellAnnotation = {
@@ -115,6 +116,9 @@ export default async (req, res) => {
         };
         // console.log(`*** response alligator *** foundObj.entities: ${JSON.stringify(foundObj.entities)}`);
         response.push(cellAnnotation);
+      } else {
+        // No CEA entry for this cell — push empty metadata so the frontend doesn't show N/A
+        response.push({ id: mention.id, metadata: [] });
       }
     }
   }
