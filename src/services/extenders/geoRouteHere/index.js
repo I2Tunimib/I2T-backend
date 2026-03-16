@@ -30,7 +30,7 @@ export default {
       },
       {
         id: 'poi_property',
-        description: 'Specify whether the destination column contains <strong>Points of Interest (POI)</strong>:\'',
+        description: 'Specify whether the destination column contains <strong>Points of Interest (POI)</strong>:',
         label: 'poi_property',
         inputType: 'checkbox',
         rules: [],

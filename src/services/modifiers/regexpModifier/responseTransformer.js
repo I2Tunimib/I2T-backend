@@ -68,10 +68,10 @@ export default async (req, res) => {
 
   selectedColumns.forEach((col) => {
     // Determine the output column name based on outputMode
-    const outputColumn = outputMode === "newColumn" ? newColumnName : col;
+    const outputColumn = outputMode === "create" ? newColumnName : col;
 
     // Validate new column name if creating a new column
-    if (outputMode === "newColumn") {
+    if (outputMode === "create") {
       if (!newColumnName || newColumnName.trim() === "") {
         throw new Error(
           "New column name is required when creating a new column.",

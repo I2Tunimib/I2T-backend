@@ -7,7 +7,7 @@ export default async (req, serviceResponse) => {
     columnToJoin,
     renameJoinedColumn,
     renameNewColumnSplit,
-    splitRenameMode,
+    renameMode,
     expectedParts,
   } = serviceResponse;
 
@@ -58,10 +58,14 @@ export default async (req, serviceResponse) => {
       ...Object.keys(columnToJoin || {}),
     ];
 
-    const newColName =
-      renameJoinedColumn && renameJoinedColumn.trim() !== ""
-        ? renameJoinedColumn.trim()
+      const newColName =
+      renameMode === "custom"
+        ? (renameJoinedColumn || "").trim()
         : `${allColumnsToJoin.join("_")}`;
+
+    if (renameMode === "custom" && !newColName) {
+      throw new Error("Please provide a name for the joined column.");
+    }
 
     response.columns[newColName] = {
       label: newColName,
@@ -104,7 +108,7 @@ export default async (req, serviceResponse) => {
 
     // Determine column names for split results
     let splitNames = [];
-    if (splitRenameMode === "custom" && renameNewColumnSplit) {
+    if (renameMode === "custom" && renameNewColumnSplit) {
       splitNames = renameNewColumnSplit
         .split(",")
         .map((n) => n.trim())
