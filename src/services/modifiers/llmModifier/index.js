@@ -125,7 +125,7 @@ export default {
         id: "prompt",
         description:
           "Write instructions for how to modify the values of the cells.",
-        label: "Reconciliation instructions",
+        label: "Modification prompt",
         inputType: "textArea",
         rules: ["required"],
       },
