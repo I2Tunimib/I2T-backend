@@ -280,7 +280,7 @@ export default async (req, res) => {
   } else {
     const columnToProcess = selectedColumns[0];
     const columnData = items[columnToProcess];
-    const newColumnName = outputMode === "update" ? columnToProcess : `formatted_${columnToProcess}`;
+    const newColumnName = outputMode === "update" ? columnToProcess : `${columnToProcess}_formatted`;
 
     response.columns[newColumnName] = {
       label: outputMode === "update" ? columnToProcess : `${newColumnName}`,

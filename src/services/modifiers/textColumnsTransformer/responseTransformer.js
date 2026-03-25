@@ -69,11 +69,12 @@ export default async (req) => {
     let maxParts;
     let extractParts;
 
+    const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
+    if (!separatorFound) {
+      throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
+    }
+
     if (splitMode === "separatorAll") {
-      const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
-      if (!separatorFound) {
-        throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
-      }
 
       const splitSamples = rowEntries.map(([_, val]) => String(val?.[0] ?? "").split(sep));
       maxParts = Math.max(...splitSamples.map((p) => p.length));

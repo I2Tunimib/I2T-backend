@@ -35,7 +35,7 @@ export default {
         id: "prompt",
         description:
           "Write instructions for processing the cell data. The LLM will automatically receive the cell content. Be specific about what each output column should contain:",
-        label: "Processing prompt",
+        label: "Extension prompt",
         inputType: "textArea",
       },
     ],
