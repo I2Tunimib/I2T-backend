@@ -124,13 +124,13 @@ export default async (req) => {
     .map((item) => {
       const idMatch = item.id.match(/r(\d+)\$/);
       return {
-        idRow: idMatch ? Number(idMatch[1]) + 1 : null, // Extract the number between "r" and "$"
+        idRow: idMatch ? Number(idMatch[1]) : null, // Extract the number between "r" and "$"
         data: [item.label], // Create an array with the label
       };
     });
   // Modify this part to handle specific columns correctly
   for (const row of rows) {
-    const rowIndex = "r" + (row.idRow - 1);
+    const rowIndex = "r" + row.idRow;
 
     // Add standard column2/3/4 data
     // for (const key of ["column2", "column3", "column4"]) {

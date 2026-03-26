@@ -91,7 +91,7 @@ export default async (req, res) => {
     // console.log(`*** response alligator *** idRow: ${JSON.stringify(idRow)}`);
     if (idRow !== -1) {
       const foundObj = cea.find(
-        (obj) => obj.idRow === idRow + 1 && obj.idColumn === 0,
+        (obj) => obj.idRow === idRow && obj.idColumn === 0,
       );
       // console.log(`*** response alligator *** foundObj: ${JSON.stringify(foundObj)}`);
       if (foundObj !== undefined) {
