@@ -51,7 +51,7 @@ export default {
         label: "Reference column",
         description: "Select the reference column containing values to reconcile the selected column",
         infoText: "",
-        inputType: "selectColumns",
+        inputType: "selectColumnAll",
         rules: ["required"],
       },
     ],
