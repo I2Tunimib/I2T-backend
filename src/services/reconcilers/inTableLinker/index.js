@@ -49,8 +49,9 @@ export default {
       {
         id: "columnToReconcile",
         label: "Reference column",
-        description: "Select the reference column containing values to reconcile the selected column",
-        infoText: "",
+        description: "Select the reference column for value matching.",
+        infoText: "To reconcile a column containing IDs with itself, select that same column as the reference. " +
+          "(e.g., reconcile the 'wikidataID' column using the IDs within the same column.)",
         inputType: "selectColumnAll",
         rules: ["required"],
       },
