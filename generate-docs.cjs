@@ -90,8 +90,6 @@ function cleanDescription(raw) {
     )
     .replace(/\)\./g, ').')
 
-    .replace(/\*\*Output\*\*:/g, '<br>**Output**:')
-
     .replace(
       /\$\{process\.env\.LLM_MODEL\s*\|\|\s*"([^"]+)"\}/g,
       process.env.LLM_MODEL || '$1'
@@ -111,6 +109,7 @@ function cleanDescription(raw) {
     .replace(/^[ \t]+/gm, '')
     .replace(/^\s*\n/gm, '\n')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/\*\*Output\*\*:/g, '<br>**Output**:')
 
     .trim();
 }
