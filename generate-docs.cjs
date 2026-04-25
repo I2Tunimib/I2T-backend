@@ -104,7 +104,7 @@ function cleanDescription(raw) {
     .replace(/(<br\s*\/?>\s*){2,}/g, '\n\n')
     .replace(/<br\s*\/?>/g, '\n')
 
-    .replace(/PLACEHOLDER_COMPLIANCE_GIF/g, '![Compliance GIF](./compliance.gif)')
+    .replace(/PLACEHOLDER_COMPLIANCE_GIF/g, '![Compliance GIF](/img/compliance.gif)')
 
     .replace(/<[^>]+>/g, '')
 
