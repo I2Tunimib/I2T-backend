@@ -78,13 +78,14 @@ function cleanDescription(raw) {
   return raw
     .replace(/^`|`$/g, '')
 
+    .replace(/{/g, '&#123;')
+    .replace(/}/g, '&#125;')
+
     .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
 
-    .replace(/<div[^>]*>/gi, '')
-    .replace(/<\/div>/gi, '\n')
-    .replace(/<p[^>]*>/gi, '')
-    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<(div|p|span|section)[^>]*>/gi, '')
+    .replace(/<\/(div|p|span|section)>/gi, '\n\n')
 
     .replace(/<li[^>]*>(.*?)<\/li>/gi, '* $1\n')
     .replace(/<ul[^>]*>/gi, '\n')
