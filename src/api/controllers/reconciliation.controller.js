@@ -29,7 +29,7 @@ const ReconciliationController = {
   },
   automaticAnnotation: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    const { target, method } = req.body;
+    const { target, method, useLLM } = req.body;
     const io = req.app.get("io");
 
     try {
@@ -39,6 +39,7 @@ const ReconciliationController = {
           idDataset,
           idTable,
           req.body,
+          Boolean(useLLM),
         );
         if (result.status === "Ok") {
           await MantisService.trackAnnotationStatus({ io, idDataset, idTable });

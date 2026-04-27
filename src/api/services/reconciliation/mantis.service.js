@@ -401,7 +401,16 @@ const MantisService = {
     for (const table of pendingTables) {
       const { id: idTable, idDataset } = table;
       // const { mantisId: mantisDatasetId } = await FileSystemService.findOneDataset(localDatasetId);
-      const result = await MantisService.getTable(idDataset, idTable);
+      let result;
+      try {
+        result = await MantisService.getTable(idDataset, idTable);
+      } catch (err) {
+        log(
+          "mantis",
+          `Could not reach Mantis for table ${idTable} (dataset ${idDataset}): ${err.message}`,
+        );
+        continue;
+      }
       if (result) {
         if (result.status === "DONE") {
           const annotatedTable = await handleAnnotationCompletion({
@@ -416,13 +425,14 @@ const MantisService = {
       }
     }
   },
-  annotate: async (idDataset, idTable, data) => {
+  annotate: async (idDataset, idTable, data, useLLM = false) => {
     const req = getAnnotationRequest(idDataset, idTable, data);
+    const processorParam = useLLM ? "&processor_id=llm-processor" : "";
 
     // Post to Alligator create endpoint
     try {
       const result = await axios.post(
-        `${MANTIS}/dataset/${idDataset}/table/json?token=${MANTIS_AUTH_TOKEN}`,
+        `${MANTIS}/dataset/${idDataset}/table/json?token=${MANTIS_AUTH_TOKEN}${processorParam}`,
         req,
       );
       // normalize to previous expected shape

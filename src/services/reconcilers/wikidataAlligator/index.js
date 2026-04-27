@@ -52,6 +52,17 @@ export default {
         inputType: "multipleColumnSelect",
         rules: [],
       },
+      {
+        id: "useLLM",
+        description:
+          "Use LLM-based annotation instead of the default ML model.",
+        label: "LLM mode",
+        infoText:
+          "When enabled, Alligator will use a Large Language Model to rank entity candidates instead of the default ML pipeline.",
+        inputType: "checkbox",
+        options: [{ id: "useLLM", value: "llm", label: "Use LLM mode" }],
+        rules: [],
+      },
       //   {
       //     id: "column2",
       //     description: "Optional column to set the context.",

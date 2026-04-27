@@ -13,6 +13,10 @@ const { relativeUrl } = config.public; // /dataset
 
 export default async (req) => {
   const { tableId, datasetId, columnName } = req.original.props;
+  const useLLMMode =
+    Array.isArray(req.original.props.useLLM) &&
+    req.original.props.useLLM.includes("llm");
+  console.log(`*** request alligator *** useLLMMode: ${useLLMMode}`);
 
   // fs.writeFile('../../fileSemTUI/requestREC-UI-Alligator.json', JSON.stringify(req), function (err) {
   //     if (err) throw err;
@@ -203,8 +207,12 @@ export default async (req) => {
   try {
     let postStatus;
     let useLegacyApi = false;
+    const processorParam = useLLMMode ? "&processor_id=llm-processor" : "";
     try {
-      const res = await axios.post(`${postUrl}?token=${access_token}`, newBody);
+      const res = await axios.post(
+        `${postUrl}?token=${access_token}${processorParam}`,
+        newBody,
+      );
       postStatus = res.status;
     } catch (err) {
       const errStatus = err?.response?.status;
@@ -233,7 +241,7 @@ export default async (req) => {
           },
         ];
         const legacyRes = await axios.post(
-          `${endpoint}${relativeUrl}/createWithArray?token=${access_token}`,
+          `${endpoint}${relativeUrl}/createWithArray?token=${access_token}${processorParam}`,
           legacyBody,
         );
         postStatus = legacyRes.status;
