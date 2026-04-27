@@ -23,64 +23,26 @@ const docsContent = {
 };
 
 function extractDescription(content) {
-  const start = content.indexOf('description:');
-  if (start === -1) return null;
-
-  let i = start + 'description:'.length;
-
-  while (/\s/.test(content[i])) i++;
-
-  let result = '';
-
-  while (i < content.length) {
-    const quote = content[i];
-
-    if (!['"', "'", '`'].includes(quote)) break;
-
-    i++;
-
-    let escaped = false;
-
-    while (i < content.length) {
-      const char = content[i];
-
-      if (escaped) {
-        result += char;
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-        result += char;
-      } else if (char === quote) {
-        break;
-      } else {
-        result += char;
-      }
-
-      i++;
-    }
-
-    i++;
-
-    result += ' ';
-
-    while (/\s/.test(content[i])) i++;
-
-    if (content[i] !== '+') break;
-
-    i++;
-    while (/\s/.test(content[i])) i++;
+  let match = content.match(/description:\s*`([\s\S]*?)`/);
+  if (match) {
+    return match[1].replace(/\$\{[^}]+\}/g, '');
   }
 
-  return result;
+  match = content.match(/description:\s*((?:"[^"]*"|'[^']*'|`[^`]*`|\s*\+\s*)+)/);
+
+  if (!match) return null;
+
+  return match[1]
+    .split('+')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => part.replace(/^["'`]|["'`]$/g, ''))
+    .join('')
+    .replace(/\$\{[^}]+\}/g, '');
 }
 
 function cleanDescription(raw) {
   return raw
-    .replace(/^`|`$/g, '')
-
-    .replace(/{/g, '&#123;')
-    .replace(/}/g, '&#125;')
-
     .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
 
@@ -125,11 +87,7 @@ function processServiceFile(filePath, defaultCategory) {
   const skipList = ['asiaKeywordsMatcher', 'asiaWikifier', 'atokaMatch2', 'atokaPeople', 'asiaPeopleExtender'];
   if (skipList.some(skip => filePath.includes(skip))) return;
 
-  const description = cleanDescription(
-    rawDescription
-      .replace(/"\s*\+\s*`/g, '')
-      .replace(/`\s*\+\s*"/g, '')
-  );
+  const description = cleanDescription(rawDescription);
 
   const group = groupMatch ? groupMatch[1] : "";
 
