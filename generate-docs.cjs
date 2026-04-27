@@ -76,41 +76,34 @@ function extractDescription(content) {
 
 function cleanDescription(raw) {
   return raw
-    .replace(/<\/?div[^>]*>/g, '')
+    .replace(/^`|`$/g, '')
 
-    .replace(/<p[^>]*>/g, '')
-    .replace(/<\/p>/g, '\n\n')
+    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+    .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
 
-    .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
-    .replace(/<code>(.*?)<\/code>/g, '`$1`')
+    .replace(/<div[^>]*>/gi, '')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<\/p>/gi, '\n\n')
 
-    .replace(
-      /<a\s+href=['"]([^'"]+)['"][^>]*>(.*?)<\/a>/g,
-      '[$2]($1)'
-    )
-    .replace(/\)\./g, ').')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi, '* $1\n')
+    .replace(/<ul[^>]*>/gi, '\n')
+    .replace(/<\/ul>/gi, '%%ENDLIST%%')
 
-    .replace(
-      /\$\{process\.env\.LLM_MODEL\s*\|\|\s*"([^"]+)"\}/g,
-      process.env.LLM_MODEL || '$1'
-    )
+    .replace(/<br\s*\/?>/gi, '\n')
 
-    .replace(/<ul[^>]*>/g, '\n')
-    .replace(/<\/ul>/g, '\n')
-    .replace(/<li>(.*?)<\/li>/g, '- $1\n')
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n')
 
-    .replace(/(<br\s*\/?>\s*){2,}/g, '\n\n')
-    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/(\*\*Input\*\*:[^\n]+)/g, '$1  ')
+    .replace(/%%ENDLIST%%\n\*\*Output\*\*:/g, '\n\n**Output**:')
+    .replace(/\n+\*\*Output\*\*:/g, '\n**Output**:')
+
+    .replace(/%%ENDLIST%%/g, '\n\n')
+    .replace(/\n{3,}/g, '\n\n')
 
     .replace(/PLACEHOLDER_COMPLIANCE_GIF/g, '![Compliance GIF](/img/compliance.gif)')
-
-    .replace(/<[^>]+>/g, '')
-
-    .replace(/^[ \t]+/gm, '')
-    .replace(/^\s*\n/gm, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\*\*Output\*\*:/g, '<br>**Output**:')
-
     .trim();
 }
 
@@ -119,7 +112,7 @@ function processServiceFile(filePath, defaultCategory) {
 
   const content = fs.readFileSync(filePath, 'utf-8');
 
-  const nameMatch = content.match(/name:\s*"(.*?)"/);
+  const nameMatch = content.match(/name:\s*["'](.*?)["']/);
   const groupMatch = content.match(/group:\s*"(.*?)"/);
 
   const rawDescription = extractDescription(content);
@@ -127,6 +120,9 @@ function processServiceFile(filePath, defaultCategory) {
   if (!nameMatch || !rawDescription) return;
 
   const name = nameMatch[1];
+
+  const skipList = ['asiaKeywordsMatcher', 'asiaWikifier', 'atokaMatch2', 'atokaPeople', 'asiaPeopleExtender'];
+  if (skipList.some(skip => filePath.includes(skip))) return;
 
   const description = cleanDescription(
     rawDescription

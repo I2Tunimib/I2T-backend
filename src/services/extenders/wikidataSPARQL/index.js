@@ -14,12 +14,11 @@ export default {
         '<li>Body of the query (e.g., <code>?item wdt:P2044 ?elevation</code>).</li>' +
         '<li>ORDER BY and LIMIT clause (optionally).</li>' +
       '</ul>' +
-      'While the variable <code>?item</code> is automatically included with the values from the selected column, and' +
-      'also the VALUES clause is automatically added.<br>'+
       '<strong>Output</strong>: A new column for each selected variable containing the retrieved property values ' +
       'for each entity, returned as strings or numbers according to Wikidata property types.<br><br>' +
-      '<strong>Notes</strong>: Some properties may be missing for certain entities in Wikidata. ' +
-      'Ensure variable names correspond to properties used in the query body.',
+      '<strong>Note</strong>: While the variable <code>?item</code> is automatically included with the values from the ' +
+      'selected column, also the VALUES clause is automatically added. Some properties may be missing for certain ' +
+      'entities in Wikidata. Ensure variable names correspond to properties used in the query body.',
     formParams: [
       {
         id: "variables",
