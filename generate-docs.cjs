@@ -38,10 +38,15 @@ function extractDescription(content) {
     .filter(Boolean)
     .map(part => part.replace(/^["'`]|["'`]$/g, ''))
     .join('')
+    .replace(
+      /\$\{process\.env\.LLM_MODEL\s*\|\|\s*"([^"]+)"\}/g,
+      process.env.LLM_MODEL || '$1'
+    )
     .replace(/\$\{[^}]+\}/g, '');
 }
 
-function cleanDescription(raw) {
+function cleanDescription(raw, category) {
+  const isCompliance = category === 'compliance';
   return raw
     .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
@@ -49,7 +54,7 @@ function cleanDescription(raw) {
     .replace(/<(div|p|span|section)[^>]*>/gi, '')
     .replace(/<\/(div|p|span|section)>/gi, '\n\n')
 
-    .replace(/<li[^>]*>(.*?)<\/li>/gi, '* $1\n')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi, isCompliance ? '* $1' : '* $1\n')
     .replace(/<ul[^>]*>/gi, '\n')
     .replace(/<\/ul>/gi, '%%ENDLIST%%')
 
@@ -87,7 +92,7 @@ function processServiceFile(filePath, defaultCategory) {
   const skipList = ['asiaKeywordsMatcher', 'asiaWikifier', 'atokaMatch2', 'atokaPeople', 'asiaPeopleExtender'];
   if (skipList.some(skip => filePath.includes(skip))) return;
 
-  const description = cleanDescription(rawDescription);
+  const description = cleanDescription(rawDescription, defaultCategory);
 
   const group = groupMatch ? groupMatch[1] : "";
 
