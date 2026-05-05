@@ -49,6 +49,7 @@ function cleanDescription(raw, category) {
   const isCompliance = category === 'compliance';
   return raw
     .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+    .replace(/<em[^>]*>\s*([\s\S]*?)\s*<\/em>/gi, '_$1_')
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
 
     .replace(/<(div|p|span|section)[^>]*>/gi, '')
