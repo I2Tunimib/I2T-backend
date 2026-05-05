@@ -16,8 +16,8 @@ export default {
       "<strong>Note</strong>: Requires access to the GeoNames service",
     relativeUrl: "/dataset",
     prefix: "geoCoord",
-    uri: "http://www.google.com/maps/place/",
-    searchPattern: "https://www.google.com/maps/search/?api=1&query={label}/",
+    uri: "https://www.openstreetmap.org/",
+    searchPattern: "https://www.openstreetmap.org/search/?query={label}",
     listTypes: "http://www.geonames.org/export/codes.html",
     listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
