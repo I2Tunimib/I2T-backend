@@ -26,6 +26,26 @@ export default {
         rules: ['required']
       },
       {
+        id: "mode",
+        description: "Select the travel mode for route calculation:",
+        label: "Travel Mode",
+        inputType: "radio",
+        rules: ["required"],
+        options: [
+          {
+            id: "car",
+            label: "By car",
+            value: "car",
+          },
+          {
+            id: "foot",
+            label:
+              "By foot",
+            value: "foot",
+          },
+        ],
+      },
+      {
         id: 'property',
         description: 'Select one or more <strong>properties</strong>:',
         label: 'Property',

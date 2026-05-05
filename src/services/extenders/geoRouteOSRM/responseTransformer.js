@@ -1,11 +1,3 @@
-function editRowDict(RowDict) {
-  let newRowDict = {};
-  Object.keys(RowDict).forEach(row => {
-    newRowDict[RowDict[row].origin.toString() + RowDict[row].destination.toString()] = row;
-  })
-  return newRowDict
-}
-
 function getPropRoute(item, prop) {
   // Ok if route founded
   if (item.code === "Ok" && item.routes && item.routes.length > 0) {
@@ -31,6 +23,7 @@ export default async (req, res) => {
   const { props } = req.original;
   const property = props.property;
 
+  const mode = props.mode;
   const start_label = res.start;
   const end_label = res.end;
   const dict = res.dict
@@ -42,17 +35,19 @@ export default async (req, res) => {
   }
 
   property.forEach(prop => {
-    if(prop !== "route"){
-      response.columns[prop] = {
-        label: prop,
+    const propId = `${prop}_${mode}`;
+    const columnLabel = `${prop}_${mode}`;
+    if (prop !== "route") {
+      response.columns[propId] = {
+        label: columnLabel,
         kind: 'literal',
         entity: [],
         metadata: [],
         cells: {}
       }
-    }else{
-      response.columns[prop] = {
-        label: prop,
+    } else {
+      response.columns[propId] = {
+        label: columnLabel,
         kind: 'entity',
         entity: [
           {
@@ -142,25 +137,24 @@ export default async (req, res) => {
       }
     }
 
-    response.columns[prop].metadata[0] = {
-      "id": "path_" + start_label + "_" + end_label,
+    response.columns[propId].metadata[0] = {
+      "id": "path_" + start_label + "_" + end_label + "_" + mode,
       "name": prop,
       "entity": colEntity,
       "type": colType,
       "property": colProperty
     }
 
-
     Object.keys(dict).forEach(index => {
       let row_id = dict[index];
       let label_result = getPropRoute(res[index], prop)
-      if(prop !== "route"){
-        response.columns[prop].cells[row_id] = {
+      if (prop !== "route") {
+        response.columns[propId].cells[row_id] = {
           label: label_result,
           metadata: []
         }
-      }else{
-        response.columns[prop].cells[row_id] = {
+      } else {
+        response.columns[propId].cells[row_id] = {
           label: label_result,
           metadata: [{
             'id': String("georss:" + label_result),

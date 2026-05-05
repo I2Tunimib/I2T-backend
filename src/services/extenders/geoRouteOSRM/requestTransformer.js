@@ -20,6 +20,7 @@ export default async (req) => {
   const { items, props } = req.original;
   const start = items[Object.keys(items)[0]];
   const endCol = props.end;
+  const mode = props.mode || 'car';
 
   let promises = [];
   let RowDict = {};
@@ -37,7 +38,8 @@ export default async (req) => {
 
     if (origin && destCoords) {
       // URL OSRM: endpoint/long,lat;long,lat?overview=full
-      const url = `${endpoint}${origin};${destCoords}?overview=full&geometries=polyline`;
+      const url = `${endpoint}-${mode}/route/v1/driving/${origin};${destCoords}?overview=full&geometries=polyline`;
+      console.log("URL", url);
       promises.push(axios.get(url).catch(e => ({ data: { code: 'Error' } })));
       RowDict[count] = rowId;
       count++;
@@ -51,5 +53,6 @@ export default async (req) => {
     dict: RowDict,
     start: Object.keys(items)[0],
     end: props.end[Object.keys(props.end)[0]][2],
+    mode: mode,
   };
 };
