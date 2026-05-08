@@ -1,3 +1,5 @@
+import { getOSMData } from "../../../utils/osmUtils.js";
+
 export default async (req) => {
   const { columnName, prefix, columnToReconcile } = req.original.props;
   const reconcilers = req.config.reconcilers || [];
@@ -153,6 +155,7 @@ export default async (req) => {
           const res = await fetch(url);
           const data = await res.json();
           const item = data.geonames?.[0];
+          const osm = await getOSMData(lat, lng);
           return {
             description: item?.name || "",
             type: [
@@ -161,6 +164,8 @@ export default async (req) => {
                 name: item?.fcodeName || "",
               },
             ],
+            osmId: osm.osmId,
+            osmType: osm.osmType
           };
         } catch (err) {
           console.error("Error GeocodingGeonames:", err);
@@ -219,6 +224,8 @@ export default async (req) => {
             type: metadataInfo.type,
             match: true,
             score: 1.00,
+            osmId: metadataInfo.osmId,
+            osmType: metadataInfo.osmType
           },
         ],
       });

@@ -128,4 +128,46 @@ router.get("/geonamesCoordinates", async (req, res) => {
   }
 });
 
+// OpenStreetMap (Nominatim Proxy)
+router.get("/osm", async (req, res) => {
+  const { id } = req.query;
+  let url = "";
+  const userAgent = { "User-Agent": "SemTX/1.0" };
+
+  try {
+    if (id.includes(",")) {
+      // Raw Coordinate
+      const [lat, lon] = id.split(",");
+      url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14`;
+    } else if (id.includes("/")) {
+      // Relation/Way/Node
+      const [type, osmId] = id.split("/");
+      const prefix = type.charAt(0).toUpperCase(); // R, W, o N
+      url = `https://nominatim.openstreetmap.org/lookup?osm_ids=${prefix}${osmId}&format=json`;
+    }
+
+    if (!url) return res.status(400).json({ error: "Invalid ID format" });
+
+    const response = await fetch(url, { headers: userAgent });
+    const data = await response.json();
+    console.log("OSM data:", data);
+
+    const item = Array.isArray(data) ? data[0] : data;
+
+    if (!item || item.error) {
+      return res.status(404).json({ error: "No OSM data found" });
+    }
+
+    res.json({
+      name: item.display_name?.split(",")[0] || "Unknown",
+      osmId: item.osm_id,
+      osmType: item.osm_type,
+      lat: item.lat,
+      lon: item.lon
+    });
+  } catch (err) {
+    res.status(500).json({ error: "OSM request failed" });
+  }
+});
+
 export default router;

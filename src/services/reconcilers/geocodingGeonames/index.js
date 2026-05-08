@@ -16,7 +16,7 @@ export default {
       "<strong>Note</strong>: Requires access to the GeoNames service",
     relativeUrl: "/dataset",
     prefix: "geoCoord",
-    uri: "https://www.openstreetmap.org/",
+    uri: "https://www.openstreetmap.org/{osmType}/{osmId}",
     searchPattern: "https://www.openstreetmap.org/search/?query={label}",
     listTypes: "http://www.geonames.org/export/codes.html",
     listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
