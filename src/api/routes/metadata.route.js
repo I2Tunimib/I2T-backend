@@ -72,10 +72,37 @@ router.get("/lionlinker", async (req, res) => {
 
 //Geonames
 router.get("/geonames", async (req, res) => {
-  const { id } = req.query;
+  const { id, context } = req.query;
   const endpoint = process.env.GEONAMES;
   const token = process.env.GEONAMES_TOKEN;
   const cleanId = id.replace(/^geo:/, "").trim();
+
+  if (context && context === "typeTab") {
+    try {
+      const codesUrl = "http://download.geonames.org/export/dump/featureCodes_en.txt";
+      const response = await fetch(codesUrl);
+      const textData = await response.text();
+
+      const lines = textData.split("\n");
+
+      const matchedLine = lines.find((line) => {
+        const parts = line.split("\t");
+        return parts[0] && parts[0].endsWith(`.${cleanId.toUpperCase()}`);
+      });
+
+      if (matchedLine) {
+        const parts = matchedLine.split("\t");
+        return res.json({
+          name: parts[1],
+          description: parts[2] || "GeoNames Feature Code",
+          type: []
+        });
+      }
+    } catch (e) {
+      console.error("Error in fetching feature code:", e);
+      return res.status(500).json({ error: "Failed to fetch feature code mapping" });
+    }
+  }
 
   const url = `${endpoint}/getJSON?geonameId=${cleanId}&username=${token}`;
   console.log("url", url);
