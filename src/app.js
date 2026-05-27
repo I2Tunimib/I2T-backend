@@ -11,6 +11,7 @@ import config from "./config/index.js";
 import { colorString } from "./utils/log.js";
 import zipTmpFileMiddleware from "./api/middleware/zip-tmp-file.middleware.js";
 import logger from "./api/middleware/logger.js";
+import loggerJson from "./api/middleware/logger-json.js";
 const __dirname = path.resolve();
 
 const { ENV, PORT } = config;
@@ -100,6 +101,7 @@ app.use(
 );
 // Apply logger middleware after body parsing
 app.use(logger);
+app.use(loggerJson);
 app.use("/api", routes);
 
 // If production redirect to '/api'

@@ -18,7 +18,6 @@ function latin1Safe(s) {
 }
 
 class ComplianceService {
-
   static getServiceMetadata() {
     return {
       id: "gdpr-compliance-check",
@@ -27,14 +26,14 @@ class ComplianceService {
       description: `
       <div>
         <p>
-          An LLM-based service designed to evaluate the current state of a table's compliance with regulatory frameworks. 
-          By analyzing data samples and column headers through the lens of a specified processing purpose, the system 
+          An LLM-based service designed to evaluate the current state of a table's compliance with regulatory frameworks.
+          By analyzing data samples and column headers through the lens of a specified processing purpose, the system
           determines whether the dataset falls under the scope of GDPR.
         </p>
-        
+
         <p style="margin-top: 10px;">
           <strong>Input</strong>: The current table and a description of the data processing purpose.<br />
-          <strong>Output</strong>: A table overview (summary of GDPR status and confidence) and a detailed column analysis 
+          <strong>Output</strong>: A table overview (summary of GDPR status and confidence) and a detailed column analysis
           (classification, suggested action, reasoning).
         </p>
 
@@ -60,12 +59,12 @@ class ComplianceService {
           <li><strong>generalize</strong>: Reduce data specificity (e.g., exact dates to years).</li>
           <li><strong>remove</strong>: Delete the column if unnecessary for the specified purpose.</li>
         </ul>
-        
+
         <div style="display: flex; justify-content: center; margin-top: 15px;">
           PLACEHOLDER_COMPLIANCE_GIF
         </div>
       </div>
-    `
+    `,
     };
   }
   /**
@@ -196,12 +195,16 @@ class ComplianceService {
       }
 
       // Wrong format: { column_name: "Foo", classification: "...", action: "...", ... }
-      if ("column_name" in item) {
-        const { column_name, ...rest } = item;
+      //           or: { name: "Foo", classification: "...", action: "...", ... }
+      const nameKey =
+        "column_name" in item ? "column_name" : "name" in item ? "name" : null;
+      if (nameKey) {
+        const columnName = item[nameKey];
+        const { column_name, name, ...rest } = item;
         console.log(
-          `[normalizeResult] Converting wrong format for column: ${column_name}`,
+          `[normalizeResult] Converting wrong format for column: ${columnName}`,
         );
-        return { [column_name]: rest };
+        return { [columnName]: rest };
       }
 
       // Unknown shape — return as-is

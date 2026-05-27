@@ -1,7 +1,7 @@
 export default async (req) => {
   const { columnName, prefix, columnToReconcile } = req.original.props;
   const reconcilers = req.config.reconcilers || [];
-  const matchedReconciler = reconcilers.find(r => r.prefix === prefix);
+  const matchedReconciler = reconcilers.find((r) => r.prefix === prefix);
   const targetUri = matchedReconciler?.uri || "";
   const targetRelativeUrl = matchedReconciler?.relativeUrl || "";
   //console.log("Matched reconciler for prefix:", prefix, matchedReconciler.prefix);
@@ -29,13 +29,15 @@ export default async (req) => {
           const url = `https://www.wikidata.org/wiki/Special:EntityData/${cleanId}.json`;
           console.log("Wikidata fetch URL:", url);
 
-          const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+          const res = await fetch(url, {
+            headers: { Accept: "application/json" },
+          });
           const data = await res.json();
           const entity = data.entities?.[cleanId];
           const description = entity?.descriptions?.en?.value || "";
           const typeClaims = entity?.claims?.P31 || [];
           const typeIds = typeClaims
-            .map(c => c.mainsnak?.datavalue?.value?.id)
+            .map((c) => c.mainsnak?.datavalue?.value?.id)
             .filter(Boolean);
 
           let type = [];
@@ -44,7 +46,7 @@ export default async (req) => {
             const typesUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${idsParam}&format=json&origin=*`;
             const typeRes = await fetch(typesUrl);
             const typeData = await typeRes.json();
-            type = Object.keys(typeData.entities || {}).map(id => ({
+            type = Object.keys(typeData.entities || {}).map((id) => ({
               id,
               name: typeData.entities[id]?.labels?.en?.value || id,
             }));
@@ -63,7 +65,9 @@ export default async (req) => {
           const url = `https://www.wikidata.org/wiki/Special:EntityData/${cleanId}.json`;
           console.log("Wikidata (via Alligator) fetch URL:", url);
 
-          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          const res = await fetch(url, {
+            headers: { Accept: "application/json" },
+          });
           const data = await res.json();
           const entity = data.entities?.[cleanId];
           const description = entity?.descriptions?.en?.value || "";
@@ -95,23 +99,26 @@ export default async (req) => {
         try {
           const cleanName = label;
           const cleanId = refValue.replace(/^wd:/, "").trim();
-          const retrieverEndpoint = process.env.RETRIEVER_ENDPOINT
-            || "https://lamapi.hel.sintef.cloud/lookup/entity-retrieval";
+          const retrieverEndpoint =
+            process.env.RETRIEVER_ENDPOINT ||
+            "https://lamapi.hel.sintef.cloud/lookup/entity-retrieval";
           const token = process.env.RETRIEVER_TOKEN || "lamapi_demo_2023";
           const url = `${retrieverEndpoint}?name=${encodeURIComponent(cleanName)}&token=${token}`;
           console.log("LionLinker fetch URL:", url);
 
-          const res = await fetch(url, { headers: { "Accept": "application/json" } });
+          const res = await fetch(url, {
+            headers: { Accept: "application/json" },
+          });
           const data = await res.json();
           const entity = Array.isArray(data)
-            ? data.find(e => e.id === cleanId)
+            ? data.find((e) => e.id === cleanId)
             : null;
           const description = entity?.description || "";
           const type = Array.isArray(entity?.types)
-            ? entity.types.map(t => ({
-              id: t.id || "",
-              name: t.name || "",
-            }))
+            ? entity.types.map((t) => ({
+                id: t.id || "",
+                name: t.name || "",
+              }))
             : [];
           return { description, type };
         } catch (err) {
@@ -137,7 +144,7 @@ export default async (req) => {
           }
           return {
             description: item.toponymName || item.name || "",
-            type: [ { id: item.fcode, name: item.fcodeName } ]
+            type: [{ id: item.fcode, name: item.fcodeName }],
           };
         } catch (err) {
           console.error("Error Geonames:", err);
@@ -187,7 +194,7 @@ export default async (req) => {
 
   const result = [];
 
-  for (const label of itemKeys.filter(l => l !== columnName)) {
+  for (const label of itemKeys.filter((l) => l !== columnName)) {
     const cellIds = items[label];
     if (!cellIds || !cellIds.length) continue;
 
@@ -201,14 +208,15 @@ export default async (req) => {
 
     if (!fetchCache[normalizedId]) {
       fetchCache[normalizedId] =
-        (matchedReconciler.id === "lionLinker" || matchedReconciler.id === "geonames")
+        matchedReconciler.id === "lionLinker" ||
+        matchedReconciler.id === "geonames"
           ? await fetchMetadata(label, normalizedId)
           : await fetchMetadata(normalizedId);
     }
 
     const metadataInfo = { ...fetchCache[normalizedId] };
 
-    cellIds.forEach(cellId => {
+    cellIds.forEach((cellId) => {
       result.push({
         id: cellId,
         metadata: [
@@ -218,7 +226,7 @@ export default async (req) => {
             description: metadataInfo.description,
             type: metadataInfo.type,
             match: true,
-            score: 1.00,
+            score: 1.0,
           },
         ],
       });
@@ -236,8 +244,8 @@ export default async (req) => {
       prefix,
       uri: targetUri,
       relativeUrl: targetRelativeUrl,
-      description: "A local reconciliation that uses an external prefix to construct URIs.",
+      description:
+        "A local reconciliation that uses an external prefix to construct URIs.",
     },
   };
 };
-
