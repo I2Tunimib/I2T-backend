@@ -6,6 +6,8 @@ import config from "../../config/index.js";
 import AuthService from "../services/auth/auth.service.js";
 import fs from "fs";
 import LoggerService from "../services/logger/logger.service.js";
+import LoggerJsonService from "../services/logger/logger-json.service.js";
+import { Log } from "../services/logger/Log.js";
 
 const {
   JWT_SECRET,
@@ -29,11 +31,11 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanView(dataset, user.id)) {
         return res.status(401).json({});
       }
 
-      res.json(await DatasetsService.findOneDataset(idDataset));
+      res.json(dataset);
     } catch (err) {
       next(err);
     }
@@ -44,7 +46,7 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanView(dataset, user.id)) {
         return res.status(401).json([]);
       }
 
@@ -55,17 +57,39 @@ const DatasetsController = {
   },
   getTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
+    //testing the logger
+    const LogFile = new Log(idDataset, idTable);
+    LogFile.buildDependencyGraph();
+    LogFile.pruneNonConsolidated();
+    console.log("Log file json", LogFile);
     try {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanView(dataset, user.id)) {
         return res.status(401).json({});
       }
       const tableData = await DatasetsService.findTable(idDataset, idTable);
       const dump = JSON.stringify(tableData);
       // Write dump to /sample_jsons/get_table_sample.json
       res.json(tableData);
+    } catch (err) {
+      next(err);
+    }
+  },
+  getDependencies: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+
+      if (!DatasetsService.userCanView(dataset, user.id)) {
+        return res.status(401).json({});
+      }
+
+      const logInstance = new Log(idDataset, idTable);
+      logInstance.buildDependencyGraph();
+      res.json(logInstance.getObject());
     } catch (err) {
       next(err);
     }
@@ -107,7 +131,7 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanEdit(dataset, user.id)) {
         return res.status(401).json({});
       }
 
@@ -127,7 +151,7 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanEdit(dataset, user.id)) {
         return res.status(401).json({});
       }
 
@@ -159,7 +183,7 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanEdit(dataset, user.id)) {
         return res.status(401).json({});
       }
 
@@ -172,14 +196,22 @@ const DatasetsController = {
   },
   updateTable: async (req, res, next) => {
     const data = req.body;
-    //write body dump to file
-    // Flavio
-    // fs.writeFile('../../fileSemTUI/updateTable.json', JSON.stringify(data), function (err) {
-    //     if (err) throw err;
-    //     console.log('File ../../fileSemTUI/updateTable.json saved!');
-    // });
-
+    // Require auth and edit rights
     try {
+      const user = await AuthService.verifyToken(req);
+      const tableInstance = data.tableInstance || data.table || null;
+      if (!tableInstance || !tableInstance.idDataset) {
+        return res
+          .status(400)
+          .json({ error: "Missing tableInstance or idDataset" });
+      }
+      const dataset = await DatasetsService.findOneDataset(
+        tableInstance.idDataset,
+      );
+      if (!DatasetsService.userCanEdit(dataset, user.id)) {
+        return res.status(401).json({});
+      }
+
       res.json(await DatasetsService.updateTable(data));
     } catch (err) {
       next(err);
@@ -232,7 +264,7 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
-      if (dataset.userId !== user.id) {
+      if (!DatasetsService.userCanView(dataset, user.id)) {
         return res.status(401).json({});
       }
 
@@ -280,6 +312,113 @@ const DatasetsController = {
       next(err);
     }
   },
+  getOperationDownstreamDeps: async (req, res, next) => {
+    const { idDataset, idTable, opId } = req.params;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      if (!DatasetsService.userCanView(dataset, user.id))
+        return res.status(401).json({});
+
+      const log = new Log(idDataset, idTable);
+      log.buildDependencyGraph();
+      res.json({ opId, downstreamDeps: log.getDownstreamDependencies(opId) });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  deleteOperation: async (req, res, next) => {
+    const { idDataset, idTable, opId } = req.params;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      if (!DatasetsService.userCanEdit(dataset, user.id))
+        return res.status(401).json({});
+
+      const log = new Log(idDataset, idTable);
+      log.buildDependencyGraph();
+      const downstream = log.getDownstreamDependencies(opId);
+      log.deleteOperationsFromLog([opId, ...downstream]);
+      res.json({ deleted: [opId, ...downstream] });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // ACL management endpoints
+  addViewer: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.addViewer(idDataset, userId, acting);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  removeViewer: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.removeViewer(
+        idDataset,
+        userId,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  addEditor: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.addEditor(idDataset, userId, acting);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  removeEditor: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.removeEditor(
+        idDataset,
+        userId,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  setVisibility: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const { visibility } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.setVisibility(
+        idDataset,
+        visibility,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   trackTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
     const { operationType, columnName, payload } = req.body;
@@ -287,6 +426,12 @@ const DatasetsController = {
       switch (operationType) {
         case LoggerService.OPERATION_TYPES.PROPAGATE_TYPE: {
           LoggerService.logTypePropagation(
+            idDataset,
+            idTable,
+            columnName,
+            payload,
+          );
+          LoggerJsonService.logTypePropagation(
             idDataset,
             idTable,
             columnName,
