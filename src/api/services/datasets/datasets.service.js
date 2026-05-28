@@ -43,6 +43,7 @@ const userHasEditAccess = (dataset, userId) => {
   const uid = userId === null || userId === undefined ? null : String(userId);
   if (!uid) return false;
   if (String(dataset.userId) === uid) return true; // owner
+  if (dataset.visibility === "public") return true; // public datasets may be edited by any authenticated user
   if (
     Array.isArray(dataset.editors) &&
     dataset.editors.map(String).includes(uid)

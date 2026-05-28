@@ -21,7 +21,10 @@ const ROUTE_PATTERNS = {
 // Raw body capture
 const getRawBody = (req) => {
   return new Promise((resolve) => {
-    if (req.body && Object.keys(req.body).length > 0) {
+    // If express.json() (or any body-parser) already parsed the body, use it
+    // directly — even if it is an empty object. Trying to re-read an already-
+    // consumed stream would hang forever.
+    if (req.body !== undefined) {
       return resolve(req.body);
     }
     if (req.method === "GET" || req.method === "OPTIONS") {

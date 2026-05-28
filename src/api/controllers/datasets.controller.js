@@ -8,6 +8,7 @@ import fs from "fs";
 import LoggerService from "../services/logger/logger.service.js";
 import LoggerJsonService from "../services/logger/logger-json.service.js";
 import { Log } from "../services/logger/Log.js";
+import reconciliationPipeline from "../services/reconciliation/reconciliation-pipeline.js";
 
 const {
   JWT_SECRET,
@@ -336,11 +337,201 @@ const DatasetsController = {
       if (!DatasetsService.userCanEdit(dataset, user.id))
         return res.status(401).json({});
 
+      // 1. Delete the operation and its downstream dependents
       const log = new Log(idDataset, idTable);
       log.buildDependencyGraph();
       const downstream = log.getDownstreamDependencies(opId);
-      log.deleteOperationsFromLog([opId, ...downstream]);
-      res.json({ deleted: [opId, ...downstream] });
+      const deletedIds = new Set([opId, ...downstream]);
+
+      // Capture which columns had their reconciliation deleted (before removal)
+      const allOps = log.getObject().operations;
+      const deletedReconCols = new Set(
+        allOps
+          .filter(
+            (op) =>
+              deletedIds.has(op.id) &&
+              op.operationType === "RECONCILIATION" &&
+              op.columnName,
+          )
+          .map((op) => op.columnName),
+      );
+
+      log.deleteOperationsFromLog([...deletedIds]);
+
+      // 2. Build fresh dependency graph (after deletion, before any redo — redo must NOT appear in deps/logs)
+      const freshLog = new Log(idDataset, idTable);
+      freshLog.buildDependencyGraph();
+      const dependencies = freshLog.getObject();
+
+      // 3. For each affected column, find the latest SURVIVING reconciliation op and re-run it
+      //    Note: deleteOperationsFromLog does not mutate in-memory ops, so we filter manually.
+      const survivingOps = allOps.filter((op) => !deletedIds.has(op.id));
+      const reconResults = [];
+
+      if (deletedReconCols.size > 0) {
+        const { columns, rows } = await DatasetsService.findTable(
+          idDataset,
+          idTable,
+        );
+
+        for (const colName of deletedReconCols) {
+          const lastRecon = survivingOps
+            .filter(
+              (op) =>
+                op.columnName === colName &&
+                op.operationType === "RECONCILIATION",
+            )
+            .sort((a, b) => (b.opNumber ?? 0) - (a.opNumber ?? 0))[0];
+
+          if (!lastRecon) continue;
+
+          const serviceId = lastRecon.reconciler || lastRecon.service;
+          if (!serviceId) continue;
+
+          const colEntry = Object.entries(columns).find(
+            ([, col]) => col.label === colName,
+          );
+          if (!colEntry) continue;
+          const [colId, col] = colEntry;
+
+          const items = [
+            { id: colId, label: col.label },
+            ...Object.entries(rows)
+              .map(([rowId, row]) => ({
+                id: `${rowId}$${colId}`,
+                label: row.cells?.[colId]?.label ?? "",
+              }))
+              .filter((item) => item.label !== ""),
+          ];
+
+          const {
+            serviceId: _s,
+            tableId: _t,
+            datasetId: _d,
+            columnName: _c,
+            items: _i,
+            ...extraParams
+          } = lastRecon.additionalData ?? {};
+
+          const body = {
+            serviceId,
+            items,
+            tableId: idTable,
+            datasetId: idDataset,
+            columnName: colName,
+            ...extraParams,
+          };
+
+          const result = await reconciliationPipeline(body);
+          // Intentionally NOT logging — redo results must not appear in the operation log or dependency graph
+          reconResults.push({ colName, serviceId, reconData: result });
+        }
+      }
+
+      res.json({ deleted: [...deletedIds], reconResults, dependencies });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Re-run a reconciliation operation from the log with the same parameters.
+   * Reads the stored operation (serviceId, columnName, additionalData) from the
+   * log, rebuilds `items` from the current table JSON, calls the reconciliation
+   * pipeline, logs the new operation, and returns the result exactly like a
+   * normal reconciliation response.
+   */
+  redoOperation: async (req, res, next) => {
+    const { idDataset, idTable, opId } = req.params;
+    console.log("redo OP params");
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      if (!DatasetsService.userCanView(dataset, user.id))
+        return res.status(401).json({});
+
+      // 1. Find the operation in the log
+      const log = new Log(idDataset, idTable);
+      const operations = log.getObject().operations;
+      const op = operations.find((o) => o.id === opId);
+      console.log("operation to redo", op);
+      if (!op) return res.status(404).json({ error: "Operation not found" });
+      if (op.operationType !== "RECONCILIATION")
+        return res
+          .status(400)
+          .json({ error: "Operation is not a reconciliation" });
+
+      const serviceId = op.reconciler || op.service;
+      if (!serviceId)
+        return res
+          .status(400)
+          .json({ error: "Operation has no service/reconciler ID" });
+
+      // 2. Get current table data to rebuild items
+      const { columns, rows } = await DatasetsService.findTable(
+        idDataset,
+        idTable,
+      );
+
+      const colEntry = Object.entries(columns).find(
+        ([, col]) => col.label === op.columnName,
+      );
+      if (!colEntry)
+        return res
+          .status(404)
+          .json({ error: `Column '${op.columnName}' not found in table` });
+
+      const [colId, col] = colEntry;
+
+      // Build items exactly as the frontend does: column header + each non-empty cell
+      const items = [
+        { id: colId, label: col.label },
+        ...Object.entries(rows)
+          .map(([rowId, row]) => ({
+            id: `${rowId}$${colId}`,
+            label: row.cells?.[colId]?.label ?? "",
+          }))
+          .filter((item) => item.label !== ""),
+      ];
+
+      // 3. Reconstruct request body: use stored additionalData (already the
+      //    processed request body minus items) and supply fresh items.
+      const {
+        serviceId: _s,
+        tableId: _t,
+        datasetId: _d,
+        columnName: _c,
+        items: _i,
+        ...extraParams
+      } = op.additionalData ?? {};
+
+      const body = {
+        serviceId,
+        items,
+        tableId: idTable,
+        datasetId: idDataset,
+        columnName: op.columnName,
+        ...extraParams,
+      };
+      console.log("redo body", body);
+      // 4. Run the reconciliation pipeline (same as normal reconcile)
+      const result = await reconciliationPipeline(body);
+      console.log("redo result", result);
+      // 5. Log the new reconciliation operation
+      await LoggerJsonService.logReconciliation({
+        datasetId: idDataset,
+        tableId: idTable,
+        columnName: op.columnName,
+        service: serviceId,
+        additionalData: body,
+      });
+
+      // 6. Build fresh dependency graph and return result with it
+      const freshLog = new Log(idDataset, idTable);
+      freshLog.buildDependencyGraph();
+      const dependencies = freshLog.getObject();
+
+      res.json({ ...result, serviceId, dependencies });
     } catch (err) {
       next(err);
     }

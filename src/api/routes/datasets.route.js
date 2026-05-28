@@ -77,6 +77,10 @@ router.get(
   "/:idDataset/table/:idTable/operation/:opId/downstream",
   asyncMiddleware(DatasetsController.getOperationDownstreamDeps),
 );
+router.post(
+  "/:idDataset/table/:idTable/operation/:opId/redo",
+  asyncMiddleware(DatasetsController.redoOperation),
+);
 router.delete(
   "/:idDataset/table/:idTable/operation/:opId",
   asyncMiddleware(DatasetsController.deleteOperation),
