@@ -4,7 +4,6 @@ import reconciliationPipeline from "../services/reconciliation/reconciliation-pi
 import config from "../../config/index.js";
 import path from "path";
 import MantisService from "../services/reconciliation/mantis.service.js";
-import ColumnClassifierService from "../services/reconciliation/column-classifier.service.js";
 import LLMColumnClassifierService from "../services/reconciliation/llm-column-classifier.service.js";
 
 const __dirname = path.resolve();
@@ -48,15 +47,6 @@ const ReconciliationController = {
             mantisStatus: "PENDING",
           });
         }
-      }
-      if (target === "schema" && method === "columnClassifier") {
-        await ColumnClassifierService.annotate({ idDataset, idTable, io });
-
-        return res.json({
-          datasetId: idDataset,
-          tableId: idTable,
-          schemaStatus: "PENDING",
-        });
       }
       if (
         target === "schema" &&
