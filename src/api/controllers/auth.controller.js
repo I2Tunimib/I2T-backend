@@ -581,10 +581,49 @@ const AuthController = {
     }
   },
 
+  // Search local users by username or email (query param 'q')
+  // optional query param: role (e.g. role=editor) to filter users by role
+  searchUsers: async (req, res, next) => {
+    try {
+      const q = (req.query.q || "").toString().toLowerCase();
+      const role = req.query.role ? String(req.query.role).toLowerCase() : null;
+      const usersRaw = JSON.parse(await fs.readFile(getUsersPath(), "utf8"));
+      const { users = {} } = usersRaw;
+      let list = Object.values(users).filter((u) => {
+        const uname = (u.username || "").toString().toLowerCase();
+        const email = (u.email || "").toString().toLowerCase();
+        return uname.includes(q) || email.includes(q) || String(u.id) === q;
+      });
+
+      if (role) {
+        // role-based filtering. Special-case: if role === 'editor' also accept 'admin'
+        list = list.filter((u) => {
+          const roles = Array.isArray(u.roles)
+            ? u.roles.map((r) => String(r).toLowerCase())
+            : [];
+          if (role === "editor")
+            return roles.includes("editor") || roles.includes("admin");
+          return roles.includes(role);
+        });
+      }
+
+      // Return minimal info
+      res.json(
+        list.map((u) => ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          roles: u.roles || [],
+        })),
+      );
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // Return decoded payload from kc_access_token cookie (if present) or other fallback locations
   keycloakMe: async (req, res, next) => {
     try {
-      console.log("keycloak me request", req);
       // Accept token from cookie (preferred), Authorization header, query or body (fallbacks)
       let token = null;
       if (req.cookies && req.cookies.kc_access_token) {

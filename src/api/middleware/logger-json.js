@@ -1,4 +1,4 @@
-import LoggerService from "../services/logger/logger.service.js";
+import LoggerJsonService from "../services/logger/logger-json.service.js";
 
 // Operation types
 const OPERATION_TYPES = {
@@ -21,7 +21,10 @@ const ROUTE_PATTERNS = {
 // Raw body capture
 const getRawBody = (req) => {
   return new Promise((resolve) => {
-    if (req.body && Object.keys(req.body).length > 0) {
+    // If express.json() (or any body-parser) already parsed the body, use it
+    // directly — even if it is an empty object. Trying to re-read an already-
+    // consumed stream would hang forever.
+    if (req.body !== undefined) {
       return resolve(req.body);
     }
     if (req.method === "GET" || req.method === "OPTIONS") {
@@ -55,7 +58,7 @@ export default async (req, res, next) => {
     req._rawBody = rawBody;
     await routeLogs(req, res);
   } catch (error) {
-    console.error("Error in logger middleware:", error);
+    console.error("Error in JSON logger middleware:", error);
   }
   next();
 };
@@ -63,7 +66,7 @@ export default async (req, res, next) => {
 async function routeLogs(req, res) {
   const { method, url } = req;
   if (method === "OPTIONS") {
-    console.log("OPTIONS request, skipping logging.");
+    console.log("OPTIONS request, skipping JSON logging.");
     return;
   }
   console.log("called url", url);
@@ -86,13 +89,17 @@ async function handleExportOperation(req, url) {
     const [tableId, datasetId] = taskInfos;
     const format = req.query.format;
     console.log("*** request obj", format);
-    LoggerService.logExportTable(datasetId, tableId, format);
+    LoggerJsonService.logExportTable(datasetId, tableId, format);
   } catch (error) {
-    console.error("error handling export logging", error);
+    console.error("error handling export JSON logging", error);
   }
 }
 
 async function handleReconciliationRoute(req, res, url) {
+  // Skip logging for automated redo-after-delete reconciliations
+  const tableDatasetInfo = req.headers["x-table-dataset-info"] || "";
+  if (tableDatasetInfo.includes("skipLog=1")) return;
+
   const requestedReconciliation = extractServiceFromUrl(
     url,
     ROUTE_PATTERNS.RECONCILERS,
@@ -104,8 +111,8 @@ async function handleReconciliationRoute(req, res, url) {
     const body = req._rawBody || req.body;
 
     // Log only after the response is sent and only on success.
-    interceptResponse(res, (_responseBody) => {
-      LoggerService.logReconciliation({
+    interceptResponse(res, async (_responseBody) => {
+      await LoggerJsonService.logReconciliation({
         datasetId,
         tableId,
         columnName,
@@ -126,16 +133,18 @@ async function handleExtenderRoute(req, res, url) {
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
 
-    interceptResponse(res, (_responseBody) => {
+    interceptResponse(res, async (responseBody) => {
+      const createdColumns = extractCreatedColumns(responseBody);
       console.log(
-        `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
+        `📋 [JSON] EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName} | CreatedColumns: ${createdColumns}`,
       );
-      LoggerService.logExtension({
+      await LoggerJsonService.logExtension({
         datasetId,
         tableId,
         columnName,
         service: requestedExtender,
         additionalData: req._rawBody || req.body,
+        createdColumns,
       });
     });
   }
@@ -151,16 +160,18 @@ async function handleModificationRoute(req, res, url) {
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
 
-    interceptResponse(res, (_responseBody) => {
+    interceptResponse(res, async (responseBody) => {
+      const createdColumns = extractCreatedColumns(responseBody);
       console.log(
-        `📋 MODIFICATION LOGGED - Function: ${requestedModifier} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
+        `📋 [JSON] MODIFICATION LOGGED - Function: ${requestedModifier} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName} | CreatedColumns: ${createdColumns}`,
       );
-      LoggerService.logModification({
+      await LoggerJsonService.logModification({
         datasetId,
         tableId,
         columnName,
         service: requestedModifier,
         additionalData: req._rawBody || req.body,
+        createdColumns,
       });
     });
   }
@@ -171,15 +182,15 @@ async function handleSaveRoute(req, method) {
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, deletedCols] = taskInfos;
     if (method === "PUT") {
-      LoggerService.logSave({ datasetId, tableId, deletedCols });
+      LoggerJsonService.logSave({ datasetId, tableId, deletedCols });
     }
   } else if (taskInfos && taskInfos.length === 2) {
     const [tableId, datasetId] = taskInfos;
     if (method === "PUT") {
-      LoggerService.logSave({ datasetId, tableId });
+      LoggerJsonService.logSave({ datasetId, tableId });
     }
     if (method === "GET") {
-      LoggerService.logGetTable({ datasetId, tableId });
+      LoggerJsonService.logGetTable({ datasetId, tableId });
     } else {
       console.error("Task infos not found or incomplete for save operation.");
     }
@@ -193,16 +204,29 @@ async function handleSaveRoute(req, method) {
  */
 function interceptResponse(res, callback) {
   const originalJson = res.json.bind(res);
-  res.json = (body) => {
+  res.json = async (body) => {
     try {
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        callback(body);
+        await callback(body);
       }
     } catch (err) {
-      console.error("[logger] Error in post-response log callback:", err);
+      console.error("[JSON logger] Error in post-response log callback:", err);
     }
     return originalJson(body);
   };
+}
+
+function extractCreatedColumns(responseBody) {
+  try {
+    if (!responseBody || typeof responseBody !== "object") return [];
+    const cols = responseBody.columns;
+    if (!cols || typeof cols !== "object") return [];
+    return Object.values(cols)
+      .map((col) => col?.label || col?.id || null)
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 function extractServiceFromUrl(url, pattern) {
@@ -213,7 +237,7 @@ async function getTaskInfos(req) {
   try {
     const tableDatasetInfo = req.headers["x-table-dataset-info"];
     if (!tableDatasetInfo) {
-      console.debug("x-table-dataset-info header not found, skipping log");
+      console.debug("x-table-dataset-info header not found, skipping JSON log");
       return [];
     }
     const infoArray = tableDatasetInfo

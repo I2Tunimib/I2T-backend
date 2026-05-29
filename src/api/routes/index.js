@@ -1,4 +1,5 @@
 import { Router } from "express";
+import dependenciesMiddleware from "../middleware/dependencies.middleware.js";
 import configRoutes from "./config.route.js";
 import reconciliationRoutes from "./reconciliation.route.js";
 import datasetsRoutes from "./datasets.route.js";
@@ -15,10 +16,10 @@ router.get("/", (req, res) => {
 });
 
 router.use("/config", configRoutes);
-router.use("/full-annotation", reconciliationRoutes);
-router.use("/reconcilers", reconciliationRoutes);
-router.use("/extenders", extensionRoutes);
-router.use("/modifiers", modificationRoutes);
+router.use("/full-annotation", dependenciesMiddleware, reconciliationRoutes);
+router.use("/reconcilers", dependenciesMiddleware, reconciliationRoutes);
+router.use("/extenders", dependenciesMiddleware, extensionRoutes);
+router.use("/modifiers", dependenciesMiddleware, modificationRoutes);
 router.use("/dataset", datasetsRoutes);
 router.use("/auth", authRoutes);
 router.use("/suggestion", suggestionRoutes);

@@ -23,4 +23,7 @@ router.get("/keycloak/me", asyncMiddleware(AuthController.keycloakMe));
 // Server-side logout: clears server cookies and redirects to Keycloak end-session
 router.get("/keycloak/logout", asyncMiddleware(AuthController.keycloakLogout));
 
+// User search (local users DB)
+router.get("/users", asyncMiddleware(AuthController.searchUsers));
+
 export default router;

@@ -53,6 +53,15 @@ export default async (req) => {
       ? props.weatherParams_hourly
       : props.weatherParams_daily;
 
+  if (!weatherParamsInput || weatherParamsInput.length === 0) {
+    const expected =
+      granularity === "hourly" ? "weatherParams_hourly" : "weatherParams_daily";
+    throw new Error(
+      `Missing required parameter "${expected}" for granularity "${granularity}". ` +
+        `Please provide at least one weather parameter.`,
+    );
+  }
+
   let weatherParams = weatherParamsInput.join(",");
   if (weatherParams.includes("light_hours")) {
     // Replace 'light_hours' with 'sunset,sunrise'
@@ -143,8 +152,14 @@ export default async (req) => {
             data,
           });
         } catch (err) {
-          console.log("error", err);
-          throw new Error(err.message);
+          console.warn(`Skipping row ${rowId} (${url}): ${err.message}`);
+          allResponses.push({
+            id: coord,
+            rowId,
+            weatherParams,
+            data: null,
+            error: true,
+          });
         }
       }
     }

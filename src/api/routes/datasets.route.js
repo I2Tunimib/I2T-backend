@@ -13,6 +13,10 @@ router.get(
   asyncMiddleware(DatasetsController.getAllTablesByDataset),
 );
 router.get(
+  "/:idDataset/table/:idTable/dependencies",
+  asyncMiddleware(DatasetsController.getDependencies),
+);
+router.get(
   "/:idDataset/table/:idTable",
   asyncMiddleware(DatasetsController.getTable),
 );
@@ -30,6 +34,28 @@ router.get(
 );
 router.post("/", asyncMiddleware(DatasetsController.addDataset));
 router.post("/:idDataset/table", asyncMiddleware(DatasetsController.addTable));
+
+// ACL routes
+router.post(
+  "/:idDataset/acl/viewers",
+  asyncMiddleware(DatasetsController.addViewer),
+);
+router.delete(
+  "/:idDataset/acl/viewers",
+  asyncMiddleware(DatasetsController.removeViewer),
+);
+router.post(
+  "/:idDataset/acl/editors",
+  asyncMiddleware(DatasetsController.addEditor),
+);
+router.delete(
+  "/:idDataset/acl/editors",
+  asyncMiddleware(DatasetsController.removeEditor),
+);
+router.post(
+  "/:idDataset/acl/visibility",
+  asyncMiddleware(DatasetsController.setVisibility),
+);
 router.post(
   "/track/:idDataset/:idTable",
   asyncMiddleware(DatasetsController.trackTable),
@@ -46,6 +72,18 @@ router.delete("/:idDataset", asyncMiddleware(DatasetsController.removeDataset));
 router.delete(
   "/:idDataset/table/:idTable",
   asyncMiddleware(DatasetsController.removeTable),
+);
+router.get(
+  "/:idDataset/table/:idTable/operation/:opId/downstream",
+  asyncMiddleware(DatasetsController.getOperationDownstreamDeps),
+);
+router.post(
+  "/:idDataset/table/:idTable/operation/:opId/redo",
+  asyncMiddleware(DatasetsController.redoOperation),
+);
+router.delete(
+  "/:idDataset/table/:idTable/operation/:opId",
+  asyncMiddleware(DatasetsController.deleteOperation),
 );
 
 export default router;
