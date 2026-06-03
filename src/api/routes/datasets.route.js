@@ -56,6 +56,31 @@ router.post(
   "/:idDataset/acl/visibility",
   asyncMiddleware(DatasetsController.setVisibility),
 );
+// Table ACL routes
+router.get(
+  "/:idDataset/table/:idTable/acl",
+  asyncMiddleware(DatasetsController.getTableAcl),
+);
+router.post(
+  "/:idDataset/table/:idTable/acl/viewers",
+  asyncMiddleware(DatasetsController.addTableViewer),
+);
+router.delete(
+  "/:idDataset/table/:idTable/acl/viewers",
+  asyncMiddleware(DatasetsController.removeTableViewer),
+);
+router.post(
+  "/:idDataset/table/:idTable/acl/editors",
+  asyncMiddleware(DatasetsController.addTableEditor),
+);
+router.delete(
+  "/:idDataset/table/:idTable/acl/editors",
+  asyncMiddleware(DatasetsController.removeTableEditor),
+);
+router.post(
+  "/:idDataset/table/:idTable/acl/visibility",
+  asyncMiddleware(DatasetsController.setTableVisibility),
+);
 router.post(
   "/track/:idDataset/:idTable",
   asyncMiddleware(DatasetsController.trackTable),

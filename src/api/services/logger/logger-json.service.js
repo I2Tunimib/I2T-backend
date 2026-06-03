@@ -305,26 +305,32 @@ class LoggerJsonService {
   }
 
   /**
-   * Reads the log file and counts existing entries that carry an opNumber,
+   * Reads the log file and finds the highest opNumber already assigned,
    * then returns the next value (1-based).
+   *
+   * Using max instead of count ensures correctness after operations are
+   * deleted: surviving entries keep their original opNumbers so the next
+   * one must be max+1, not count+1.
    * @private
    */
   static #computeNextOpNumber(logPath) {
     try {
       if (!fs.existsSync(logPath)) return 1;
       const content = fs.readFileSync(logPath, "utf8");
-      const count = content
+      const maxOpNumber = content
         .split("\n")
         .filter(Boolean)
-        .reduce((acc, line) => {
+        .reduce((max, line) => {
           try {
             const parsed = JSON.parse(line);
-            return parsed.opNumber !== undefined ? acc + 1 : acc;
+            return parsed.opNumber !== undefined
+              ? Math.max(max, parsed.opNumber)
+              : max;
           } catch {
-            return acc;
+            return max;
           }
         }, 0);
-      return count + 1;
+      return maxOpNumber + 1;
     } catch {
       return 1;
     }

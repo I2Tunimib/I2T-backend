@@ -51,7 +51,13 @@ const DatasetsController = {
         return res.status(401).json([]);
       }
 
-      res.json(await DatasetsService.findAllTablesByDataset(idDataset));
+      res.json(
+        await DatasetsService.findAllTablesByDataset(
+          idDataset,
+          dataset,
+          user.id,
+        ),
+      );
     } catch (err) {
       next(err);
     }
@@ -70,6 +76,10 @@ const DatasetsController = {
       if (!DatasetsService.userCanView(dataset, user.id)) {
         return res.status(401).json({});
       }
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
+        return res.status(401).json({});
+      }
       const tableData = await DatasetsService.findTable(idDataset, idTable);
       const dump = JSON.stringify(tableData);
       // Write dump to /sample_jsons/get_table_sample.json
@@ -85,6 +95,10 @@ const DatasetsController = {
       const dataset = await DatasetsService.findOneDataset(idDataset);
 
       if (!DatasetsService.userCanView(dataset, user.id)) {
+        return res.status(401).json({});
+      }
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
         return res.status(401).json({});
       }
 
@@ -187,6 +201,10 @@ const DatasetsController = {
       if (!DatasetsService.userCanEdit(dataset, user.id)) {
         return res.status(401).json({});
       }
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id)) {
+        return res.status(401).json({});
+      }
 
       await DatasetsService.removeTable(idDataset, idTable);
 
@@ -210,6 +228,13 @@ const DatasetsController = {
         tableInstance.idDataset,
       );
       if (!DatasetsService.userCanEdit(dataset, user.id)) {
+        return res.status(401).json({});
+      }
+      const tableMeta = await DatasetsService.findOneTable(
+        tableInstance.idDataset,
+        tableInstance.id,
+      );
+      if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id)) {
         return res.status(401).json({});
       }
 
@@ -268,6 +293,10 @@ const DatasetsController = {
       if (!DatasetsService.userCanView(dataset, user.id)) {
         return res.status(401).json({});
       }
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
+        return res.status(401).json({});
+      }
 
       // Table existence isn't checked - we only need the logs
       // The table ID is just used for reference in the generated code
@@ -320,6 +349,9 @@ const DatasetsController = {
       const dataset = await DatasetsService.findOneDataset(idDataset);
       if (!DatasetsService.userCanView(dataset, user.id))
         return res.status(401).json({});
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id))
+        return res.status(401).json({});
 
       const log = new Log(idDataset, idTable);
       log.buildDependencyGraph();
@@ -335,6 +367,9 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
       if (!DatasetsService.userCanEdit(dataset, user.id))
+        return res.status(401).json({});
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id))
         return res.status(401).json({});
 
       // 1. Delete the operation and its downstream dependents
@@ -448,6 +483,9 @@ const DatasetsController = {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
       if (!DatasetsService.userCanView(dataset, user.id))
+        return res.status(401).json({});
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id))
         return res.status(401).json({});
 
       // 1. Find the operation in the log
@@ -601,6 +639,117 @@ const DatasetsController = {
       const acting = await AuthService.verifyToken(req);
       const result = await DatasetsService.setVisibility(
         idDataset,
+        visibility,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // Table ACL management endpoints
+  getTableAcl: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      if (!DatasetsService.userCanView(dataset, user.id))
+        return res.status(401).json({});
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id))
+        return res.status(401).json({});
+      // Return table ACL fields alongside dataset owner
+      res.json({
+        id: tableMeta.id,
+        idDataset: tableMeta.idDataset,
+        name: tableMeta.name,
+        visibility: tableMeta.visibility ?? null,
+        viewers: tableMeta.viewers || [],
+        editors: tableMeta.editors || [],
+        datasetOwnerId: dataset.userId,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  addTableViewer: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.addTableViewer(
+        idDataset,
+        idTable,
+        userId,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  removeTableViewer: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.removeTableViewer(
+        idDataset,
+        idTable,
+        userId,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  addTableEditor: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.addTableEditor(
+        idDataset,
+        idTable,
+        userId,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  removeTableEditor: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { userId } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.removeTableEditor(
+        idDataset,
+        idTable,
+        userId,
+        acting,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  setTableVisibility: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { visibility } = req.body;
+    try {
+      const acting = await AuthService.verifyToken(req);
+      const result = await DatasetsService.setTableVisibility(
+        idDataset,
+        idTable,
         visibility,
         acting,
       );
