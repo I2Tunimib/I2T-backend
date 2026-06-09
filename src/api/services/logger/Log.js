@@ -673,7 +673,46 @@ export class Log {
       this.#deleteFromPlainLog(removedTimestamps);
     }
   }
+  optimize() {
+    let nodesWhoCanBeDeleted = [];
 
+    let sortedOps = this.#operations.sort((a, b) => a.opNumber < b.opNumber);
+    for (const nodeId of Object.keys(this.#nodes)) {
+      const nodeDetails = this.#getOpById(nodeId);
+      const nodeChildrens = this.#nodes[nodeId].children;
+
+      if (nodeDetails !== undefined && nodeChildrens) {
+        let hasOnlyReconciliations = true;
+        for (const child of nodeChildrens) {
+          const currentChildren = this.#getOpById(child);
+          if (currentChildren.operationType !== "RECONCILIATION") {
+            hasOnlyReconciliations = false;
+            break;
+          }
+        }
+        if (
+          hasOnlyReconciliations &&
+          Array.isArray(nodeChildrens) &&
+          nodeChildrens.length > 0
+        ) {
+          let lastRec = nodeChildrens.reduce((prev, current) => {
+            return this.#getOpById(prev).opNumber >
+              this.#getOpById(current).opNumber
+              ? prev
+              : current;
+          });
+          nodesWhoCanBeDeleted.push(nodeId);
+          nodesWhoCanBeDeleted.push(
+            ...nodeChildrens.filter((item) => item !== lastRec),
+          );
+        }
+      }
+    }
+    nodesWhoCanBeDeleted = nodesWhoCanBeDeleted.map((nodeId) =>
+      this.#getOpById(nodeId),
+    );
+    console.log("nodes to delete", nodesWhoCanBeDeleted);
+  }
   /**
    * Remove lines from the plain-text .log file whose embedded ISO timestamp
    * matches any entry in the provided set.

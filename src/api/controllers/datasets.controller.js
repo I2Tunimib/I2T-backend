@@ -68,6 +68,7 @@ const DatasetsController = {
     const LogFile = new Log(idDataset, idTable);
     LogFile.buildDependencyGraph();
     LogFile.pruneNonConsolidated();
+    LogFile.optimize();
     console.log("Log file json", LogFile);
     try {
       const user = await AuthService.verifyToken(req);

@@ -1232,6 +1232,11 @@ const FileSystemService = {
     const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId)
       throw new Error("Unauthorized to modify visibility");
+    // Enforce most-restrictive rule: table cannot be public if dataset is private
+    if (visibility === "public" && dataset.visibility === "private")
+      throw new Error(
+        "Cannot set table to public when dataset is private. The most restrictive permission (dataset private) always wins.",
+      );
     await writeQueue.push(async () => {
       const raw = JSON.parse(await readFile(getTablesDbPath()));
       const { meta = {}, tables = {} } = raw;
