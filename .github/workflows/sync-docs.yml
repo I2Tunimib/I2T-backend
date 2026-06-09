@@ -1,0 +1,35 @@
+name: Sync Docs to I2T-docs Repo
+
+on:
+  push:
+    branches:
+      - DEV_2025
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Backend
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Generate Markdown Files
+        run: node generate-docs.cjs
+
+      - name: Pushes to Docs Repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.DOCS_REPO_TOKEN }}
+        with:
+          source-directory: 'generated_docs/discover-services'
+          destination-github-username: 'I2Tunimib'
+          destination-repository-name: 'I2T-docs'
+          target-directory: 'docs/user-manual/discover-services'
+          user-email: 'action@github.com'
+          target-branch: main
+
+

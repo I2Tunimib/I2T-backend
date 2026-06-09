@@ -15,6 +15,8 @@ export default async (req, res) => {
       score: meta.score ?? 1.00,
       match: meta.match ?? (i === 0),
       type: meta.type ?? [],
+      osmId: meta.osmId,
+      osmType: meta.osmType
     })),
   }));
   //console.log("response", response);

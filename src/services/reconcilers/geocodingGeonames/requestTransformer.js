@@ -1,6 +1,7 @@
 import config from "./index.js";
 import axios from "axios";
 import fs from "fs";
+import { getOSMData } from "../../../utils/osmUtils.js";
 
 const { endpoint } = config.private;
 const { access_token } = config.private;
@@ -112,19 +113,24 @@ export default async (req) => {
     //   adminName1: item.adminName1
     // }));
 
-    const filteredData = res.map((entry) => {
-      return entry.geonames.map((item) => ({
-        geonameId: item.geonameId,
-        name: item.name,
-        countryName: item.countryName,
-        fcode: item.fcode,
-        fcodeName: item.fcodeName,
-        lat: item.lat,
-        lng: item.lng,
-        score: item.score,
-        adminName1: item.adminName1,
+    const filteredData = await Promise.all(res.map(async (entry) => {
+      return await Promise.all(entry.geonames.map(async (item) => {
+        const osm = await getOSMData(item.lat, item.lng);
+        return {
+          geonameId: item.geonameId,
+          name: item.name,
+          countryName: item.countryName,
+          fcode: item.fcode,
+          fcodeName: item.fcodeName,
+          lat: item.lat,
+          lng: item.lng,
+          score: item.score,
+          adminName1: item.adminName1,
+          osmId: osm.osmId,
+          osmType: osm.osmType
+        };
       }));
-    });
+    }));
 
     // fs.writeFile('../../fileSemTUI/filteredData.json', JSON.stringify(filteredData), function (err) {
     //   if (err) throw err;

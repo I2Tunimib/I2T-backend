@@ -30,13 +30,12 @@ export default async (req, res) => {
 
       weatherParameters.forEach((param) => {
         // for each item in weatherParameters build a column
-        /*
         const columNames = { // to cahnge the default names of the new columns
           apparent_temperature_max: 'temperature_max',
           apparent_temperature_min: 'temperature_min',
         };
-         */
-        const colId = `${inputColumns[colIndex]}_${param}`;
+        const displayName = columNames[param] || param;
+        const colId = `${inputColumns[colIndex]}_${displayName}`;
         if (!(colId in response.columns)) {
           response.columns[colId] = {
             label: colId,

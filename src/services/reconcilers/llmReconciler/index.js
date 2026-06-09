@@ -59,7 +59,7 @@ export default {
         id: "prompt",
         description:
           "Write instructions for how to reconcile/match the cell values to entities. The LLM will receive each cell value and must return: entityId (string with prefix like 'wd:Q123'), name (string), description (string), score (0-100), and match (true/false):",
-        label: "Reconciliation propmt",
+        label: "Reconciliation prompt",
         inputType: "textArea",
         rules: ["required"],
       },
