@@ -28,8 +28,36 @@ export default async (req) => {
         },
       });
 
+      const entities = res.data?.entities || {};
+      const subIds = [];
+
+      Object.keys(entities).forEach((entityId) => {
+        const tzClaims = entities[entityId]?.claims?.P421;
+        if (tzClaims && tzClaims.length > 0) {
+          const subId = tzClaims[0].mainsnak?.datavalue?.value?.id;
+          if (subId) subIds.push(subId);
+        }
+      });
+
+      if (subIds.length > 0) {
+        const resLabelTz = await axios.get(`${endpoint}${subIds.join("|")}`, {
+          params: {
+            props: "labels",
+            languages: "en"
+          },
+          headers: {
+            "User-Agent":
+              "I2T-backend/1.0 (Educational project; https://github.com/your-repo) axios/1.8.3",
+          },
+        });
+
+        if (resLabelTz.data?.entities) {
+          Object.assign(entities, resLabelTz.data.entities);
+        }
+      }
+
       return {
-        res: res.data,
+        res: { entities }
       };
     }),
   );

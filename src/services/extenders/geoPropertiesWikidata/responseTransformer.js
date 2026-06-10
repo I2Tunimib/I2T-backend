@@ -3,15 +3,17 @@ import fs from "fs";
 const PROPS = {
   // latitude and logitude
   P625: {
-    label: 'Latitude_Longitude',
+    label: 'coordinate location',
     getColumn: (colId) => {
       return {
         label: colId,
+        kind: 'entity',
+        datatype: 'PLACE',
         metadata: [],
         cells: {}
       }
     },
-    getCell: ({ entities, entityId, prop }) => { 
+    getCell: ({ entities, entityId, prop }) => {
       const { value } = entities[entityId].claims[prop][0].mainsnak.datavalue
       return {
         label: `${value.latitude},${value.longitude}`,
@@ -21,32 +23,60 @@ const PROPS = {
   },
   // timezone
   P421: {
-    label: 'Time zone',
+    label: 'located in time zone',
     getColumn: (colId) => {
       return {
         label: colId,
+        kind: 'entity',
+        datatype: 'OTHER',
         metadata: [],
         cells: {}
       }
     },
     getCell: ({ entities, entityId, prop }) => {
-      // implement this
-      return null
+      const claims = entities[entityId]?.claims?.[prop];
+      if (!claims || claims.length === 0) {
+        return { label: null, metadata: [] };
+      }
+      const targetTimezoneId = claims[0].mainsnak.datavalue.value.id;
+      const timezoneEntity = entities[targetTimezoneId];
+      const readableLabel = timezoneEntity?.labels?.en?.value;
+      return {
+        label: timezoneEntity.labels.en.value,
+        metadata: [
+          {
+            id: `wd:${targetTimezoneId}`,
+            name: readableLabel,
+            match: true,
+            score: 100,
+            type: []
+          }
+        ]
+      };
     }
   },
   // postal code
   P281: {
-    label: 'Postal code',
+    label: 'postal code',
     getColumn: (colId) => {
       return {
         label: colId,
+        kind: 'literal',
+        datatype: 'NUMBER',
         metadata: [],
         cells: {}
       }
     },
     getCell: ({ entities, entityId, prop }) => {
-      // implement this
-      return null
+      const claims = entities[entityId]?.claims?.[prop];
+      if (!claims || claims.length === 0) {
+        return {label: null, metadata: []};
+      }
+      const postalCodeValue = claims[0].mainsnak.datavalue.value;
+      return {
+        label: postalCodeValue,
+        metadata: []
+      };
     }
   }
 }
@@ -63,46 +93,86 @@ export default async (req, res) => {
 
   const { property } = props;
 
+  const columnName = inputColumns[0];
+
   let response = {
     columns: {},
-    meta: {}
+    meta: {},
+    originalColMeta: {
+      originalColName: columnName,
+      types: [],
+      properties: []
+    }
   }
+
+  const propertyTypes = {
+    P625: { id: "wd:Q104224919", name: "geographic coordinate" },
+    P421: { id: "wd:Q12143", name: "time zone" },
+    P281: { id: "wd:Q37447", name: "postal code" }
+  };
 
   res.forEach((serviceResponse, colIndex) => {
     const { entities } = serviceResponse.res;
+    const sourceColId = inputColumns[colIndex];
 
     property.forEach((prop) => {
       // get label, getColumn and getCell for the current prop
       const { label, getColumn, getCell } = PROPS[prop];
-      
-        const colId = `${inputColumns[colIndex]}_${label}`;
+
+        const colId = `${sourceColId}_${label}`;
         // create columns
         response.columns[colId] = getColumn(colId);
 
-        // add cells to each column
-        Object.keys(entities).forEach((entityId) => {
-          // get rows for each metaId
-          const requestRowsIds = items[inputColumns[colIndex]][`wd:${entityId}`];
-
-          // build cells
-          const cells = requestRowsIds.reduce((acc, rowId) => {
-            // get a cell for the appropriate prop
-            acc[rowId] = getCell({ entities, entityId, prop })
-            return acc;
-          }, {});
-
-          // add cells to column
-          response.columns[colId].cells = {
-            ...response.columns[colId].cells,
-            ...cells
-          }
+      if (!response.originalColMeta.properties.some((p) => p.id === `wd:${prop}`)) {
+        response.originalColMeta.properties.push({
+          id: `wd:${prop}`,
+          obj: colId,
+          name: label,
+          match: true,
+          score: 1,
         });
+      }
 
-        // add columns mapping
-        response.meta = {
-          ...response.meta,
-          [colId]: inputColumns[colIndex]
-        }
+      const typeInfo = propertyTypes[prop];
+      const columnTypesArray = typeInfo ? [{
+        id: typeInfo.id,
+        name: typeInfo.name,
+        match: true,
+        score: 100
+      }] : [];
+
+      response.columns[colId].metadata[0] = {
+        id: `wd:${prop}`,
+        name: label,
+        match: true,
+        score: 100,
+        type: columnTypesArray
+      };
+
+        // add cells to each column
+       Object.keys(entities).forEach((entityId) => {
+         // get rows for each metaId
+         const requestRowsIds = items[inputColumns[colIndex]][`wd:${entityId}`];
+
+         // build cells
+         const cells = requestRowsIds.reduce((acc, rowId) => {
+           // get a cell for the appropriate prop
+           acc[rowId] = getCell({entities, entityId, prop})
+           return acc;
+         }, {});
+
+         // add cells to column
+         response.columns[colId].cells = {
+           ...response.columns[colId].cells,
+           ...cells
+         }
+       });
+
+       // add columns mapping
+      response.meta = {
+        ...response.meta,
+        [colId]: sourceColId
+      }
     });
 
   });

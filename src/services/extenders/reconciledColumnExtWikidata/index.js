@@ -13,8 +13,8 @@ export default {
           'properties</em>:' +
           '<ul style="list-style-type: disc;">' +
             '<li>ID, in Wikidata format <code>wd:Q42</code></li>' +
-            '<li>URI, as full URL</li>' +
-            '<li>Name, as string</li>' +
+            '<li>URI, as full URL [<a href="https://www.wikidata.org/wiki/Property:P856" target="_blank" rel="noopener noreferrer">P856</a>]</li>' +
+            '<li>Name, as string [<a href="https://www.wikidata.org/wiki/Property:P1448" target="_blank" rel="noopener noreferrer">P1448</a>]</li>' +
             '<li>Description, as string</li>' +
           '</ul>' +
           '<strong>Output</strong>: A new column for each selected property, containing the corresponding Wikidata metadata.',
@@ -33,12 +33,12 @@ export default {
                     },
                     {
                         id: 'url',
-                        label: 'URL of entities in Wikidata',
+                        label: 'URL of entities in Wikidata [P856]',
                         value: 'url'
                     },
                     {
                         id: 'name',
-                        label: 'Name of entities in Wikidata',
+                        label: 'Name of entities in Wikidata [P1448]',
                         value: 'name'
                     },
                     {

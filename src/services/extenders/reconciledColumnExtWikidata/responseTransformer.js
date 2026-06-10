@@ -16,12 +16,16 @@ export default async (req, res) => {
     `*** Label Extender *** inputColumn: ${JSON.stringify(inputColumnName)}`,
   );
 
-  const response = {
+  let response = {
     // columns entities to be added
     columns: {},
     // mapping between the new column obtained from extension of the input column (i.e.: { newColumnId: inputColumnId })
     // meta is used to place the new columns in the correct order in the UI.
     meta: {},
+    originalColMeta: {
+      originalColName: inputColumnName,
+      properties: []
+    }
   };
 
   for (const label of props.labels) {
@@ -29,6 +33,8 @@ export default async (req, res) => {
     const newColumn = {};
     newColumn[newColumnName] = {
       label: newColumnName,
+      kind: (label === "description" || label === "url") ? "literal" : "entity",
+      datatype: label === "description" || label === "url" ? "STRING" : "",
       metadata: [],
       cells: {},
     };
@@ -38,6 +44,27 @@ export default async (req, res) => {
     // Update meta to put the new column next to the inputColumnName
     // response.meta[newColumnName] = inputColumnName;
     response.meta = { [newColumnName]: inputColumnName, ...response.meta };
+
+    let propId = "";
+    let propLabel = "";
+    if (label === "url") {
+      propId = "P856";
+      propLabel = "official website";
+    }
+    if (label === "name") {
+      propId = "P1448";
+      propLabel = "official name";
+    }
+
+    if (propId) {
+      response.originalColMeta.properties.push({
+        id: `wd:${propId}`,
+        obj: newColumnName,
+        name: propLabel || label,
+        match: true,
+        score: 100
+      });
+    }
   }
 
   for (const key in res) {

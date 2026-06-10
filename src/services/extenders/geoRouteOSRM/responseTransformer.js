@@ -20,10 +20,13 @@ function getPropRoute(item, prop) {
 }
 
 export default async (req, res) => {
-  const { props } = req.original;
+  const { props, items } = req.original;
   const property = props.property;
-
   const mode = props.mode;
+
+  const sourceColId = Object.keys(items)[0];
+  const destinationColId = props.end[Object.keys(props.end)[0]][2];
+
   const start_label = res.start;
   const end_label = res.end;
   const dict = res.dict
@@ -31,61 +34,64 @@ export default async (req, res) => {
 
   let response = {
     columns: {},
-    meta: {}
-  }
+    meta: {},
+    originalColMeta: {
+      originalColName: sourceColId,
+      types: [],
+      properties: []
+    }
+  };
+
+  response.originalColMeta.properties.push({
+    id: "wd:P1444",
+    obj: destinationColId,
+    name: "destination point",
+    match: true,
+    score: 100
+  });
+
+  response.originalColMeta.types.push({
+    id: "wd:Q529711",
+    name: "beginning",
+    match: true,
+    score: 100
+  });
 
   property.forEach(prop => {
-    const propId = `${prop}_${mode}`;
-    const columnLabel = `${prop}_${mode}`;
-    if (prop !== "route") {
-      response.columns[propId] = {
-        label: columnLabel,
-        kind: 'literal',
-        entity: [],
-        metadata: [],
-        cells: {}
-      }
-    } else {
-      response.columns[propId] = {
-        label: columnLabel,
-        kind: 'entity',
-        entity: [
-          {
-            "name": "itinerary",
-            "id": "wd:Q1322323",
-            "score": 100,
-            "match": true,
-            'type': [{
-              "id": "wd:Q111226201",
-              "name": "MultiLineString",
-              "score": 100,
-              "match": true
-            }]
-          }],
-        metadata: [],
-        cells: {}
-      }
+    const targetColId = `${prop}_${mode}`;
+
+    response.columns[targetColId] = {
+      label: targetColId,
+      kind: prop === "route" ? "entity" : "literal",
+      datatype: prop === "route" ? "OTHER" : "NUMBER",
+      entity: [],
+      metadata: [],
+      cells: {}
     }
 
+    let propId = "";
+    let propLabel = "";
 
-    const colProperty = [{
-      id: 'P1427',
-      obj: start_label,
+    if (prop === "duration") {
+      propId = "wd:P2047";
+      propLabel = "duration";
+    } else if (prop === "length") {
+      propId = "wd:P2043";
+      propLabel = "distance";
+    } else {
+      propId = "wd:P2825";
+      propLabel = "via";
+    }
+
+    response.originalColMeta.properties.push({
+      id: propId,
+      obj: targetColId,
+      name: propLabel,
       match: true,
-      name: 'start point',
       score: 100
-    },
-      {
-        id: 'P1444',
-        obj: end_label,
-        match: true,
-        name: 'destination point',
-        score: 100
-      }];
+    });
 
     let colType = "";
-    let colEntity = "";
-
     if (prop === "duration") {
       colType = [
         {
@@ -93,68 +99,46 @@ export default async (req, res) => {
           "name": "minute",
           "match": true,
           "score": 100
-        }];
-      colEntity = [
+        }
+      ];
+    } else if (prop === "length") {
+      colType = [
         {
-          "name": "duration",
-          "id": "wd:Q2199864",
-          "score": 100,
-          "match": true
+          "id": "wd:Q828224",
+          "name": "kilometre",
+          "match": true,
+          "score": 100
         }
       ];
     } else {
-      if (prop === "length") {
-        colType = [
-          {
-            "id": "wd:Q828224",
-            "name": "kilometre",
-            "match": true,
-            "score": 100
-          }];
-        colEntity = [
-          {
-            "name": "length",
-            "id": "wd:Q36253",
-            "score": 100,
-            "match": true
-          }
-        ];
-      } else {
-        colType = [
-          {
-            "id": "wd:Q111226201",
-            "name": "MultiLineString",
-            "match": true,
-            "score": 100
-          }];
-        colEntity = [
-          {
-            "name": "itinerary",
-            "id": "wd:Q1322323",
-            "score": 100,
-            "match": true
-          }];
-      }
+      colType = [
+        {
+          "id": "wd:Q111226201",
+          "name": "MultiLineString",
+          "match": true,
+          "score": 100
+        }
+      ];
     }
 
-    response.columns[propId].metadata[0] = {
+    response.columns[targetColId].metadata = [{
       "id": "path_" + start_label + "_" + end_label + "_" + mode,
       "name": prop,
-      "entity": colEntity,
+      "entity": [],
       "type": colType,
-      "property": colProperty
-    }
+      "property": []
+    }];
 
-    Object.keys(dict).forEach(index => {
+    Object.keys(dict).forEach((index) => {
       let row_id = dict[index];
-      let label_result = getPropRoute(res[index], prop)
+      let label_result = getPropRoute(res[index], prop);
       if (prop !== "route") {
-        response.columns[propId].cells[row_id] = {
+        response.columns[targetColId].cells[row_id] = {
           label: label_result,
           metadata: []
-        }
+        };
       } else {
-        response.columns[propId].cells[row_id] = {
+        response.columns[targetColId].cells[row_id] = {
           label: label_result,
           metadata: [{
             'id': String("georss:" + label_result),
@@ -164,11 +148,10 @@ export default async (req, res) => {
             'match': true,
             'type': [{'id': "wd:Q111226201", 'name': "MultiLineString" }]
           }]
-        }
+        };
       }
-
     });
-
+    response.meta[targetColId] = sourceColId;
   });
   console.log(response)
   return response;
