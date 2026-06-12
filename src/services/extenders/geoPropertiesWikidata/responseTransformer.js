@@ -154,6 +154,10 @@ export default async (req, res) => {
          // get rows for each metaId
          const requestRowsIds = items[inputColumns[colIndex]][`wd:${entityId}`];
 
+         if (!requestRowsIds || !Array.isArray(requestRowsIds)) {
+           return;
+         }
+
          // build cells
          const cells = requestRowsIds.reduce((acc, rowId) => {
            // get a cell for the appropriate prop
