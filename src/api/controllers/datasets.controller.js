@@ -242,17 +242,28 @@ const DatasetsController = {
   },
   exportTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    let { format = "w3c", keepMatching = false } = req.query;
-    console.log("*** export req query values", req.query);
+    let format = req.query.format || req.body.format || "w3c";
+    const keepMatching = req.query.keepMatching === "true" || req.body.keepMatching === true;
     try {
       const table = await DatasetsService.findTable(idDataset, idTable);
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
       const data = await ExportService[format]({
         ...table,
+        htmlContent: req.body.htmlContent,
         keepMatching,
         ...req.query,
+        ...req.body
       });
+
+      if (format === "report_md") {
+        res.setHeader("Content-Type", "text/markdown");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${table?.name || "report"}.md"`
+        );
+        return res.send(data);
+      }
       res.send(data);
     } catch (err) {
       next(err);
