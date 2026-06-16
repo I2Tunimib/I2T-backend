@@ -28,9 +28,6 @@ RUN python3 -m venv venv && \
     echo "Verifying spacy model installation..." && \
     ./venv/bin/python3 -c "import spacy; spacy.load('en_core_web_sm'); print('✓ en_core_web_sm loaded successfully')"
 
-# Make the Python script executable
-RUN chmod +x py-scripts/column_classifier_runner.py
-
 # explicitly tell docker to copy .env file or it won't be copied to image
 # COPY .env .
 
