@@ -111,4 +111,14 @@ router.delete(
   asyncMiddleware(DatasetsController.deleteOperation),
 );
 
+// Table lock routes
+router.post(
+  "/lock/:tableId/acquire",
+  asyncMiddleware(DatasetsController.acquireTableLock),
+);
+router.post(
+  "/lock/:tableId/release",
+  asyncMiddleware(DatasetsController.releaseTableLock),
+);
+
 export default router;

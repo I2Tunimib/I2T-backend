@@ -44,7 +44,15 @@ function getCurrentTime() {
   // Return the current time in the format "hh:mm:ss:ms"
   return `${currentHours}:${currentMinutes}:${currentSeconds}:${currentMilliseconds}`;
 }
-
+const clearTableAnnotationStatus = async (idDataset, idTable) => {
+  // update status to done
+  const { meta, tables } = JSON.parse(await readFile(getTablesDbPath()));
+  tables[idTable] = {
+    ...tables[idTable],
+    mantisStatus: "DONE",
+  };
+  await writeFile(getTablesDbPath(), JSON.stringify({ meta, tables }, null, 2));
+};
 const getAnnotationRequest = (idDataset, idTable, { rows, columns }) => {
   // Build payload matching new Alligator `POST /dataset/{datasetName}/table/json` API
   const columnKeys = Object.keys(columns);
@@ -304,6 +312,7 @@ const clearCron = (cronId) => {
     `Finished tracking for ${cronId} - current time: ${getCurrentTime()}`,
   );
 };
+let cronMapLastChecks = {};
 const startCron = ({ idDataset, idTable, io }) => {
   log(
     "mantis",
@@ -355,6 +364,23 @@ const startCron = ({ idDataset, idTable, io }) => {
         });
         // emit to client annotated table
         io.emit("done", annotatedTable);
+      } else {
+        const key = `${idDataset}_${idTable}`;
+        if (!(key in cronMapLastChecks)) {
+          cronMapLastChecks[key] = {
+            status: status,
+            checksDone: 1,
+          };
+        } else {
+          if (cronMapLastChecks[key].checksDone <= 5) {
+            cronMapLastChecks[key].checksDone += 1;
+          } else {
+            log("mantis", `clearing non responding job ${key}`);
+            clearCron(key);
+            delete cronMapLastChecks[key];
+            await clearTableAnnotationStatus(idDataset, idTable);
+          }
+        }
       }
     } catch (err) {
       // don't let a single poll failure crash the cron; log and continue
@@ -451,6 +477,7 @@ const MantisService = {
       throw err;
     }
   },
+
   trackAnnotationStatus: async ({ idDataset, idTable, ...rest }) => {
     // start cron to check annotation status every 30 seconds
     startCron({ idDataset, idTable, ...rest });

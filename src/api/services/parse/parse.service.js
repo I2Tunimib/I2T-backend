@@ -80,13 +80,13 @@ const ParseService = {
       if (condition) {
         if (await condition(obj)) {
           if (stopAtFirst) {
-            acc = transformFn ? transformFn(obj) : obj;
+            acc = transformFn ? await transformFn(obj) : obj;
             break;
           }
-          push(transformFn ? transformFn(obj) : obj);
+          push(transformFn ? await transformFn(obj) : obj);
         }
       } else {
-        push(transformFn ? transformFn(obj) : obj);
+        push(transformFn ? await transformFn(obj) : obj);
       }
     }
     stream.end();
@@ -97,7 +97,7 @@ const ParseService = {
     const stream = ParseService.createJsonStreamReader(path, pattern);
     for await (const obj of stream) {
       if (condition(obj)) {
-        value = transformFn ? transformFn(obj) : obj;
+        value = transformFn ? await transformFn(obj) : obj;
         break;
       }
     }

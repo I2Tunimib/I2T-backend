@@ -134,8 +134,15 @@ const COLLECTION_TABLES_MAP = {
   nRows: {
     label: "N. Rows",
   },
+  nProperties: {
+    label: "N. Properties",
+  },
   completion: {
     label: "Completion",
+    type: "percentage",
+  },
+  headerTypeMatching: {
+    label: "Header Types",
     type: "percentage",
   },
   lastModifiedDate: {
@@ -248,14 +255,71 @@ const FileSystemService = {
       path: getTablesDbPath(),
       pattern: "tables.*",
       acc: [],
-      transformFn: (item) => {
+      transformFn: async (item) => {
         const { nCells, nCellsReconciliated, ...rest } = item;
+
+        // Calculate header type matching and number of unique properties
+        let headerTypeMatching = { total: 0, value: 0 };
+        let nProperties = 0;
+        try {
+          const tableJsonPath = `${getDatasetFilesPath()}/${item.idDataset}/${item.id}.json`;
+          const tableJsonContent = await readFile(tableJsonPath, "utf-8");
+          const tableData = JSON.parse(tableJsonContent);
+
+          if (tableData.columns && typeof tableData.columns === "object") {
+            const columns = tableData.columns;
+            const totalColumns = Object.keys(columns).length;
+            let matchedColumns = 0;
+            const uniquePropertyIds = new Set();
+
+            // Count columns where at least one type has match: true
+            // and collect all unique properties
+            for (const columnId of Object.keys(columns)) {
+              const column = columns[columnId];
+              if (column.metadata && Array.isArray(column.metadata)) {
+                // Check if any metadata entry has a type with match: true
+                const hasMatch = column.metadata.some((metaItem) => {
+                  if (metaItem.type && Array.isArray(metaItem.type)) {
+                    return metaItem.type.some(
+                      (typeItem) => typeItem.match === true,
+                    );
+                  }
+                  return false;
+                });
+                if (hasMatch) {
+                  matchedColumns++;
+                }
+
+                // Collect unique properties from all metadata entries
+                for (const metaItem of column.metadata) {
+                  if (metaItem.property && Array.isArray(metaItem.property)) {
+                    for (const prop of metaItem.property) {
+                      if (prop.id) {
+                        uniquePropertyIds.add(prop.id);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            headerTypeMatching = { total: totalColumns, value: matchedColumns };
+            nProperties = uniquePropertyIds.size;
+          }
+        } catch (err) {
+          // If file cannot be read or parsed, return default values
+          headerTypeMatching = { total: 0, value: 0 };
+          nProperties = 0;
+        }
+
         return {
           ...rest,
           completion: {
             total: nCells,
             value: nCellsReconciliated,
           },
+          headerTypeMatching,
+          nProperties,
         };
       },
       condition: (item) => {

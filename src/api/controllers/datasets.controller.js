@@ -1,6 +1,7 @@
 import DatasetsService from "../services/datasets/datasets.service.js";
 import ExportService from "../services/export/export.service.js";
 import ComplianceService from "../services/tables/compliance.service.js";
+import TableLockService from "../services/tables/table-lock.service.js";
 import jwt from "jsonwebtoken";
 import config from "../../config/index.js";
 import AuthService from "../services/auth/auth.service.js";
@@ -12,7 +13,7 @@ import reconciliationPipeline from "../services/reconciliation/reconciliation-pi
 
 const {
   JWT_SECRET,
-  helpers: { getTo },
+  helpers: { getTo, getDatasetFilesPath },
 } = config;
 
 const DatasetsController = {
@@ -82,9 +83,17 @@ const DatasetsController = {
         return res.status(401).json({});
       }
       const tableData = await DatasetsService.findTable(idDataset, idTable);
-      const dump = JSON.stringify(tableData);
-      // Write dump to /sample_jsons/get_table_sample.json
-      res.json(tableData);
+      const currentLock = TableLockService.getTableLock(idTable);
+      const isLocked =
+        currentLock && String(currentLock.userId) !== String(user.id);
+      res.json({
+        ...tableData,
+        _lock: {
+          isLocked,
+          lockedBy: isLocked ? currentLock.userId : null,
+          lockedSince: isLocked ? currentLock.timestamp : null,
+        },
+      });
     } catch (err) {
       next(err);
     }
@@ -178,16 +187,83 @@ const DatasetsController = {
       );
 
       res.json({
-        tables: Object.keys(tables).map((key) => {
-          const { nCells, nCellsReconciliated, ...rest } = tables[key];
-          return {
-            ...rest,
-            completion: {
-              total: nCells,
-              value: nCellsReconciliated,
-            },
-          };
-        }),
+        tables: await Promise.all(
+          Object.keys(tables).map(async (key) => {
+            const { nCells, nCellsReconciliated, ...rest } = tables[key];
+            let headerTypeMatching = { total: 0, value: 0 };
+            let nProperties = 0;
+
+            // Calculate headerTypeMatching and nProperties from table JSON file
+            try {
+              const tableJsonPath = `${getDatasetFilesPath()}/${idDataset}/${key}.json`;
+              const tableJsonContent = await fs.promises.readFile(
+                tableJsonPath,
+                "utf-8",
+              );
+              const tableData = JSON.parse(tableJsonContent);
+
+              if (tableData.columns && typeof tableData.columns === "object") {
+                const columns = tableData.columns;
+                const totalColumns = Object.keys(columns).length;
+                let matchedColumns = 0;
+                const uniquePropertyIds = new Set();
+
+                // Count columns where at least one type has match: true
+                // and collect all unique properties
+                for (const columnId of Object.keys(columns)) {
+                  const column = columns[columnId];
+                  if (column.metadata && Array.isArray(column.metadata)) {
+                    const hasMatch = column.metadata.some((metaItem) => {
+                      if (metaItem.type && Array.isArray(metaItem.type)) {
+                        return metaItem.type.some(
+                          (typeItem) => typeItem.match === true,
+                        );
+                      }
+                      return false;
+                    });
+                    if (hasMatch) {
+                      matchedColumns++;
+                    }
+
+                    // Collect unique properties from all metadata entries
+                    for (const metaItem of column.metadata) {
+                      if (
+                        metaItem.property &&
+                        Array.isArray(metaItem.property)
+                      ) {
+                        for (const prop of metaItem.property) {
+                          if (prop.id) {
+                            uniquePropertyIds.add(prop.id);
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
+                headerTypeMatching = {
+                  total: totalColumns,
+                  value: matchedColumns,
+                };
+                nProperties = uniquePropertyIds.size;
+              }
+            } catch (err) {
+              // If file cannot be read or parsed, return default values
+              headerTypeMatching = { total: 0, value: 0 };
+              nProperties = 0;
+            }
+
+            return {
+              ...rest,
+              completion: {
+                total: nCells,
+                value: nCellsReconciliated,
+              },
+              headerTypeMatching,
+              nProperties,
+            };
+          }),
+        ),
       });
     } catch (err) {
       next(err);
@@ -237,6 +313,20 @@ const DatasetsController = {
       );
       if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id)) {
         return res.status(401).json({});
+      }
+
+      // Check table lock: prevent modifications if locked by another user
+      const tableId = tableInstance.id;
+      const tableLock = TableLockService.getTableLock(tableId);
+      if (tableLock && String(tableLock.userId) !== String(user.id)) {
+        console.log(
+          `[LOCK] User ${user.id} attempted to modify table ${tableId} locked by ${tableLock.userId}`,
+        );
+        return res.status(423).json({
+          error: "Table is currently being edited by another user",
+          lockedBy: tableLock.userId,
+          lockedSince: tableLock.timestamp,
+        });
       }
 
       res.json(await DatasetsService.updateTable(data));
@@ -373,6 +463,19 @@ const DatasetsController = {
       if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id))
         return res.status(401).json({});
 
+      // Check table lock: prevent modifications if locked by another user
+      const tableLock = TableLockService.getTableLock(idTable);
+      if (tableLock && String(tableLock.userId) !== String(user.id)) {
+        console.log(
+          `[LOCK] User ${user.id} attempted to delete operation on table ${idTable} locked by ${tableLock.userId}`,
+        );
+        return res.status(423).json({
+          error: "Table is currently being edited by another user",
+          lockedBy: tableLock.userId,
+          lockedSince: tableLock.timestamp,
+        });
+      }
+
       // 1. Delete the operation and its downstream dependents
       const log = new Log(idDataset, idTable);
       log.buildDependencyGraph();
@@ -483,11 +586,24 @@ const DatasetsController = {
     try {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
-      if (!DatasetsService.userCanView(dataset, user.id))
+      if (!DatasetsService.userCanEdit(dataset, user.id))
         return res.status(401).json({});
       const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
-      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id))
+      if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id))
         return res.status(401).json({});
+
+      // Check table lock: prevent modifications if locked by another user
+      const tableLock = TableLockService.getTableLock(idTable);
+      if (tableLock && String(tableLock.userId) !== String(user.id)) {
+        console.log(
+          `[LOCK] User ${user.id} attempted to redo operation on table ${idTable} locked by ${tableLock.userId}`,
+        );
+        return res.status(423).json({
+          error: "Table is currently being edited by another user",
+          lockedBy: tableLock.userId,
+          lockedSince: tableLock.timestamp,
+        });
+      }
 
       // 1. Find the operation in the log
       const log = new Log(idDataset, idTable);
@@ -783,6 +899,55 @@ const DatasetsController = {
       }
 
       res.status(200).end();
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // Table lock management endpoints
+  acquireTableLock: async (req, res, next) => {
+    const { tableId } = req.params;
+    console.log(`[LOCK] tableId:`, tableId);
+    try {
+      const user = await AuthService.verifyToken(req);
+      console.log(`[LOCK] userId:`, user.id);
+      const lockResult = TableLockService.acquireTableLock(tableId, user.id);
+      console.log(`[LOCK] lockResult:`, lockResult);
+      console.log(
+        `[LOCK-BACKEND] Table ${tableId}: acquired=${lockResult.acquired}, user=${user.id}, lockedBy=${lockResult.lockedBy || "none"}`,
+      );
+      const io = req.app.get("io");
+      if (io && lockResult.acquired) {
+        io.emit("table-lock-acquired", { tableId: tableId, userId: user.id });
+      } else if (io && !lockResult.acquired) {
+        io.emit("table-lock-denied", {
+          tableId: tableId,
+          lockedBy: lockResult.lockedBy,
+        });
+      }
+      console.log(
+        "[LOCK-BACKEND] Sending response:",
+        JSON.stringify(lockResult),
+      );
+      res.json(lockResult);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  releaseTableLock: async (req, res, next) => {
+    const { tableId } = req.params;
+    console.log(`[LOCK] tableId:`, tableId);
+    try {
+      const user = await AuthService.verifyToken(req);
+      console.log(`[LOCK] userId:`, user.id);
+      const released = TableLockService.releaseTableLock(tableId, user.id);
+      console.log(`[LOCK] released:`, released);
+      const io = req.app.get("io");
+      if (io && released) {
+        io.emit("table-lock-released", { tableId: tableId, userId: user.id });
+      }
+      res.json({ released });
     } catch (err) {
       next(err);
     }
