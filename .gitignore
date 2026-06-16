@@ -34,5 +34,5 @@ yarn-error.log*
 *.zip
 logs
 sample_jsons
-semTParser*
+semTParser
 venv
