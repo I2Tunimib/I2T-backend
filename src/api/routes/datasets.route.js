@@ -24,7 +24,7 @@ router.get(
   "/:idDataset/table/:idTable/export",
   asyncMiddleware(DatasetsController.exportTable),
 );
-router.get(
+router.post(
   "/:idDataset/table/:idTable/export",
   asyncMiddleware(DatasetsController.exportTable),
 );
