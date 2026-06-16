@@ -1,10 +1,13 @@
 export default async (req, res) => {
-  const { items } = req.original;
+  const { items, props } = req.original;
 
-  let response = {
-    columns: {},
-    meta: {},
-  };
+  const sparqlData = res?.data || [];
+  const fetchedProps = res?.properties || [];
+
+  const newCols = props.variables
+    .split(/\s+/)
+    .map(v => v.replace('?', ''))
+    .filter(v => v.length > 0);
 
   // Extract row mapping from columnName
   const columnName = Object.keys(items)[0]; // Extract the first key (e.g., "Museum")
@@ -16,14 +19,23 @@ export default async (req, res) => {
     rowMapping[itemId] = rowKey;
   });
 
+  let response = {
+    columns: {},
+    meta: {},
+    originalColMeta: {
+      originalColName: columnName,
+      properties: []
+    }
+  };
+
   // Check if res is undefined or empty
-  if (!res || !Array.isArray(res) || res.length === 0) {
+  if (sparqlData.length === 0) {
     console.warn("No results returned from SPARQL query");
     return response;
   }
 
   // Iterate over the array `res` to populate columns
-  res.forEach((entry) => {
+  sparqlData.forEach((entry) => {
     Object.entries(entry).forEach(([key, value]) => {
       // Skip source column variables - these should not be returned as new columns
       if (key === "item" || key === "itemLabel" || key === "itemDescription") {
@@ -32,11 +44,25 @@ export default async (req, res) => {
 
       // Ensure the column exists
       if (!response.columns[key]) {
+        const colIndex = newCols.indexOf(key);
+        const propData = fetchedProps[colIndex] || { id: "P_UNKNOWN", label: key };
         response.columns[key] = {
           label: key,
           metadata: [],
           cells: {},
         };
+
+        if (!response.originalColMeta.properties.some(p => p.obj === key)) {
+          response.originalColMeta.properties.push({
+            id: `wd:${propData.id}`,
+            obj: key,
+            name: propData.label,
+            match: true,
+            score: 100
+          });
+        }
+
+        response.meta[key] = columnName;
       }
 
       // Populate the cell for the current row and column

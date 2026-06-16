@@ -5,6 +5,13 @@ import axios from "axios";
 import { SemtParserService } from "./semtparser.service.js";
 
 const ExportService = {
+  schema_w3c: async ({ columns, rows }) => {
+    const jsonData = await ExportService.w3c({ columns, rows, keepMatching: false });
+    return jsonData[0] || {};
+  },
+  report_html: async ({ columns, rows }) => {
+    return await ExportService.w3c({ columns, rows, keepMatching: false });
+  },
   rawJson: async ({ columns, rows }) => {
     // Be defensive: rows or individual row.cells may be missing. Produce one object per row
     // using the available column labels. Missing cell values produce empty string.

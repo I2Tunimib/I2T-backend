@@ -72,7 +72,22 @@ function cleanDescription(raw, category) {
     .replace(/%%ENDLIST%%/g, '\n\n')
     .replace(/\n{3,}/g, '\n\n')
 
-    .replace(/PLACEHOLDER_COMPLIANCE_GIF/g, '![Compliance GIF](/img/compliance.gif)')
+    .replace(/PLACEHOLDER_COMPLIANCE_GIF/g,
+`:::tip
+  Watch this short video to see the GDPR Compliance Check in action:
+
+  <div style={{textAlign: 'center', margin: '1.5rem 0'}}>
+    <iframe
+      width="100%"
+      style={{aspectRatio: '16/9', maxWidth: '600px'}}
+      src="https://www.youtube.com/embed/ZqcuemO53bA"
+      title="SemT-X Starting a Project"
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen>
+    </iframe>
+  </div>
+:::`)
     .trim();
 }
 

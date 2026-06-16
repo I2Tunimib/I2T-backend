@@ -12,7 +12,8 @@ export default {
       "<em>ID</em> and/or <em>name</em> values from the reconciled column.<br><br>" +
       "<strong>Input</strong>: A <em> reconciled column </em> against any dataset or knowledge graph; " +
       "a <em> selection of the properties </em> to extract (ID in any supported format <code>prefix:id</code>, " +
-      "name as string).<br> <strong>Output</strong>: One new column for each requested property, containing the " +
+      "name as string [<a href='https://www.wikidata.org/wiki/Property:P1448' target='_blank' rel='noopener noreferrer'>P1448</a>])." +
+      "<br> <strong>Output</strong>: One new column for each requested property, containing the " +
       "extracted metadata from the reconciled entities.",
     formParams: [
       {
@@ -29,7 +30,7 @@ export default {
           },
           {
             id: "name",
-            label: "Name of entities in the reference dataset",
+            label: "Name of entities in the reference dataset [P1448]",
             value: "name",
           },
         ],

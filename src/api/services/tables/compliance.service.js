@@ -60,9 +60,7 @@ class ComplianceService {
           <li><strong>remove</strong>: Delete the column if unnecessary for the specified purpose.</li>
         </ul>
 
-        <div style="display: flex; justify-content: center; margin-top: 15px;">
-          PLACEHOLDER_COMPLIANCE_GIF
-        </div>
+        PLACEHOLDER_COMPLIANCE_GIF
       </div>
     `,
     };
