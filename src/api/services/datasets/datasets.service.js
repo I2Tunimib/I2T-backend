@@ -319,7 +319,7 @@ const FileSystemService = {
             value: nCellsReconciliated,
           },
           headerTypeMatching,
-          nProperties,
+          nProperties: nProperties !== 0 ? nProperties : "N/A",
         };
       },
       condition: (item) => {
