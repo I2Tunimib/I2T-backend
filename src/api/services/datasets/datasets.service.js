@@ -866,6 +866,7 @@ const FileSystemService = {
       minMetaScore,
       maxMetaScore,
       compliance,
+      complianceReports,
     } = tableInstance;
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
@@ -889,7 +890,8 @@ const FileSystemService = {
         minMetaScore,
         maxMetaScore,
         lastModifiedDate: new Date().toISOString(),
-        ...(compliance && { compliance }), // Preserve compliance data if present
+        ...(compliance && { compliance }),
+        ...(complianceReports && { complianceReports }),
       };
 
       // update table entry
