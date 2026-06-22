@@ -124,5 +124,9 @@ router.post(
   "/lock/:tableId/release",
   asyncMiddleware(DatasetsController.releaseTableLock),
 );
+router.post(
+  "/lock/:tableId/force-release",
+  asyncMiddleware(DatasetsController.forceReleaseTableLock),
+);
 
 export default router;

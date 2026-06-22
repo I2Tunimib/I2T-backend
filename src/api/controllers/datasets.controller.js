@@ -16,16 +16,39 @@ const {
   helpers: { getTo, getDatasetFilesPath },
 } = config;
 
-const GDPR_STATUS_LABEL = { noGDPR: "✅ No GDPR", yesGDPR: "❌ GDPR Applies", pseudoGDPR: "⚠️ Pseudonymized (GDPR)" };
-const CLASS_LABEL = { personalData: "Personal Data", quasiIdentifiers: "Quasi-Identifier", nonPersonalData: "Non-Personal", anonymousData: "Anonymous" };
-const ACTION_LABEL = { noChange: "No change needed", pseudonymize: "Pseudonymize", remove: "Remove", generalize: "Generalize" };
+const GDPR_STATUS_LABEL = {
+  noGDPR: "✅ No GDPR",
+  yesGDPR: "❌ GDPR Applies",
+  pseudoGDPR: "⚠️ Pseudonymized (GDPR)",
+};
+const CLASS_LABEL = {
+  personalData: "Personal Data",
+  quasiIdentifiers: "Quasi-Identifier",
+  nonPersonalData: "Non-Personal",
+  anonymousData: "Anonymous",
+};
+const ACTION_LABEL = {
+  noChange: "No change needed",
+  pseudonymize: "Pseudonymize",
+  remove: "Remove",
+  generalize: "Generalize",
+};
 
 function buildComplianceMarkdown(report, tableName) {
   const { userId, date, result } = report;
   const tableInfo = result?.[0]?.table;
-  const columns = result?.slice(1).flatMap((item) =>
-    Object.entries(item).map(([name, analysis]) => ({ name, analysis }))
-  ).filter(({ analysis }) => analysis && typeof analysis === "object" && "classification" in analysis) ?? [];
+  const columns =
+    result
+      ?.slice(1)
+      .flatMap((item) =>
+        Object.entries(item).map(([name, analysis]) => ({ name, analysis })),
+      )
+      .filter(
+        ({ analysis }) =>
+          analysis &&
+          typeof analysis === "object" &&
+          "classification" in analysis,
+      ) ?? [];
 
   const lines = [];
   lines.push(`# GDPR Compliance Report — ${tableName}`);
@@ -41,8 +64,12 @@ function buildComplianceMarkdown(report, tableName) {
     lines.push(``);
     lines.push(`| Field | Value |`);
     lines.push(`|---|---|`);
-    lines.push(`| **GDPR Status** | ${GDPR_STATUS_LABEL[tableInfo.gdpr] ?? tableInfo.gdpr} |`);
-    lines.push(`| **Confidence** | ${Math.round((tableInfo.score ?? 0) * 100)}% |`);
+    lines.push(
+      `| **GDPR Status** | ${GDPR_STATUS_LABEL[tableInfo.gdpr] ?? tableInfo.gdpr} |`,
+    );
+    lines.push(
+      `| **Confidence** | ${Math.round((tableInfo.score ?? 0) * 100)}% |`,
+    );
     lines.push(`| **Reasoning** | ${tableInfo.reasoning ?? ""} |`);
   }
 
@@ -53,10 +80,13 @@ function buildComplianceMarkdown(report, tableName) {
     lines.push(`| Column | Classification | Action | Confidence | Reasoning |`);
     lines.push(`|---|---|---|---|---|`);
     for (const { name, analysis } of columns) {
-      const cls = CLASS_LABEL[analysis.classification] ?? analysis.classification ?? "";
+      const cls =
+        CLASS_LABEL[analysis.classification] ?? analysis.classification ?? "";
       const act = ACTION_LABEL[analysis.action] ?? analysis.action ?? "";
       const conf = `${Math.round((analysis.score ?? 0) * 100)}%`;
-      const reasoning = (analysis.reasoning ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
+      const reasoning = (analysis.reasoning ?? "")
+        .replace(/\|/g, "\\|")
+        .replace(/\n/g, " ");
       lines.push(`| **${name}** | ${cls} | ${act} | ${conf} | ${reasoning} |`);
     }
   }
@@ -423,28 +453,44 @@ const DatasetsController = {
 
       // Resolve the report — supports complianceReports array and legacy compliance field
       let report;
-      if (tableMeta.complianceReports && tableMeta.complianceReports.length > 0) {
-        const idx = reportIndex === "latest"
-          ? tableMeta.complianceReports.length - 1
-          : parseInt(reportIndex, 10);
+      if (
+        tableMeta.complianceReports &&
+        tableMeta.complianceReports.length > 0
+      ) {
+        const idx =
+          reportIndex === "latest"
+            ? tableMeta.complianceReports.length - 1
+            : parseInt(reportIndex, 10);
         report = tableMeta.complianceReports[idx];
         if (!report) return res.status(404).json({ error: "Report not found" });
       } else if (tableMeta.compliance) {
-        report = { userId: null, date: tableMeta.lastModifiedDate, result: tableMeta.compliance };
+        report = {
+          userId: null,
+          date: tableMeta.lastModifiedDate,
+          result: tableMeta.compliance,
+        };
       } else {
-        return res.status(404).json({ error: "No compliance reports available" });
+        return res
+          .status(404)
+          .json({ error: "No compliance reports available" });
       }
 
       const baseName = `compliance_${tableMeta.name}_report${reportIndex}_${report.date.slice(0, 10)}`;
 
       if (format === "md") {
         res.setHeader("Content-Type", "text/markdown");
-        res.setHeader("Content-Disposition", `attachment; filename="${baseName}.md"`);
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${baseName}.md"`,
+        );
         return res.send(buildComplianceMarkdown(report, tableMeta.name));
       }
 
       res.setHeader("Content-Type", "application/json");
-      res.setHeader("Content-Disposition", `attachment; filename="${baseName}.json"`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${baseName}.json"`,
+      );
       return res.send(JSON.stringify(report, null, 2));
     } catch (err) {
       next(err);
@@ -453,7 +499,8 @@ const DatasetsController = {
   exportTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
     let format = req.query.format || req.body.format || "w3c";
-    const keepMatching = req.query.keepMatching === "true" || req.body.keepMatching === true;
+    const keepMatching =
+      req.query.keepMatching === "true" || req.body.keepMatching === true;
     try {
       const table = await DatasetsService.findTable(idDataset, idTable);
       //workaround to handle different rdf formats
@@ -463,14 +510,14 @@ const DatasetsController = {
         htmlContent: req.body.htmlContent,
         keepMatching,
         ...req.query,
-        ...req.body
+        ...req.body,
       });
 
       if (format === "report_md") {
         res.setHeader("Content-Type", "text/markdown");
         res.setHeader(
           "Content-Disposition",
-          `attachment; filename="${table?.name || "report"}.md"`
+          `attachment; filename="${table?.name || "report"}.md"`,
         );
         return res.send(data);
       }
@@ -1054,6 +1101,59 @@ const DatasetsController = {
       }
       res.json({ released });
     } catch (err) {
+      next(err);
+    }
+  },
+
+  forceReleaseTableLock: async (req, res, next) => {
+    const { tableId } = req.params;
+    console.log(`[LOCK] Force release requested for tableId:`, tableId);
+    try {
+      const user = await AuthService.verifyToken(req);
+      console.log(`[LOCK] User requesting force release:`, user.id);
+
+      // Check if user is dataset owner or has permission
+      const { idDataset } = req.params;
+      if (!idDataset) {
+        // Try to find dataset from table
+        const tables = await DatasetsService.getAllTables();
+        const tableEntry = tables.find((t) => t.id === tableId);
+        if (!tableEntry) {
+          return res.status(404).json({ error: "Table not found" });
+        }
+        req.params.idDataset = tableEntry.datasetId;
+      }
+
+      const dataset = await DatasetsService.findOneDataset(
+        req.params.idDataset,
+      );
+      const isOwner = String(dataset.userId) === String(user.id);
+
+      if (!isOwner) {
+        console.log(
+          `[LOCK] User ${user.id} is not dataset owner, denying force release`,
+        );
+        return res.status(403).json({
+          error: "Only dataset owner can force release locks",
+          released: false,
+        });
+      }
+
+      const result = TableLockService.forceReleaseTableLock(tableId);
+      console.log(`[LOCK] Force release result:`, result);
+
+      const io = req.app.get("io");
+      if (io && result.released) {
+        io.emit("table-lock-force-released", {
+          tableId: tableId,
+          byUserId: user.id,
+          wasOwnedBy: result.wasOwnedBy,
+        });
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error("[LOCK] Error in forceReleaseTableLock:", err);
       next(err);
     }
   },
