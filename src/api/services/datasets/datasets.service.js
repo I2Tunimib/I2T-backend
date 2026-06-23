@@ -261,6 +261,7 @@ const FileSystemService = {
         // Calculate header type matching and number of unique properties
         let headerTypeMatching = { total: 0, value: 0 };
         let nProperties = 0;
+        let graph = { nodes: [], links: [] };
         try {
           const tableJsonPath = `${getDatasetFilesPath()}/${item.idDataset}/${item.id}.json`;
           const tableJsonContent = await readFile(tableJsonPath, "utf-8");
@@ -268,6 +269,50 @@ const FileSystemService = {
 
           if (tableData.columns && typeof tableData.columns === "object") {
             const columns = tableData.columns;
+
+            const nodesMap = new Map();
+            const clean = (str) => str ? str.trim().replace(/^\uFEFF/, '') : '';
+
+            Object.keys(columns).forEach((colId) => {
+              const column = columns[colId];
+              const columnLabel = clean(column.label || colId);
+
+              nodesMap.set(columnLabel, {
+                id: columnLabel,
+                label: columnLabel,
+                role: column.role,
+                kind: column.kind,
+              });
+            });
+
+            const links = [];
+            Object.keys(columns).forEach((colId) => {
+              const column = columns[colId];
+              const sourceLabel = clean(column.label || colId);
+
+              if (column.metadata && Array.isArray(column.metadata)) {
+                column.metadata.forEach((metaItem) => {
+                  if (metaItem.property && Array.isArray(metaItem.property)) {
+                    metaItem.property.forEach((prop) => {
+                      const targetLabel = clean(prop.obj);
+                      if (targetLabel && nodesMap.has(targetLabel)) {
+                        links.push({
+                          source: sourceLabel,
+                          target: targetLabel,
+                          label: prop.label
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+
+            graph = {
+              nodes: Array.from(nodesMap.values()),
+              links: links
+            }
+
             const totalColumns = Object.keys(columns).length;
             let matchedColumns = 0;
             const uniquePropertyIds = new Set();
@@ -320,6 +365,7 @@ const FileSystemService = {
           },
           headerTypeMatching,
           nProperties,
+          graph,
         };
       },
       condition: (item) => {
