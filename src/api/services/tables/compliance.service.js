@@ -68,15 +68,15 @@ class ComplianceService {
   /**
    * 1. ENTRY POINT
    */
-  static async startCompliance({ idDataset, idTable, purpose, io }) {
+  static async startCompliance({ idDataset, idTable, purpose, userId, io }) {
     await this.setStatus(idTable, "PENDING");
-    this.makeCompliance({ idDataset, idTable, purpose, io });
+    this.makeCompliance({ idDataset, idTable, purpose, userId, io });
   }
 
   /**
    * 2. MAIN OPERATION - Calls LLM for GDPR compliance check
    */
-  static async makeCompliance({ idDataset, idTable, purpose, io }) {
+  static async makeCompliance({ idDataset, idTable, purpose, userId, io }) {
     try {
       // Get table data
       const table = await FileSystemService.findTable(idDataset, idTable);
@@ -155,10 +155,10 @@ class ComplianceService {
       finalResult = this.normalizeResult(finalResult);
 
       // Update table with compliance results
-      await this.applyResult(idDataset, idTable, finalResult);
+      const { newReport, complianceReports } = await this.applyResult(idDataset, idTable, finalResult, userId);
 
       // Finish successfully
-      await this.finish({ idDataset, idTable, io, result: finalResult });
+      await this.finish({ idDataset, idTable, io, result: finalResult, complianceReports });
     } catch (err) {
       console.error("[makeCompliance] Error:", err);
       await this.setStatus(idTable, "ERROR");
@@ -356,20 +356,26 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
   }
 
   /**
-   * 5. APPLY RESULT - Save entire compliance result in one field
+   * 5. APPLY RESULT - Append compliance report to the reports array
+   * Returns the new report object so the caller can forward it via socket.
    */
-  static async applyResult(idDataset, idTable, result) {
+  static async applyResult(idDataset, idTable, result, userId) {
     const tableData = await FileSystemService.findTable(idDataset, idTable);
     const { table, columns, rows, columnOrder } = tableData;
-    // Save the entire compliance result in one field
+
+    const newReport = {
+      userId: userId ?? null,
+      date: new Date().toISOString(),
+      result,
+    };
+
+    const updatedReports = [...(table.complianceReports || []), newReport];
     const updatedTable = {
       ...table,
-      compliance: result, // Store the full array from LLM
+      complianceReports: updatedReports,
       lastModifiedDate: new Date().toISOString(),
     };
 
-    // Ensure columns and rows are in the correct format for updateTable
-    // updateTable expects { byId: {}, allIds: [] } structure
     const columnsFormatted = {
       byId: columns,
       allIds: Object.keys(columns),
@@ -386,6 +392,8 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
       rows: rowsFormatted,
       columnOrder,
     });
+
+    return { newReport, complianceReports: updatedReports };
   }
 
   /**
@@ -407,16 +415,15 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
   /**
    * 7. FINISH HANDLERS
    */
-  static async finish({ idDataset, idTable, io, result }) {
+  static async finish({ idDataset, idTable, io, result, complianceReports }) {
     await this.setStatus(idTable, "DONE");
-    const tableData = await FileSystemService.findTable(idDataset, idTable);
 
     io?.emit("compliance-done", {
       datasetId: idDataset,
       tableId: idTable,
-      table: tableData.table,
       status: "DONE",
       result,
+      complianceReports,
     });
   }
 

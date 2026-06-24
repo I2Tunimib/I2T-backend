@@ -78,8 +78,30 @@ const getTableLock = (tableId) => {
   return lock || null;
 };
 
+const forceReleaseTableLock = (tableId) => {
+  console.log(`[LOCK] Force releasing lock for table ${tableId}`);
+  const lock = tableEditLocks.get(tableId);
+  if (lock) {
+    const now = Date.now();
+    const lockAge = now - lock.timestamp;
+    console.log(
+      `[LOCK] Lock found: owned by ${lock.userId}, age: ${Math.floor(lockAge / 1000 / 60)} minutes`,
+    );
+    tableEditLocks.delete(tableId);
+    console.log(`[LOCK] Force released lock for table ${tableId}`);
+    console.log(
+      `[LOCK] Current locks: ${JSON.stringify([...tableEditLocks.entries()])}`,
+    );
+    return { released: true, wasOwnedBy: lock.userId, lockAge };
+  } else {
+    console.log(`[LOCK] No lock found for table ${tableId}`);
+    return { released: false, reason: "No lock found" };
+  }
+};
+
 export default {
   acquireTableLock,
   releaseTableLock,
   getTableLock,
+  forceReleaseTableLock,
 };

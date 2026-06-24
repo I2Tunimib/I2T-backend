@@ -89,6 +89,10 @@ router.post(
   "/:idDataset/table/:idTable/compliance",
   asyncMiddleware(DatasetsController.makeCompliance),
 );
+router.get(
+  "/:idDataset/table/:idTable/compliance/:reportIndex",
+  asyncMiddleware(DatasetsController.downloadComplianceReport),
+);
 router.put(
   "/:idDataset/table/:idTable",
   asyncMiddleware(DatasetsController.updateTable),
@@ -119,6 +123,10 @@ router.post(
 router.post(
   "/lock/:tableId/release",
   asyncMiddleware(DatasetsController.releaseTableLock),
+);
+router.post(
+  "/lock/:tableId/force-release",
+  asyncMiddleware(DatasetsController.forceReleaseTableLock),
 );
 
 export default router;
