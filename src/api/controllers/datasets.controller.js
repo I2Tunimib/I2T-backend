@@ -505,20 +505,29 @@ const DatasetsController = {
       const table = await DatasetsService.findTable(idDataset, idTable);
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
-      const data = await ExportService[format]({
+
+      let schemaData = null;
+      if (format === 'report_html' || format === 'report_md') {
+        schemaData = await ExportService.w3c({ ...table, keepMatching: false });
+      }
+
+      const exportPayload = {
         ...table,
-        htmlContent: req.body.htmlContent,
-        keepMatching,
-        ...req.query,
         ...req.body,
-      });
+        datasetId: idDataset,
+        tableId: idTable,
+        schemaData: schemaData
+      };
+
+      const data = await ExportService[format](exportPayload);
+
+      if (format === "report_html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.send(data);
+      }
 
       if (format === "report_md") {
         res.setHeader("Content-Type", "text/markdown");
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="${table?.name || "report"}.md"`,
-        );
         return res.send(data);
       }
       res.send(data);

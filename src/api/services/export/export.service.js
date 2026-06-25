@@ -2,48 +2,19 @@ import { parse } from "json2csv";
 import path from "path";
 import fs from "fs";
 import axios from "axios";
-import LLMExporterService from "./llm-export.service.js";
 import { SemtParserService } from "./semtparser.service.js";
+import { buildHtmlReport, buildMarkdownReport } from '../../../utils/schemaReportUtils.js';
 
 const ExportService = {
   schema_w3c: async ({ columns, rows }) => {
     const jsonData = await ExportService.w3c({ columns, rows, keepMatching: false });
     return jsonData[0] || {};
   },
-  report_html: async ({ columns, rows }) => {
-    return await ExportService.w3c({ columns, rows, keepMatching: false });
+  report_html: async (payload) => {
+    return buildHtmlReport(payload);
   },
-  report_md: async ({ htmlContent }) => {
-    if (!htmlContent) {
-      throw new Error("Missing htmlContent for Markdown generation");
-    }
-
-    let base64Image = "";
-    const imgRegex = /<img[^>]+src=["'](data:image\/png;base64,[^"']+)["']/i;
-    const match = htmlContent.match(imgRegex);
-
-    let cleanedHtmlContent = htmlContent;
-    if (match && match[1]) {
-      base64Image = match[1];
-      cleanedHtmlContent = htmlContent.replace(imgRegex, '<img src="#GRAPH_IMAGE_PLACEHOLDER#" alt="Schema Graph" />');
-    }
-
-    let markdownReport = await LLMExporterService.generateMarkdownFromHtml({
-      htmlContent: cleanedHtmlContent
-    });
-
-    if (base64Image) {
-      const markdownImageSyntax = `![Schema Graph](${base64Image})`;
-      if (markdownReport.includes("#GRAPH_IMAGE_PLACEHOLDER#")) {
-        markdownReport = markdownReport.replace("#GRAPH_IMAGE_PLACEHOLDER#", base64Image);
-      } else if (markdownReport.includes("![Schema Graph](#)")) {
-        markdownReport = markdownReport.replace("![Schema Graph](#)", markdownImageSyntax);
-      } else {
-        markdownReport += `\n\n## Schema Graph Visualization\n\n${markdownImageSyntax}\n`;
-      }
-    }
-
-    return markdownReport;
+  report_md: async (payload) => {
+    return buildMarkdownReport(payload);
   },
   rawJson: async ({ columns, rows }) => {
     // Be defensive: rows or individual row.cells may be missing. Produce one object per row
