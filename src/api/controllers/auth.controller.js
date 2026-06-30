@@ -554,7 +554,11 @@ const AuthController = {
     }
   },
   me: async (req, res, next) => {
-    const { token } = req.body;
+    let token = req.body?.token;
+    if (!token) {
+      const auth = req.headers.authorization;
+      if (auth && auth.startsWith("Bearer ")) token = auth.slice(7);
+    }
 
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
