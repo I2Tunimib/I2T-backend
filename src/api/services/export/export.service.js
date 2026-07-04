@@ -59,7 +59,7 @@ const ExportService = {
     }
     return csv;
   },
-  w3c: async ({ columns, rows, keepMatching = false }) => {
+  w3c: async ({ columns, rows, tableInstance = {}, keepMatching = false }) => {
     // Helper function to convert score strings to numbers in type/property arrays
     const convertScoresInArray = (arr) => {
       if (!Array.isArray(arr)) return arr;
@@ -94,61 +94,75 @@ const ExportService = {
         ...rest,
       }));
     };
+    const complianceReports = tableInstance?.complianceReports;
+    const complianceLastReport = complianceReports[complianceReports.length - 1];
+    const firstRow = {
+      compliance: {
+        status: (complianceReports && complianceReports.length > 0)
+          ? complianceLastReport?.result[0]?.table?.gdpr
+          : "UNKNOWN",
+        reasoning: (complianceReports && complianceReports.length > 0)
+          ? complianceLastReport?.result[0]?.table?.reasoning
+          : "",
+        score: (complianceReports && complianceReports.length > 0)
+          ? complianceLastReport?.result[0]?.table?.score
+          : "",
+      },
+      columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
+        const col = columns[colId] || {};
+        const {
+          id,
+          status,
+          context = {},
+          metadata = [],
+          annotationMeta,
+          ...propsToKeep
+        } = col;
 
-    const firstRow = Object.keys(columns || {}).reduce((acc, colId, index) => {
-      const col = columns[colId] || {};
-      const {
-        id,
-        status,
-        context = {},
-        metadata = [],
-        annotationMeta,
-        ...propsToKeep
-      } = col;
+        const trimmedLabel = (col.label || String(colId)).trim();
 
-      const trimmedLabel = (col.label || String(colId)).trim();
+        // Guard context: it may be undefined or not an object
+        const standardContext = Object.keys(context || {}).reduce(
+          (accCtx, prefix) => {
+            const entry = context[prefix] || {};
+            const uri = entry.uri;
+            return [...accCtx, { prefix: `${prefix}:`, uri }];
+          },
+          [],
+        );
 
-      // Guard context: it may be undefined or not an object
-      const standardContext = Object.keys(context || {}).reduce(
-        (accCtx, prefix) => {
-          const entry = context[prefix] || {};
-          const uri = entry.uri;
-          return [...accCtx, { prefix: `${prefix}:`, uri }];
-        },
-        [],
-      );
+        // Process column metadata safely
+        let processedMetadata = [];
+        if (Array.isArray(metadata) && metadata.length > 0) {
+          const metaItem = { ...metadata[0] };
 
-      // Process column metadata safely
-      let processedMetadata = [];
-      if (Array.isArray(metadata) && metadata.length > 0) {
-        const metaItem = { ...metadata[0] };
+          // Convert scores in type array
+          if (metaItem.type) {
+            metaItem.type = convertScoresInArray(metaItem.type);
+          }
 
-        // Convert scores in type array
-        if (metaItem.type) {
-          metaItem.type = convertScoresInArray(metaItem.type);
+          // Convert scores in property array
+          if (metaItem.property) {
+            metaItem.property = convertScoresInArray(metaItem.property);
+          }
+
+          // Convert scores in entity array
+          if (metaItem.entity) {
+            metaItem.entity = getMetadata(metaItem.entity, keepMatching);
+          }
+
+          processedMetadata = [metaItem];
         }
 
-        // Convert scores in property array
-        if (metaItem.property) {
-          metaItem.property = convertScoresInArray(metaItem.property);
-        }
-
-        // Convert scores in entity array
-        if (metaItem.entity) {
-          metaItem.entity = getMetadata(metaItem.entity, keepMatching);
-        }
-
-        processedMetadata = [metaItem];
-      }
-
-      acc[`th${index}`] = {
-        ...propsToKeep,
-        label: trimmedLabel,
-        metadata: processedMetadata,
-        context: standardContext,
-      };
-      return acc;
-    }, {});
+        acc[`th${index}`] = {
+          ...propsToKeep,
+          label: trimmedLabel,
+          metadata: processedMetadata,
+          context: standardContext,
+        };
+        return acc;
+      }, {})
+    };
 
     const rest = Object.keys(rows || {}).map((rowId) => {
       const row = rows[rowId] || {};

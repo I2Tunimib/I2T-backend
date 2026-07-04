@@ -503,6 +503,7 @@ const DatasetsController = {
       req.query.keepMatching === "true" || req.body.keepMatching === true;
     try {
       const table = await DatasetsService.findTable(idDataset, idTable);
+      const tableInstance = table?.table;
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
 
@@ -516,7 +517,8 @@ const DatasetsController = {
         ...req.body,
         datasetId: idDataset,
         tableId: idTable,
-        schemaData: schemaData
+        schemaData: schemaData,
+        tableInstance: tableInstance,
       };
 
       const data = await ExportService[format](exportPayload);
