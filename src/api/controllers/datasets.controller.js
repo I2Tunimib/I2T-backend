@@ -509,7 +509,13 @@ const DatasetsController = {
 
       let schemaData = null;
       if (format === 'report_html' || format === 'report_md') {
-        schemaData = await ExportService.w3c({ ...table, keepMatching: false });
+        schemaData = await ExportService.w3c(
+          {
+            columns: table.columns,
+            rows: table.rows,
+            tableInstance: tableInstance,
+            keepMatching: false
+          });
       }
 
       const exportPayload = {

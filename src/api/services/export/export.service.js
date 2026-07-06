@@ -95,18 +95,20 @@ const ExportService = {
       }));
     };
     const complianceReports = tableInstance?.complianceReports;
-    const complianceLastReport = complianceReports[complianceReports.length - 1];
     const firstRow = {
       compliance: {
         status: (complianceReports && complianceReports.length > 0)
-          ? complianceLastReport?.result[0]?.table?.gdpr
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.gdpr
           : "UNKNOWN",
         reasoning: (complianceReports && complianceReports.length > 0)
-          ? complianceLastReport?.result[0]?.table?.reasoning
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.reasoning
           : "",
         score: (complianceReports && complianceReports.length > 0)
-          ? complianceLastReport?.result[0]?.table?.score
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.score
           : "",
+      },
+      permissions: {
+        type: tableInstance.permission || "readOnly"
       },
       columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
         const col = columns[colId] || {};

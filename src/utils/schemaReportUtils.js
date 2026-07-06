@@ -1,9 +1,47 @@
+const labels = {
+  personalData: "Personal Data",
+  quasiIdentifiers: "Quasi-Identifiers",
+  nonPersonalData: "Non-Personal Data",
+  anonymousData: "Anonymous Data"
+};
+
 export const buildHtmlReport = (data) => {
-  const { tableName, datasetId, tableId, graphSnapshot, graphData, metrics, schemaData } = data;
+  const { tableName, datasetId, tableId, graphSnapshot, graphData, metrics, schemaData, showCompliance } = data;
 
   const schema = Array.isArray(schemaData) ? (schemaData[0] || {}) : (schemaData || {});
   const cleanStr = (str) => (str ? String(str).trim().replace(/^\uFEFF/, '') : '');
-  const columnEntries = Object.entries(schema).filter(([key]) => key.startsWith('th'));
+  const columnEntries = Object.entries(schema.columns).filter(([key]) => key.startsWith('th'));
+
+  const compliance = schema?.compliance;
+  const isGDPRCompliant = compliance.status === 'yesGDPR';
+  const complianceHtml = compliance ? `
+    <div 
+      class="section" 
+      style="background: ${isGDPRCompliant ? '#fff5f5' : '#f0fff4'};
+      padding: 20px;
+      border-radius: 6px;
+      border-width: 1px;
+      border-style: solid;
+      border-color: ${compliance.status === 'yesGDPR' ? '#feb2b2' : '#9ae6b4'};
+      margin-bottom: 30px;"
+    >
+      <h2 style="margin-top: 0; border: none; color: ${isGDPRCompliant ? '#c53030' : '#2f855a'};">Compliance Summary</h2>
+      <p style="margin: 5px 0;"><strong>Status:</strong> ${isGDPRCompliant ? 'GDPR compliant' : 'GDPR NON-complaint'}</p>
+      <p style="margin: 5px 0;"><strong>Confidence score:</strong> ${(compliance.score * 100).toFixed(0)}%</p>
+      <p style="margin: 10px 0 0 0;"><strong>Reasoning:</strong> ${compliance.reasoning}</p>
+    </div>
+  ` : '';
+
+  const currentLegendHtml = showCompliance ? `
+    <div class="legend-item"><span class="dot" style="background-color: crimson;"></span> Personal Data</div>
+    <div class="legend-item"><span class="dot" style="background-color: orange;"></span> Quasi Identifier</div>
+    <div class="legend-item"><span class="dot" style="background-color: teal;"></span> Non-Personal Data</div>
+    <div class="legend-item"><span class="dot" style="background-color: green;"></span> Anonymous Data</div>
+  ` : `
+    <div class="legend-item"><span class="dot dot-subject"></span> Subject</div>
+    <div class="legend-item"><span class="dot dot-entity"></span> Entity</div>
+    <div class="legend-item"><span class="dot dot-literal"></span> Literal</div>
+  `;
 
   const nodesHtml = columnEntries.map(([key, th]) => {
     if (!th) return '';
@@ -42,6 +80,17 @@ export const buildHtmlReport = (data) => {
         </ul>`
       : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Relations: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
+    const getComplianceDescription = (th) => {
+      return `
+        <div style="margin: 10px 0; padding: 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+          <p style="margin: 0;">
+            This column contains <strong>${labels[th.gdprClassification]}</strong> and is <strong>${th.gdprStatus === "yesGDPR" ? "GDPR compliant" : "GDPR non-compliant"}</strong> 
+            with a confidence score of <strong>${Math.round((th.gdprScore ?? 0) * 100)}%</strong>.
+           </p>
+         </div>
+      `;
+    };
+
     return `
       <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
         <h4 style="margin: 0 0 8px 0; color: #3182ce;">Column: ${label}</h4>
@@ -72,6 +121,7 @@ export const buildHtmlReport = (data) => {
             </div>
           </div>
         </div>
+        ${getComplianceDescription(th)} 
       </div>
     `;
   }).join('');
@@ -174,20 +224,18 @@ export const buildHtmlReport = (data) => {
           <p style="margin: 5px 0 0 0;"><strong>Dataset ID:</strong> ${datasetId || '-'} | <strong>Table ID:</strong> ${tableId || '-'}</p>
           <p style="margin: 5px 0 0 0; font-size: 12px; color: #4a5568;"><em>Generated on: ${new Date().toLocaleString()}</em></p>
         </div>
-
+        ${complianceHtml}
         <div class="section graph-container">
           <h2 style="margin-top: 0; border: none;">Schema Graph Visualization</h2>
           <div class="graph-wrapper-rel">
             <div class="legend-floating-box">
-              <p class="legend-title">Legend</p>
-              <div class="legend-item"><span class="dot dot-subject"></span> Subject</div>
-              <div class="legend-item"><span class="dot dot-entity"></span> Entity</div>
-              <div class="legend-item"><span class="dot dot-literal"></span> Literal</div>
+              <p class="legend-title">${showCompliance ? "Compliance Legend" : "Legend"}</p>
+              ${currentLegendHtml}
             </div>
             ${graphSnapshot
-  ? `<img class="graph-img" src="${graphSnapshot}" alt="Schema Graph" />`
-  : '<p style="color: #e53e3e; font-weight: bold; padding: 40px; background: white; border-radius: 6px;">Schema Graph snapshot not available. Please open the Graph View tab before exporting.</p>'
-}
+              ? `<img class="graph-img" src="${graphSnapshot}" alt="Schema Graph" />`
+              : '<p style="color: #e53e3e; font-weight: bold; padding: 40px; background: white; border-radius: 6px;">Schema Graph snapshot not available. Please open the Graph View tab before exporting.</p>'
+            }
           </div>
         </div>
 
@@ -226,8 +274,8 @@ export const buildHtmlReport = (data) => {
 };
 
 export const buildMarkdownReport = (data) => {
-  const { tableName, datasetId, tableId, graphSnapshot, graphData, metrics, schemaData } = data;
-  const schema = Array.isArray(schemaData) ? (schemaData[0] || {}) : (schemaData || {});
+  const { tableName, datasetId, tableId, graphSnapshot, graphData, metrics, schemaData, showCompliance } = data;
+  const schema = Array.isArray(schemaData) ? (schemaData[0].columns || {}) : (schemaData || {});
   const cleanStr = (str) => (str ? String(str).trim().replace(/^\uFEFF/, '') : '');
   const columnEntries = Object.entries(schema).filter(([key]) => key.startsWith('th'));
 
@@ -236,7 +284,38 @@ export const buildMarkdownReport = (data) => {
   md += `**Dataset ID:** ${datasetId || '-'} | **Table ID:** ${tableId || '-'}  \n`;
   md += `*Generated on: ${new Date().toLocaleString()}*\n\n`;
 
+  if (schema.compliance) {
+    const isCompliant = schema.compliance.status === 'yesGDPR';
+    md += `## Compliance Summary\n\n`;
+    md += `**Status:** ${isCompliant ? 'GDPR compliant' : 'GDPR NON-compliant'}  \n`;
+    md += `**Confidence score:** ${(schema.compliance.score * 100).toFixed(0)}%  \n`;
+    md += `**Reasoning:** ${schema.compliance.reasoning}\n\n`;
+  }
+
   md += `## Schema Graph Visualization\n\n`;
+  md += `### Legend\n\n`;
+
+  const items = showCompliance
+    ? [
+      { color: 'crimson', text: 'Personal Data' },
+      { color: 'orange', text: 'Quasi-Identifier' },
+      { color: 'teal', text: 'Non-Personal Data' },
+      { color: 'green', text: 'Anonymous Data' }
+    ]
+    : [
+      { color: '#2ecc71', text: 'Subject' },
+      { color: '#3498db', text: 'Entity' },
+      { color: '#e67e22', text: 'Literal' }
+    ];
+
+  items.forEach(item => {
+    md += `<div style="display: flex; align-items: center; margin-bottom: 5px;">
+    <span style="height: 12px; width: 12px; background-color: ${item.color}; border-radius: 50%; display: inline-block; margin-right: 8px;"></span>
+    ${item.text}
+  </div>\n`;
+  });
+
+  md += `\n`;
   if (graphSnapshot) {
     md += `![Schema Graph](${graphSnapshot})\n\n`;
   } else {
@@ -245,6 +324,7 @@ export const buildMarkdownReport = (data) => {
 
   md += `## Columns (${columnEntries.length})\n\n`;
   columnEntries.forEach(([key, th]) => {
+    console.log("TH", th);
     const label = th.label || key;
     const types = (th.metadata || []).flatMap((m) => m?.type ?? []);
     const outgoing = (graphData?.links || []).filter((l) => l && cleanStr(l.source) === cleanStr(label));
@@ -259,6 +339,10 @@ export const buildMarkdownReport = (data) => {
 
     md += `**Outgoing Relations:**\n${outgoing.length > 0 ? outgoing.map(l => `- → ${l.target} (${l.propID})`).join('\n') : "None"}\n\n`;
     md += `**Incoming Relations:**\n${incoming.length > 0 ? incoming.map(l => `- ← ${l.source} (${l.propID})`).join('\n') : "None"}\n\n`;
+
+    const gdprDesc = `This column contains **${labels[th.gdprClassification] || 'n/a'}** and is **${th.gdprStatus === "yesGDPR" ? "GDPR compliant" : "GDPR NON-compliant"}** 
+    with a confidence score of ${Math.round((th.gdprScore ?? 0) * 100)}%.`;
+    md += `${gdprDesc}\n\n`;
   });
 
   md += `## Graph Structural Metrics\n\n`;
