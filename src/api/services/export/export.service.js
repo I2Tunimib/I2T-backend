@@ -6,8 +6,13 @@ import { SemtParserService } from "./semtparser.service.js";
 import { buildHtmlReport, buildMarkdownReport } from '../../../utils/schemaReportUtils.js';
 
 const ExportService = {
-  schema_w3c: async ({ columns, rows }) => {
-    const jsonData = await ExportService.w3c({ columns, rows, keepMatching: false });
+  schema_w3c: async ({ columns, rows, tableInstance }) => {
+    const jsonData = await ExportService.w3c({
+      columns,
+      rows,
+      tableInstance,
+      keepMatching: false
+    });
     return jsonData[0] || {};
   },
   report_html: async (payload) => {
@@ -108,7 +113,7 @@ const ExportService = {
           : "",
       },
       permissions: {
-        type: tableInstance.permission || "readOnly"
+        type: tableInstance.permission
       },
       columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
         const col = columns[colId] || {};

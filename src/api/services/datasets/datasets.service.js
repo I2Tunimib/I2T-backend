@@ -1367,6 +1367,18 @@ const FileSystemService = {
     });
     return await FileSystemService.findOneTable(datasetId, tableId);
   },
+  async getTableWithPermissions(idDataset, idTable, userId) {
+    const tableData = await this.findTable(idDataset, idTable);
+    const dataset = await this.findOneDataset(idDataset);
+    const tableMeta = await this.findOneTable(idDataset, idTable);
+
+    const isOwner = String(dataset.userId) === String(userId);
+    const isEditor = tableMeta.editors?.map(String).includes(String(userId)) ||
+      dataset.editors?.map(String).includes(String(userId));
+
+    tableData.table.permission = (isOwner || isEditor) ? 'rw' : 'ro';
+    return tableData;
+  },
 };
 
 export default FileSystemService;

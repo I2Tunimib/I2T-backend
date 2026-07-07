@@ -160,12 +160,25 @@ const DatasetsController = {
       if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
         return res.status(401).json({});
       }
+      const isOwner = String(dataset.userId) === String(user.id);
+      const isEditor = tableMeta.editors?.map(String).includes(String(user.id)) ||
+        dataset.editors?.map(String).includes(String(user.id));
+      const permissionType = (isOwner || isEditor) ? 'rw' : 'ro';
+
       const tableData = await DatasetsService.findTable(idDataset, idTable);
+      const tableDataWithPerm = {
+        ...tableData,
+        table: {
+          ...tableData.table,
+          permission: permissionType
+        }
+      };
+
       const currentLock = TableLockService.getTableLock(idTable);
       const isLocked =
         currentLock && String(currentLock.userId) !== String(user.id);
       res.json({
-        ...tableData,
+        ...tableDataWithPerm,
         _lock: {
           isLocked,
           lockedBy: isLocked ? currentLock.userId : null,
@@ -501,8 +514,9 @@ const DatasetsController = {
     let format = req.query.format || req.body.format || "w3c";
     const keepMatching =
       req.query.keepMatching === "true" || req.body.keepMatching === true;
+    const user = await AuthService.verifyToken(req);
     try {
-      const table = await DatasetsService.findTable(idDataset, idTable);
+      const table = await DatasetsService.getTableWithPermissions(idDataset, idTable, user.id);
       const tableInstance = table?.table;
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
