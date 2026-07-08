@@ -271,14 +271,32 @@ export class Log {
           }
         }
       } else if (this.#columns[opColName].type === "created") {
-        let columnCreator = this.#getOpById(this.#columns[opColName].createdBy);
-        this.#nodes[columnCreator.id].children.push(operation.id);
-        this.#nodes[operation.id] = {
-          children: [],
-          parents: [columnCreator.id],
-          supportChildren: [],
-          supportParents: [],
-        };
+        const createdBy = this.#columns[opColName].createdBy;
+        let columnCreator = this.#getOpById(createdBy);
+        console.log(`[appendOperationNode] "created" branch — op:`, JSON.stringify(operation));
+        console.log(`[appendOperationNode] column entry:`, JSON.stringify(this.#columns[opColName]));
+        console.log(`[appendOperationNode] columnCreator:`, JSON.stringify(columnCreator));
+        console.log(`[appendOperationNode] node for creatorId "${createdBy}":`, this.#nodes[createdBy]);
+
+        if (!columnCreator || !this.#nodes[columnCreator.id]) {
+          // Creator op was filtered out or its node wasn't built yet — fall back to root
+          console.warn(`[appendOperationNode] WARN: creator node missing for column "${opColName}" createdBy="${createdBy}", falling back to root`);
+          this.#nodes["root"].children.push(operation.id);
+          this.#nodes[operation.id] = {
+            children: [],
+            parents: ["root"],
+            supportChildren: [],
+            supportParents: [],
+          };
+        } else {
+          this.#nodes[columnCreator.id].children.push(operation.id);
+          this.#nodes[operation.id] = {
+            children: [],
+            parents: [columnCreator.id],
+            supportChildren: [],
+            supportParents: [],
+          };
+        }
       }
     } else if (
       this.#columns[opColName] &&
@@ -539,7 +557,8 @@ export class Log {
       },
     };
     const sortedOps = this.#operations.sort((a, b) => a.opNumber - b.opNumber);
-    // console.log("SORTED OPS:", sortedOps);
+    console.log(`[buildDependencyGraph] ${sortedOps.length} ops, columns:`, JSON.stringify(this.#columns));
+    console.log(`[buildDependencyGraph] ops:`, JSON.stringify(sortedOps.map(o => ({ id: o.id, type: o.operationType, col: o.columnName, createdCols: o.createdColumns }))));
     for (const operation of sortedOps) {
       this.#appendOperationNode(operation);
     }

@@ -17,6 +17,7 @@
 import fs from "fs";
 import { randomUUID } from "crypto";
 import { Log } from "../logger/Log.js";
+import { resolveDpv, buildDpvJsonLd } from "./dpv-registry.js";
 
 // ---------------------------------------------------------------------------
 // Service config loader — reads each extender/modifier's index.js to get
@@ -726,6 +727,24 @@ function operationSummary(ops) {
   return lines.join("");
 }
 
+/**
+ * Render an operation's DPV/PROV-O classification as a delimited comment
+ * block. Python has no metadata channel like notebook cells do, so this is
+ * the only way to carry the annotation in a .py script; a downstream tool
+ * can regex-extract the JSON between the markers.
+ */
+function dpvCommentBlock(op) {
+  const dpv = resolveDpv(op);
+  if (!dpv) return "";
+
+  const jsonld = JSON.stringify(buildDpvJsonLd(op, dpv), null, 2);
+  const commented = jsonld
+    .split("\n")
+    .map((l) => `# ${l}`)
+    .join("\n");
+  return `# --- DPV:BEGIN ---\n${commented}\n# --- DPV:END ---\n\n`;
+}
+
 // ---------------------------------------------------------------------------
 // Python script generator
 // ---------------------------------------------------------------------------
@@ -746,6 +765,7 @@ function generatePython(datasetId, operations, deletedCols) {
   for (const op of relevant) {
     opNum++;
     parts.push(operationSeparator(op, opNum));
+    parts.push(dpvCommentBlock(op));
     parts.push(genOperationCode(op));
     parts.push("\n");
   }
@@ -838,15 +858,26 @@ function generateNotebook(datasetId, operations, deletedCols) {
   for (const op of relevant) {
     opNum++;
     const svc = op.reconciler || op.extender || op.modifier || "";
+    const dpv = resolveDpv(op);
+    const dpvJsonLd = dpv ? buildDpvJsonLd(op, dpv) : null;
+    const dpvLine = dpv
+      ? `\n**Privacy (DPV):** \`${dpv.processing.join(", ")}\`` +
+        (dpv.thirdParty ? " — ⚠️ involves third-party processing" : "") +
+        (dpv.recipient ? ` (recipient: \`${dpv.recipient}\`)` : "") +
+        "\n"
+      : "";
+
     cells.push(
       mdCell(
         `## Operation ${opNum}: ${op.operationType}${svc ? ` — ${svc}` : ""}\n` +
-          `**Column:** \`${op.columnName || "N/A"}\` | **Timestamp:** \`${op.timestamp}\`\n`,
+          `**Column:** \`${op.columnName || "N/A"}\` | **Timestamp:** \`${op.timestamp}\`\n` +
+          dpvLine,
         {
           semtparser: {
             operation_index: opNum,
             operation_type: op.operationType,
           },
+          ...(dpvJsonLd ? { dpv: dpvJsonLd } : {}),
         },
       ),
     );
@@ -857,6 +888,7 @@ function generateNotebook(datasetId, operations, deletedCols) {
           operation_type: op.operationType,
           op_id: op.id,
         },
+        ...(dpvJsonLd ? { dpv: dpvJsonLd } : {}),
       }),
     );
   }
