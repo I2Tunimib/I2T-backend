@@ -380,9 +380,13 @@ router.get(
  *   get:
  *     summary: Export a table in a chosen format
  *     description: >
- *       Supported formats: `w3c` (default), `rdf` (any RDF* prefix), `csv`, `raw`, `report_md`.
- *       `report_md` sets `Content-Type: text/markdown` and triggers a file download.
+ *       Supported formats: `w3c` (default), `rdf` (any RDF* prefix), `csv`, `raw`, `report_md`,
+ *       `python` (annotation script), `notebook` (Jupyter notebook).
+ *       `report_md` sets `Content-Type: text/markdown`; `python`/`notebook` return a file
+ *       download and require the caller to have view access to the table (`bearerAuth`).
  *     tags: [Tables]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/idDataset'
  *       - $ref: '#/components/parameters/idTable'
@@ -391,7 +395,7 @@ router.get(
  *         required: false
  *         schema:
  *           type: string
- *           enum: [w3c, rdf, csv, raw, report_md]
+ *           enum: [w3c, rdf, csv, raw, report_md, python, notebook]
  *           default: w3c
  *       - in: query
  *         name: keepMatching
@@ -402,6 +406,8 @@ router.get(
  *     responses:
  *       200:
  *         description: Exported data in the requested format
+ *       401:
+ *         description: Unauthorized (only enforced for `python`/`notebook` formats)
  *   post:
  *     summary: Export a table (POST variant — supports larger body params)
  *     tags: [Tables]
@@ -417,7 +423,7 @@ router.get(
  *             properties:
  *               format:
  *                 type: string
- *                 enum: [w3c, rdf, csv, raw, report_md]
+ *                 enum: [w3c, rdf, csv, raw, report_md, python, notebook]
  *               keepMatching:
  *                 type: boolean
  *               htmlContent:
@@ -434,44 +440,6 @@ router.get(
 router.post(
   "/:idDataset/table/:idTable/export",
   asyncMiddleware(DatasetsController.exportTable),
-);
-
-/**
- * @swagger
-/dataset/{idDataset}/table/{idTable}/code:
- *   get:
- *     summary: Export table annotation code (Python script or Jupyter notebook)
- *     tags: [Tables]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *       - $ref: '#/components/parameters/idTable'
- *       - in: query
- *         name: format
- *         required: false
- *         schema:
- *           type: string
- *           enum: [python, notebook]
- *           default: python
- *     responses:
- *       200:
- *         description: File download (`.py` or `.ipynb`)
- *         content:
- *           text/x-python:
- *             schema:
- *               type: string
- *               format: binary
- *           application/x-ipynb+json:
- *             schema:
- *               type: string
- *               format: binary
- *       401:
- *         description: Unauthorized
- */
-router.get(
-  "/:idDataset/table/:idTable/code",
-  asyncMiddleware(DatasetsController.exportTableCode),
 );
 
 // ---------------------------------------------------------------------------
@@ -743,9 +711,12 @@ router.post(
 
 /**
  * @swagger
-/dataset/{idDataset}/acl/viewers:
+/dataset/{idDataset}/acl:
  *   post:
- *     summary: Add a viewer to a dataset
+ *     summary: Add a viewer or editor to a dataset
+ *     description: >
+ *       Adding an `editor` additionally requires the target user to already
+ *       have an `admin` or `editor` role in the users DB.
  *     tags: [Dataset ACL]
  *     security:
  *       - bearerAuth: []
@@ -757,17 +728,20 @@ router.post(
  *         application/json:
  *           schema:
  *             type: object
- *             required: [userId]
+ *             required: [userId, role]
  *             properties:
  *               userId:
  *                 type: integer
+ *               role:
+ *                 type: string
+ *                 enum: [viewer, editor]
  *     responses:
  *       200:
  *         description: Updated dataset ACL
  *       401:
  *         description: Unauthorized
  *   delete:
- *     summary: Remove a viewer from a dataset
+ *     summary: Remove a viewer or editor from a dataset
  *     tags: [Dataset ACL]
  *     security:
  *       - bearerAuth: []
@@ -779,80 +753,23 @@ router.post(
  *         application/json:
  *           schema:
  *             type: object
- *             required: [userId]
+ *             required: [userId, role]
  *             properties:
  *               userId:
  *                 type: integer
+ *               role:
+ *                 type: string
+ *                 enum: [viewer, editor]
  *     responses:
  *       200:
  *         description: Updated dataset ACL
  *       401:
  *         description: Unauthorized
  */
-router.post(
-  "/:idDataset/acl/viewers",
-  asyncMiddleware(DatasetsController.addViewer),
-);
+router.post("/:idDataset/acl", asyncMiddleware(DatasetsController.addAclUser));
 router.delete(
-  "/:idDataset/acl/viewers",
-  asyncMiddleware(DatasetsController.removeViewer),
-);
-
-/**
- * @swagger
-/dataset/{idDataset}/acl/editors:
- *   post:
- *     summary: Add an editor to a dataset
- *     tags: [Dataset ACL]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [userId]
- *             properties:
- *               userId:
- *                 type: integer
- *     responses:
- *       200:
- *         description: Updated dataset ACL
- *       401:
- *         description: Unauthorized
- *   delete:
- *     summary: Remove an editor from a dataset
- *     tags: [Dataset ACL]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [userId]
- *             properties:
- *               userId:
- *                 type: integer
- *     responses:
- *       200:
- *         description: Updated dataset ACL
- *       401:
- *         description: Unauthorized
- */
-router.post(
-  "/:idDataset/acl/editors",
-  asyncMiddleware(DatasetsController.addEditor),
-);
-router.delete(
-  "/:idDataset/acl/editors",
-  asyncMiddleware(DatasetsController.removeEditor),
+  "/:idDataset/acl",
+  asyncMiddleware(DatasetsController.removeAclUser),
 );
 
 /**
@@ -939,9 +856,12 @@ router.get(
 
 /**
  * @swagger
-/dataset/{idDataset}/table/{idTable}/acl/viewers:
+/dataset/{idDataset}/table/{idTable}/acl:
  *   post:
- *     summary: Add a viewer to a table
+ *     summary: Add a viewer or editor to a table
+ *     description: >
+ *       Adding an `editor` additionally requires the target user to already
+ *       have an `admin` or `editor` role in the users DB.
  *     tags: [Table ACL]
  *     security:
  *       - bearerAuth: []
@@ -954,17 +874,20 @@ router.get(
  *         application/json:
  *           schema:
  *             type: object
- *             required: [userId]
+ *             required: [userId, role]
  *             properties:
  *               userId:
  *                 type: integer
+ *               role:
+ *                 type: string
+ *                 enum: [viewer, editor]
  *     responses:
  *       200:
  *         description: Updated table ACL
  *       401:
  *         description: Unauthorized
  *   delete:
- *     summary: Remove a viewer from a table
+ *     summary: Remove a viewer or editor from a table
  *     tags: [Table ACL]
  *     security:
  *       - bearerAuth: []
@@ -977,10 +900,13 @@ router.get(
  *         application/json:
  *           schema:
  *             type: object
- *             required: [userId]
+ *             required: [userId, role]
  *             properties:
  *               userId:
  *                 type: integer
+ *               role:
+ *                 type: string
+ *                 enum: [viewer, editor]
  *     responses:
  *       200:
  *         description: Updated table ACL
@@ -988,71 +914,12 @@ router.get(
  *         description: Unauthorized
  */
 router.post(
-  "/:idDataset/table/:idTable/acl/viewers",
-  asyncMiddleware(DatasetsController.addTableViewer),
+  "/:idDataset/table/:idTable/acl",
+  asyncMiddleware(DatasetsController.addTableAclUser),
 );
 router.delete(
-  "/:idDataset/table/:idTable/acl/viewers",
-  asyncMiddleware(DatasetsController.removeTableViewer),
-);
-
-/**
- * @swagger
-/dataset/{idDataset}/table/{idTable}/acl/editors:
- *   post:
- *     summary: Add an editor to a table
- *     tags: [Table ACL]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *       - $ref: '#/components/parameters/idTable'
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [userId]
- *             properties:
- *               userId:
- *                 type: integer
- *     responses:
- *       200:
- *         description: Updated table ACL
- *       401:
- *         description: Unauthorized
- *   delete:
- *     summary: Remove an editor from a table
- *     tags: [Table ACL]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *       - $ref: '#/components/parameters/idTable'
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [userId]
- *             properties:
- *               userId:
- *                 type: integer
- *     responses:
- *       200:
- *         description: Updated table ACL
- *       401:
- *         description: Unauthorized
- */
-router.post(
-  "/:idDataset/table/:idTable/acl/editors",
-  asyncMiddleware(DatasetsController.addTableEditor),
-);
-router.delete(
-  "/:idDataset/table/:idTable/acl/editors",
-  asyncMiddleware(DatasetsController.removeTableEditor),
+  "/:idDataset/table/:idTable/acl",
+  asyncMiddleware(DatasetsController.removeTableAclUser),
 );
 
 /**

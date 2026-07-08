@@ -10,14 +10,13 @@ const router = Router();
  * tags:
  *   - name: Reconciliation
  *     description: >
- *       Column reconciliation against external KGs. Routes are available under
- *       both `/reconcilers` and `/full-annotation` (identical behaviour).
+ *       Column reconciliation against external KGs.
  *       When the `X-Table-Dataset-Info` header is provided the response is
  *       automatically augmented with an updated `dependencies` object.
  */
 
 // ---------------------------------------------------------------------------
-// /reconcilers  (and alias /full-annotation — same handlers, same docs)
+// /reconcilers
 // ---------------------------------------------------------------------------
 
 /**
@@ -25,23 +24,6 @@ const router = Router();
  * /reconcilers/list:
  *   get:
  *     summary: List available reconciliation services
- *     tags: [Reconciliation]
- *     responses:
- *       200:
- *         description: Array of reconciler descriptors
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/ServiceDescriptor'
- */
-
-/**
- * @swagger
- * /full-annotation/list:
- *   get:
- *     summary: List available reconciliation services (full-annotation alias)
  *     tags: [Reconciliation]
  *     responses:
  *       200:
@@ -124,32 +106,6 @@ router.get("/list", asyncMiddleware(ReconciliationController.list));
  *       401:
  *         description: Unauthorized
  */
-
-/**
- * @swagger
- * /full-annotation/automatic/dataset/{idDataset}/table/{idTable}:
- *   post:
- *     summary: Start automatic annotation (full-annotation alias)
- *     tags: [Reconciliation]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *       - $ref: '#/components/parameters/idTable'
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/AutomaticAnnotationRequest'
- *     responses:
- *       200:
- *         description: Job accepted
- *       400:
- *         description: Unsupported annotation type
- *       401:
- *         description: Unauthorized
- */
 router.post(
   "/automatic/dataset/:idDataset/table/:idTable",
   datasetAccessMiddleware,
@@ -210,46 +166,6 @@ router.post(
  *         description: Unauthorized — dataset requires edit access
  *       500:
  *         description: Service not found or pipeline error
- */
-
-/**
- * @swagger
- * /full-annotation/{serviceId}:
- *   post:
- *     summary: Reconcile a column (full-annotation alias)
- *     tags: [Reconciliation]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: serviceId
- *         required: true
- *         schema:
- *           type: string
- *         example: lamapi
- *       - in: header
- *         name: X-Table-Dataset-Info
- *         required: false
- *         schema:
- *           type: string
- *         example: "tableId:abc123;datasetId:xyz456;columnName:City"
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ReconciliationRequest'
- *     responses:
- *       200:
- *         description: Reconciliation result (with `dependencies` when header present)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ReconciliationResponse'
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Pipeline error
  */
 router.post(
   "/*",

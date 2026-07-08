@@ -16,7 +16,6 @@ router.get("/", (req, res) => {
 });
 
 router.use("/config", configRoutes);
-router.use("/full-annotation", dependenciesMiddleware, reconciliationRoutes);
 router.use("/reconcilers", dependenciesMiddleware, reconciliationRoutes);
 router.use("/extenders", dependenciesMiddleware, extensionRoutes);
 router.use("/modifiers", dependenciesMiddleware, modificationRoutes);

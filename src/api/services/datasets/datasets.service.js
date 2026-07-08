@@ -138,7 +138,7 @@ const COLLECTION_TABLES_MAP = {
     label: "N. Properties",
   },
   completion: {
-    label: "Completion",
+    label: "Rec. Entities",
     type: "percentage",
   },
   headerTypeMatching: {
@@ -271,7 +271,8 @@ const FileSystemService = {
             const columns = tableData.columns;
 
             const nodesMap = new Map();
-            const clean = (str) => str ? str.trim().replace(/^\uFEFF/, '') : '';
+            const clean = (str) =>
+              str ? str.trim().replace(/^\uFEFF/, "") : "";
 
             Object.keys(columns).forEach((colId) => {
               const column = columns[colId];
@@ -299,7 +300,7 @@ const FileSystemService = {
                         links.push({
                           source: sourceLabel,
                           target: targetLabel,
-                          label: prop.label
+                          label: prop.label,
                         });
                       }
                     });
@@ -310,8 +311,8 @@ const FileSystemService = {
 
             graph = {
               nodes: Array.from(nodesMap.values()),
-              links: links
-            }
+              links: links,
+            };
 
             const totalColumns = Object.keys(columns).length;
             let matchedColumns = 0;
@@ -322,14 +323,18 @@ const FileSystemService = {
             for (const columnId of Object.keys(columns)) {
               const column = columns[columnId];
               if (column.metadata && Array.isArray(column.metadata)) {
-                // Check if any metadata entry has a type with match: true
+                // Check if any metadata entry has a matched type.
+                // Also checks additionalTypes, which is where literal types
+                // (QUDT units, XSD datatypes) are stored when the user picks
+                // a unit of measurement for a literal column.
                 const hasMatch = column.metadata.some((metaItem) => {
-                  if (metaItem.type && Array.isArray(metaItem.type)) {
-                    return metaItem.type.some(
-                      (typeItem) => typeItem.match === true,
-                    );
-                  }
-                  return false;
+                  const mainMatch =
+                    Array.isArray(metaItem.type) &&
+                    metaItem.type.some((t) => t.match === true);
+                  const additionalMatch =
+                    Array.isArray(metaItem.additionalTypes) &&
+                    metaItem.additionalTypes.some((t) => t.match === true);
+                  return mainMatch || additionalMatch;
                 });
                 if (hasMatch) {
                   matchedColumns++;
@@ -1077,7 +1082,10 @@ const FileSystemService = {
     tableUserHasEditAccess(dataset, table, userId),
 
   // ACL modifiers
-  addViewer: async (datasetId, targetUserId, actingUser) => {
+  addAclUser: async (datasetId, targetUserId, role, actingUser) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
     // only owner can modify ACL
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
@@ -1092,15 +1100,24 @@ const FileSystemService = {
       (u) => String(u.id) === String(targetUserId),
     );
     if (!target) throw new Error("Target user not found in users DB");
+    if (role === "editor") {
+      const targetRoles = target.roles || [];
+      if (!(targetRoles.includes("admin") || targetRoles.includes("editor"))) {
+        throw new Error(
+          "Target user does not have admin/editor role and cannot be made editor",
+        );
+      }
+    }
 
+    const listKey = role === "editor" ? "editors" : "viewers";
     await writeQueue.push(async () => {
       const raw = JSON.parse(await readFile(getDatasetDbPath()));
       const { meta = {}, datasets = {} } = raw;
       const ds = datasets[datasetId];
       if (!ds) throw new Error("Dataset not found");
-      ds.viewers = ds.viewers || [];
+      ds[listKey] = ds[listKey] || [];
       const uid = String(targetUserId);
-      if (!ds.viewers.map(String).includes(uid)) ds.viewers.push(uid);
+      if (!ds[listKey].map(String).includes(uid)) ds[listKey].push(uid);
       await writeFile(
         getDatasetDbPath(),
         JSON.stringify({ meta, datasets }, null, 2),
@@ -1110,82 +1127,23 @@ const FileSystemService = {
     return await FileSystemService.findOneDataset(datasetId);
   },
 
-  removeViewer: async (datasetId, targetUserId, actingUser) => {
+  removeAclUser: async (datasetId, targetUserId, role, actingUser) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
     const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId) {
       throw new Error("Unauthorized to modify ACL");
     }
+    const listKey = role === "editor" ? "editors" : "viewers";
     await writeQueue.push(async () => {
       const raw = JSON.parse(await readFile(getDatasetDbPath()));
       const { meta = {}, datasets = {} } = raw;
       const ds = datasets[datasetId];
       if (!ds) throw new Error("Dataset not found");
-      ds.viewers = (ds.viewers || []).filter(
-        (u) => String(u) !== String(targetUserId),
-      );
-      await writeFile(
-        getDatasetDbPath(),
-        JSON.stringify({ meta, datasets }, null, 2),
-      );
-    });
-    return await FileSystemService.findOneDataset(datasetId);
-  },
-
-  addEditor: async (datasetId, targetUserId, actingUser) => {
-    // only owner can modify ACL
-    const dataset = await FileSystemService.findOneDataset(datasetId);
-    if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
-    if (String(dataset.userId) !== actingId) {
-      throw new Error("Unauthorized to modify ACL");
-    }
-
-    // ensure target user exists and has admin/editor role
-    const usersPath = config.helpers.getUsersPath();
-    const usersRaw = JSON.parse(await fs.promises.readFile(usersPath, "utf8"));
-    const target = Object.values(usersRaw.users || {}).find(
-      (u) => String(u.id) === String(targetUserId),
-    );
-    if (!target) throw new Error("Target user not found in users DB");
-    const targetRoles = target.roles || [];
-    if (!(targetRoles.includes("admin") || targetRoles.includes("editor"))) {
-      throw new Error(
-        "Target user does not have admin/editor role and cannot be made editor",
-      );
-    }
-
-    await writeQueue.push(async () => {
-      const raw = JSON.parse(await readFile(getDatasetDbPath()));
-      const { meta = {}, datasets = {} } = raw;
-      const ds = datasets[datasetId];
-      if (!ds) throw new Error("Dataset not found");
-      ds.editors = ds.editors || [];
-      const uid = String(targetUserId);
-      if (!ds.editors.map(String).includes(uid)) ds.editors.push(uid);
-      await writeFile(
-        getDatasetDbPath(),
-        JSON.stringify({ meta, datasets }, null, 2),
-      );
-    });
-
-    return await FileSystemService.findOneDataset(datasetId);
-  },
-
-  removeEditor: async (datasetId, targetUserId, actingUser) => {
-    const dataset = await FileSystemService.findOneDataset(datasetId);
-    if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
-    if (String(dataset.userId) !== actingId) {
-      throw new Error("Unauthorized to modify ACL");
-    }
-    await writeQueue.push(async () => {
-      const raw = JSON.parse(await readFile(getDatasetDbPath()));
-      const { meta = {}, datasets = {} } = raw;
-      const ds = datasets[datasetId];
-      if (!ds) throw new Error("Dataset not found");
-      ds.editors = (ds.editors || []).filter(
+      ds[listKey] = (ds[listKey] || []).filter(
         (u) => String(u) !== String(targetUserId),
       );
       await writeFile(
@@ -1221,7 +1179,10 @@ const FileSystemService = {
   },
 
   // Table ACL modifiers (only dataset owner can modify)
-  addTableViewer: async (datasetId, tableId, targetUserId, actingUser) => {
+  addTableAclUser: async (datasetId, tableId, targetUserId, role, actingUser) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
     const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
@@ -1233,16 +1194,24 @@ const FileSystemService = {
       (u) => String(u.id) === String(targetUserId),
     );
     if (!target) throw new Error("Target user not found in users DB");
+    if (role === "editor") {
+      const targetRoles = target.roles || [];
+      if (!(targetRoles.includes("admin") || targetRoles.includes("editor")))
+        throw new Error(
+          "Target user does not have admin/editor role and cannot be made table editor",
+        );
+    }
 
+    const listKey = role === "editor" ? "editors" : "viewers";
     await writeQueue.push(async () => {
       const raw = JSON.parse(await readFile(getTablesDbPath()));
       const { meta = {}, tables = {} } = raw;
       const tbl = tables[tableId];
       if (!tbl) throw new Error("Table not found");
-      tbl.viewers = tbl.viewers || [];
+      tbl[listKey] = tbl[listKey] || [];
       const uid = String(targetUserId);
-      if (!tbl.viewers.map(String).includes(uid)) tbl.viewers.push(uid);
-      // Ensure private when viewers are explicitly set
+      if (!tbl[listKey].map(String).includes(uid)) tbl[listKey].push(uid);
+      // Ensure private when viewers/editors are explicitly set
       if (tbl.visibility === null || tbl.visibility === undefined)
         tbl.visibility = "private";
       await writeFile(
@@ -1253,77 +1222,28 @@ const FileSystemService = {
     return await FileSystemService.findOneTable(datasetId, tableId);
   },
 
-  removeTableViewer: async (datasetId, tableId, targetUserId, actingUser) => {
+  removeTableAclUser: async (
+    datasetId,
+    tableId,
+    targetUserId,
+    role,
+    actingUser,
+  ) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
     const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId)
       throw new Error("Unauthorized to modify ACL");
+    const listKey = role === "editor" ? "editors" : "viewers";
     await writeQueue.push(async () => {
       const raw = JSON.parse(await readFile(getTablesDbPath()));
       const { meta = {}, tables = {} } = raw;
       const tbl = tables[tableId];
       if (!tbl) throw new Error("Table not found");
-      tbl.viewers = (tbl.viewers || []).filter(
-        (u) => String(u) !== String(targetUserId),
-      );
-      await writeFile(
-        getTablesDbPath(),
-        JSON.stringify({ meta, tables }, null, 2),
-      );
-    });
-    return await FileSystemService.findOneTable(datasetId, tableId);
-  },
-
-  addTableEditor: async (datasetId, tableId, targetUserId, actingUser) => {
-    const dataset = await FileSystemService.findOneDataset(datasetId);
-    if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
-    if (String(dataset.userId) !== actingId)
-      throw new Error("Unauthorized to modify ACL");
-    const usersPath = config.helpers.getUsersPath();
-    const usersRaw = JSON.parse(await fs.promises.readFile(usersPath, "utf8"));
-    const target = Object.values(usersRaw.users || {}).find(
-      (u) => String(u.id) === String(targetUserId),
-    );
-    if (!target) throw new Error("Target user not found in users DB");
-    const targetRoles = target.roles || [];
-    if (!(targetRoles.includes("admin") || targetRoles.includes("editor")))
-      throw new Error(
-        "Target user does not have admin/editor role and cannot be made table editor",
-      );
-
-    await writeQueue.push(async () => {
-      const raw = JSON.parse(await readFile(getTablesDbPath()));
-      const { meta = {}, tables = {} } = raw;
-      const tbl = tables[tableId];
-      if (!tbl) throw new Error("Table not found");
-      tbl.editors = tbl.editors || [];
-      const uid = String(targetUserId);
-      if (!tbl.editors.map(String).includes(uid)) tbl.editors.push(uid);
-      // Ensure private when editors are explicitly set
-      if (tbl.visibility === null || tbl.visibility === undefined)
-        tbl.visibility = "private";
-      await writeFile(
-        getTablesDbPath(),
-        JSON.stringify({ meta, tables }, null, 2),
-      );
-    });
-    return await FileSystemService.findOneTable(datasetId, tableId);
-  },
-
-  removeTableEditor: async (datasetId, tableId, targetUserId, actingUser) => {
-    const dataset = await FileSystemService.findOneDataset(datasetId);
-    if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
-    if (String(dataset.userId) !== actingId)
-      throw new Error("Unauthorized to modify ACL");
-    await writeQueue.push(async () => {
-      const raw = JSON.parse(await readFile(getTablesDbPath()));
-      const { meta = {}, tables = {} } = raw;
-      const tbl = tables[tableId];
-      if (!tbl) throw new Error("Table not found");
-      tbl.editors = (tbl.editors || []).filter(
+      tbl[listKey] = (tbl[listKey] || []).filter(
         (u) => String(u) !== String(targetUserId),
       );
       await writeFile(

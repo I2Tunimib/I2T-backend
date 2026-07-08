@@ -190,9 +190,12 @@ const DatasetsController = {
         return res.status(401).json({});
       }
 
+      console.log(`[getDependencies] dataset=${idDataset} table=${idTable} logFile=public/logs/logs-${idDataset}-${idTable}.jsonl`);
       const logInstance = new Log(idDataset, idTable);
       logInstance.buildDependencyGraph();
-      res.json(logInstance.getObject());
+      const obj = logInstance.getObject();
+      console.log(`[getDependencies] response:`, JSON.stringify(obj, null, 2));
+      res.json(obj);
     } catch (err) {
       next(err);
     }
@@ -292,12 +295,13 @@ const DatasetsController = {
                   const column = columns[columnId];
                   if (column.metadata && Array.isArray(column.metadata)) {
                     const hasMatch = column.metadata.some((metaItem) => {
-                      if (metaItem.type && Array.isArray(metaItem.type)) {
-                        return metaItem.type.some(
-                          (typeItem) => typeItem.match === true,
-                        );
-                      }
-                      return false;
+                      const mainMatch =
+                        Array.isArray(metaItem.type) &&
+                        metaItem.type.some((t) => t.match === true);
+                      const additionalMatch =
+                        Array.isArray(metaItem.additionalTypes) &&
+                        metaItem.additionalTypes.some((t) => t.match === true);
+                      return mainMatch || additionalMatch;
                     });
                     if (hasMatch) {
                       matchedColumns++;
@@ -502,6 +506,34 @@ const DatasetsController = {
     const keepMatching =
       req.query.keepMatching === "true" || req.body.keepMatching === true;
     try {
+      if (format === "python" || format === "notebook") {
+        const user = await AuthService.verifyToken(req);
+        const dataset = await DatasetsService.findOneDataset(idDataset);
+        if (!DatasetsService.userCanView(dataset, user.id)) {
+          return res.status(401).json({});
+        }
+        const tableMeta = await DatasetsService.findOneTable(
+          idDataset,
+          idTable,
+        );
+        if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
+          return res.status(401).json({});
+        }
+
+        // Table existence isn't checked - we only need the logs
+        // The table ID is just used for reference in the generated code
+        const { data, fileName, contentType } = await ExportService.semtParser(
+          { id: idTable, datasetId: idDataset, format },
+        );
+
+        res.setHeader("Content-Type", contentType);
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${fileName}"`,
+        );
+        return res.send(data);
+      }
+
       const table = await DatasetsService.findTable(idDataset, idTable);
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
@@ -521,43 +553,6 @@ const DatasetsController = {
         );
         return res.send(data);
       }
-      res.send(data);
-    } catch (err) {
-      next(err);
-    }
-  },
-  exportTableCode: async (req, res, next) => {
-    const { idDataset, idTable } = req.params;
-    const { format = "python" } = req.query;
-    try {
-      const user = await AuthService.verifyToken(req);
-      const dataset = await DatasetsService.findOneDataset(idDataset);
-
-      if (!DatasetsService.userCanView(dataset, user.id)) {
-        return res.status(401).json({});
-      }
-      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
-      if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
-        return res.status(401).json({});
-      }
-
-      // Table existence isn't checked - we only need the logs
-      // The table ID is just used for reference in the generated code
-      // Get the exported code file
-      const { data, fileName, contentType } = await ExportService.semtParser({
-        id: idTable,
-        datasetId: idDataset,
-        format: format === "notebook" ? "notebook" : "python",
-      });
-
-      // Set appropriate headers for file download
-      res.setHeader("Content-Type", contentType);
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${fileName}"`,
-      );
-
-      // Send the file and ensure the response is complete before file cleanup
       res.send(data);
     } catch (err) {
       next(err);
@@ -845,26 +840,15 @@ const DatasetsController = {
   },
 
   // ACL management endpoints
-  addViewer: async (req, res, next) => {
+  addAclUser: async (req, res, next) => {
     const { idDataset } = req.params;
-    const { userId } = req.body;
+    const { userId, role } = req.body;
     try {
       const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.addViewer(idDataset, userId, acting);
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  removeViewer: async (req, res, next) => {
-    const { idDataset } = req.params;
-    const { userId } = req.body;
-    try {
-      const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.removeViewer(
+      const result = await DatasetsService.addAclUser(
         idDataset,
         userId,
+        role,
         acting,
       );
       res.json(result);
@@ -873,26 +857,15 @@ const DatasetsController = {
     }
   },
 
-  addEditor: async (req, res, next) => {
+  removeAclUser: async (req, res, next) => {
     const { idDataset } = req.params;
-    const { userId } = req.body;
+    const { userId, role } = req.body;
     try {
       const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.addEditor(idDataset, userId, acting);
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  removeEditor: async (req, res, next) => {
-    const { idDataset } = req.params;
-    const { userId } = req.body;
-    try {
-      const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.removeEditor(
+      const result = await DatasetsService.removeAclUser(
         idDataset,
         userId,
+        role,
         acting,
       );
       res.json(result);
@@ -943,15 +916,16 @@ const DatasetsController = {
     }
   },
 
-  addTableViewer: async (req, res, next) => {
+  addTableAclUser: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    const { userId } = req.body;
+    const { userId, role } = req.body;
     try {
       const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.addTableViewer(
+      const result = await DatasetsService.addTableAclUser(
         idDataset,
         idTable,
         userId,
+        role,
         acting,
       );
       res.json(result);
@@ -960,49 +934,16 @@ const DatasetsController = {
     }
   },
 
-  removeTableViewer: async (req, res, next) => {
+  removeTableAclUser: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    const { userId } = req.body;
+    const { userId, role } = req.body;
     try {
       const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.removeTableViewer(
+      const result = await DatasetsService.removeTableAclUser(
         idDataset,
         idTable,
         userId,
-        acting,
-      );
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  addTableEditor: async (req, res, next) => {
-    const { idDataset, idTable } = req.params;
-    const { userId } = req.body;
-    try {
-      const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.addTableEditor(
-        idDataset,
-        idTable,
-        userId,
-        acting,
-      );
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  removeTableEditor: async (req, res, next) => {
-    const { idDataset, idTable } = req.params;
-    const { userId } = req.body;
-    try {
-      const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.removeTableEditor(
-        idDataset,
-        idTable,
-        userId,
+        role,
         acting,
       );
       res.json(result);
