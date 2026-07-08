@@ -160,12 +160,25 @@ const DatasetsController = {
       if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
         return res.status(401).json({});
       }
+      const isOwner = String(dataset.userId) === String(user.id);
+      const isEditor = tableMeta.editors?.map(String).includes(String(user.id)) ||
+        dataset.editors?.map(String).includes(String(user.id));
+      const permissionType = (isOwner || isEditor) ? 'rw' : 'ro';
+
       const tableData = await DatasetsService.findTable(idDataset, idTable);
+      const tableDataWithPerm = {
+        ...tableData,
+        table: {
+          ...tableData.table,
+          permission: permissionType
+        }
+      };
+
       const currentLock = TableLockService.getTableLock(idTable);
       const isLocked =
         currentLock && String(currentLock.userId) !== String(user.id);
       res.json({
-        ...tableData,
+        ...tableDataWithPerm,
         _lock: {
           isLocked,
           lockedBy: isLocked ? currentLock.userId : null,
@@ -505,6 +518,7 @@ const DatasetsController = {
     let format = req.query.format || req.body.format || "w3c";
     const keepMatching =
       req.query.keepMatching === "true" || req.body.keepMatching === true;
+    const user = await AuthService.verifyToken(req);
     try {
       if (format === "python" || format === "notebook") {
         const user = await AuthService.verifyToken(req);
@@ -537,20 +551,36 @@ const DatasetsController = {
       const table = await DatasetsService.findTable(idDataset, idTable);
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
-      const data = await ExportService[format]({
+
+      let schemaData = null;
+      if (format === 'report_html' || format === 'report_md') {
+        schemaData = await ExportService.w3c(
+          {
+            columns: table.columns,
+            rows: table.rows,
+            tableInstance: tableInstance,
+            keepMatching: false
+          });
+      }
+
+      const exportPayload = {
         ...table,
-        htmlContent: req.body.htmlContent,
-        keepMatching,
-        ...req.query,
         ...req.body,
-      });
+        datasetId: idDataset,
+        tableId: idTable,
+        schemaData: schemaData,
+        tableInstance: tableInstance,
+      };
+
+      const data = await ExportService[format](exportPayload);
+
+      if (format === "report_html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.send(data);
+      }
 
       if (format === "report_md") {
         res.setHeader("Content-Type", "text/markdown");
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="${table?.name || "report"}.md"`,
-        );
         return res.send(data);
       }
       res.send(data);

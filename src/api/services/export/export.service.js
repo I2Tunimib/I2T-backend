@@ -2,48 +2,24 @@ import { parse } from "json2csv";
 import path from "path";
 import fs from "fs";
 import axios from "axios";
-import LLMExporterService from "./llm-export.service.js";
 import { SemtParserService } from "./semtparser.service.js";
+import { buildHtmlReport, buildMarkdownReport } from '../../../utils/schemaReportUtils.js';
 
 const ExportService = {
-  schema_w3c: async ({ columns, rows }) => {
-    const jsonData = await ExportService.w3c({ columns, rows, keepMatching: false });
+  schema_w3c: async ({ columns, rows, tableInstance }) => {
+    const jsonData = await ExportService.w3c({
+      columns,
+      rows,
+      tableInstance,
+      keepMatching: false
+    });
     return jsonData[0] || {};
   },
-  report_html: async ({ columns, rows }) => {
-    return await ExportService.w3c({ columns, rows, keepMatching: false });
+  report_html: async (payload) => {
+    return buildHtmlReport(payload);
   },
-  report_md: async ({ htmlContent }) => {
-    if (!htmlContent) {
-      throw new Error("Missing htmlContent for Markdown generation");
-    }
-
-    let base64Image = "";
-    const imgRegex = /<img[^>]+src=["'](data:image\/png;base64,[^"']+)["']/i;
-    const match = htmlContent.match(imgRegex);
-
-    let cleanedHtmlContent = htmlContent;
-    if (match && match[1]) {
-      base64Image = match[1];
-      cleanedHtmlContent = htmlContent.replace(imgRegex, '<img src="#GRAPH_IMAGE_PLACEHOLDER#" alt="Schema Graph" />');
-    }
-
-    let markdownReport = await LLMExporterService.generateMarkdownFromHtml({
-      htmlContent: cleanedHtmlContent
-    });
-
-    if (base64Image) {
-      const markdownImageSyntax = `![Schema Graph](${base64Image})`;
-      if (markdownReport.includes("#GRAPH_IMAGE_PLACEHOLDER#")) {
-        markdownReport = markdownReport.replace("#GRAPH_IMAGE_PLACEHOLDER#", base64Image);
-      } else if (markdownReport.includes("![Schema Graph](#)")) {
-        markdownReport = markdownReport.replace("![Schema Graph](#)", markdownImageSyntax);
-      } else {
-        markdownReport += `\n\n## Schema Graph Visualization\n\n${markdownImageSyntax}\n`;
-      }
-    }
-
-    return markdownReport;
+  report_md: async (payload) => {
+    return buildMarkdownReport(payload);
   },
   rawJson: async ({ columns, rows }) => {
     // Be defensive: rows or individual row.cells may be missing. Produce one object per row
@@ -88,7 +64,7 @@ const ExportService = {
     }
     return csv;
   },
-  w3c: async ({ columns, rows, keepMatching = false }) => {
+  w3c: async ({ columns, rows, tableInstance = {}, keepMatching = false }) => {
     // Helper function to convert score strings to numbers in type/property arrays
     const convertScoresInArray = (arr) => {
       if (!Array.isArray(arr)) return arr;
@@ -123,61 +99,77 @@ const ExportService = {
         ...rest,
       }));
     };
+    const complianceReports = tableInstance?.complianceReports;
+    const firstRow = {
+      compliance: {
+        status: (complianceReports && complianceReports.length > 0)
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.gdpr
+          : "UNKNOWN",
+        reasoning: (complianceReports && complianceReports.length > 0)
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.reasoning
+          : "",
+        score: (complianceReports && complianceReports.length > 0)
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.score
+          : "",
+      },
+      permissions: {
+        type: tableInstance.permission
+      },
+      columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
+        const col = columns[colId] || {};
+        const {
+          id,
+          status,
+          context = {},
+          metadata = [],
+          annotationMeta,
+          ...propsToKeep
+        } = col;
 
-    const firstRow = Object.keys(columns || {}).reduce((acc, colId, index) => {
-      const col = columns[colId] || {};
-      const {
-        id,
-        status,
-        context = {},
-        metadata = [],
-        annotationMeta,
-        ...propsToKeep
-      } = col;
+        const trimmedLabel = (col.label || String(colId)).trim();
 
-      const trimmedLabel = (col.label || String(colId)).trim();
+        // Guard context: it may be undefined or not an object
+        const standardContext = Object.keys(context || {}).reduce(
+          (accCtx, prefix) => {
+            const entry = context[prefix] || {};
+            const uri = entry.uri;
+            return [...accCtx, { prefix: `${prefix}:`, uri }];
+          },
+          [],
+        );
 
-      // Guard context: it may be undefined or not an object
-      const standardContext = Object.keys(context || {}).reduce(
-        (accCtx, prefix) => {
-          const entry = context[prefix] || {};
-          const uri = entry.uri;
-          return [...accCtx, { prefix: `${prefix}:`, uri }];
-        },
-        [],
-      );
+        // Process column metadata safely
+        let processedMetadata = [];
+        if (Array.isArray(metadata) && metadata.length > 0) {
+          const metaItem = { ...metadata[0] };
 
-      // Process column metadata safely
-      let processedMetadata = [];
-      if (Array.isArray(metadata) && metadata.length > 0) {
-        const metaItem = { ...metadata[0] };
+          // Convert scores in type array
+          if (metaItem.type) {
+            metaItem.type = convertScoresInArray(metaItem.type);
+          }
 
-        // Convert scores in type array
-        if (metaItem.type) {
-          metaItem.type = convertScoresInArray(metaItem.type);
+          // Convert scores in property array
+          if (metaItem.property) {
+            metaItem.property = convertScoresInArray(metaItem.property);
+          }
+
+          // Convert scores in entity array
+          if (metaItem.entity) {
+            metaItem.entity = getMetadata(metaItem.entity, keepMatching);
+          }
+
+          processedMetadata = [metaItem];
         }
 
-        // Convert scores in property array
-        if (metaItem.property) {
-          metaItem.property = convertScoresInArray(metaItem.property);
-        }
-
-        // Convert scores in entity array
-        if (metaItem.entity) {
-          metaItem.entity = getMetadata(metaItem.entity, keepMatching);
-        }
-
-        processedMetadata = [metaItem];
-      }
-
-      acc[`th${index}`] = {
-        ...propsToKeep,
-        label: trimmedLabel,
-        metadata: processedMetadata,
-        context: standardContext,
-      };
-      return acc;
-    }, {});
+        acc[`th${index}`] = {
+          ...propsToKeep,
+          label: trimmedLabel,
+          metadata: processedMetadata,
+          context: standardContext,
+        };
+        return acc;
+      }, {})
+    };
 
     const rest = Object.keys(rows || {}).map((rowId) => {
       const row = rows[rowId] || {};

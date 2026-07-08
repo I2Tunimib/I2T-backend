@@ -2,7 +2,6 @@ import { readFile, writeFile } from "fs/promises";
 import OpenAI from "openai";
 import FileSystemService from "../datasets/datasets.service.js";
 import config from "../../../config/index.js";
-import LLMColumnClassifierService from "../reconciliation/llm-column-classifier.service.js";
 import { extractLLMJson } from "../../../utils/dataUtils.js";
 
 const {
@@ -325,11 +324,14 @@ Correct format (column name as key):
     }
   },
   {
-    "<exact column name here>": {
-      "classification": "personalData",
-      "action": "pseudonymize",
-      "reasoning": "...",
-      "score": 0.90
+    {
+      "columns": {
+        "<exact column name here>": {
+        "classification": "personalData",
+        "action": "pseudonymize",
+        "reasoning": "...",
+        "score": 0.90
+      }
     }
   }
 ]
@@ -363,6 +365,9 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
     const tableData = await FileSystemService.findTable(idDataset, idTable);
     const { table, columns, rows, columnOrder } = tableData;
 
+    const complianceSummary = result[0]?.table;
+    const columnData = result[1] || {};
+
     const newReport = {
       userId: userId ?? null,
       date: new Date().toISOString(),
@@ -372,13 +377,28 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
     const updatedReports = [...(table.complianceReports || []), newReport];
     const updatedTable = {
       ...table,
+      complianceStatus: complianceSummary?.gdpr,
       complianceReports: updatedReports,
       lastModifiedDate: new Date().toISOString(),
     };
 
+    const updatedColumns = {};
+    Object.keys(columns.byId || columns).forEach((colId) => {
+      const col = (columns.byId || columns)[colId];
+      const complianceInfo = columnData[col.label || colId];
+
+      updatedColumns[colId] = {
+        ...col,
+        gdprClassification: complianceInfo?.classification,
+        gdprAction: complianceInfo?.action,
+        gdprStatus: complianceInfo?.action === "noChange" ? "yesGDPR" : "noGDPR",
+        gdprScore: complianceInfo?.score,
+      };
+    });
+
     const columnsFormatted = {
-      byId: columns,
-      allIds: Object.keys(columns),
+      byId: updatedColumns,
+      allIds: Object.keys(updatedColumns),
     };
 
     const rowsFormatted = {
