@@ -371,6 +371,7 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
     const newReport = {
       userId: userId ?? null,
       date: new Date().toISOString(),
+      serviceName: this.getServiceMetadata().name,
       result,
     };
 
@@ -389,10 +390,12 @@ IMPORTANT: Return ONLY the JSON array. Do not include any other text, explanatio
 
       updatedColumns[colId] = {
         ...col,
-        gdprClassification: complianceInfo?.classification,
-        gdprAction: complianceInfo?.action,
-        gdprStatus: complianceInfo?.action === "noChange" ? "yesGDPR" : "noGDPR",
-        gdprScore: complianceInfo?.score,
+        compliance: complianceInfo ? {
+          classification: complianceInfo.classification,
+          action: complianceInfo.action,
+          status: complianceInfo.action === "noChange" ? "noGDPR" : "yesGDPR",
+          score: complianceInfo.score,
+        } : col.compliance,
       };
     });
 

@@ -102,6 +102,7 @@ const ExportService = {
     const complianceReports = tableInstance?.complianceReports;
     const firstRow = {
       compliance: {
+        service: complianceReports?.[tableInstance.complianceReports.length - 1]?.serviceName,
         status: (complianceReports && complianceReports.length > 0)
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.gdpr
           : "UNKNOWN",
@@ -123,6 +124,7 @@ const ExportService = {
           context = {},
           metadata = [],
           annotationMeta,
+          compliance,
           ...propsToKeep
         } = col;
 
@@ -161,11 +163,15 @@ const ExportService = {
           processedMetadata = [metaItem];
         }
 
+        const lastReport = complianceReports?.[complianceReports.length - 1];
+        const latestCompliance = lastReport?.result.find(r => r[trimmedLabel])?.[trimmedLabel];
+
         acc[`th${index}`] = {
           ...propsToKeep,
           label: trimmedLabel,
           metadata: processedMetadata,
           context: standardContext,
+          compliance: latestCompliance || col.compliance,
         };
         return acc;
       }, {})

@@ -549,6 +549,7 @@ const DatasetsController = {
       }
 
       const table = await DatasetsService.findTable(idDataset, idTable);
+      const tableInstance = table?.table;
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
 

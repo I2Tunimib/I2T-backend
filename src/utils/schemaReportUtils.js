@@ -13,11 +13,11 @@ export const buildHtmlReport = (data) => {
   const columnEntries = Object.entries(schema.columns).filter(([key]) => key.startsWith('th'));
 
   const compliance = schema?.compliance;
-  const isGDPRCompliant = compliance.status === 'yesGDPR';
+  const isCompliant = compliance.status === 'yesGDPR';
   const complianceHtml = compliance ? `
     <div 
       class="section" 
-      style="background: ${isGDPRCompliant ? '#fff5f5' : '#f0fff4'};
+      style="background: ${isCompliant ? '#fff5f5' : '#f0fff4'};
       padding: 20px;
       border-radius: 6px;
       border-width: 1px;
@@ -25,10 +25,10 @@ export const buildHtmlReport = (data) => {
       border-color: ${compliance.status === 'yesGDPR' ? '#feb2b2' : '#9ae6b4'};
       margin-bottom: 30px;"
     >
-      <h2 style="margin-top: 0; border: none; color: ${isGDPRCompliant ? '#c53030' : '#2f855a'};">Compliance Summary</h2>
+      <h2 style="margin-top: 0; border: none; color: ${isCompliant ? '#c53030' : '#2f855a'};">${compliance.service} Compliance Summary</h2>
       <p style="margin: 5px 0;"><strong>Status:</strong> 
         ${compliance.reasoning !== ""
-          ? isGDPRCompliant ? 'GDPR compliant' : 'GDPR NON-complaint'
+          ? isCompliant ? `${compliance.service} compliant` : `${compliance.service} NON-compliant`
           : 'Compliance check not performed'}
       </p>
       <p style="margin: 5px 0;"><strong>Confidence score:</strong> ${compliance.reasoning === "" ? "-" : `${(compliance.score * 100).toFixed(0)}%`}</p>
@@ -74,12 +74,12 @@ export const buildHtmlReport = (data) => {
       : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Relations: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
     const getComplianceDescription = (th) => {
-      if (th.gdprClassification) {
+      if (th.compliance.classification) {
         return `
         <div style="margin: 10px 0; padding: 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
           <p style="margin: 0;">
-            This column contains <strong>${labels[th.gdprClassification]}</strong> and is <strong>${th.gdprStatus === "yesGDPR" ? "GDPR compliant" : "GDPR non-compliant"}</strong> 
-            with a confidence score of <strong>${Math.round((th.gdprScore ?? 0) * 100)}%</strong>.
+            This column contains <strong>${labels[th.compliance.classification]}</strong> and is <strong>${th.compliance.status === "yesGDPR" ? "GDPR compliant" : "GDPR non-compliant"}</strong> 
+            with a confidence score of <strong>${Math.round((th.compliance.score ?? 0) * 100)}%</strong>.
            </p>
          </div>
       `;
@@ -311,12 +311,12 @@ export const buildMarkdownReport = (data) => {
 
   const compliance = schema?.compliance;
   const isComplianceDone = compliance && compliance.reasoning !== "";
-  md += `## Compliance Summary\n\n`;
+  md += `## ${compliance.service} Compliance Summary\n\n`;
   if (!isComplianceDone) {
     md += `> ⚠️ Compliance check not performed.\n\n`;
   } else {
     const isCompliant = compliance.status === 'yesGDPR';
-    md += `- **Status:** ${isCompliant ? 'GDPR compliant' : 'GDPR NON-compliant'}  \n`;
+    md += `- **Status:** ${isCompliant ? `${compliance.service} compliant` : `${compliance.service} NON-compliant`}  \n`;
     md += `- **Confidence score:** ${(compliance.score * 100).toFixed(0)}%  \n`;
     md += `- **Reasoning:** ${compliance.reasoning}\n\n`;
   }
@@ -386,8 +386,8 @@ export const buildMarkdownReport = (data) => {
     md += `**Outgoing Relations:**\n${outgoing.length > 0 ? outgoing.map(l => `- → ${l.target} (${l.propID})`).join('\n') : "None"}\n\n`;
     md += `**Incoming Relations:**\n${incoming.length > 0 ? incoming.map(l => `- ← ${l.source} (${l.propID})`).join('\n') : "None"}\n\n`;
 
-    const gdprDesc = `This column contains **${labels[th.gdprClassification] || 'n/a'}** and is **${th.gdprStatus === "yesGDPR" ? "GDPR compliant" : "GDPR NON-compliant"}** 
-    with a confidence score of ${Math.round((th.gdprScore ?? 0) * 100)}%.`;
+    const gdprDesc = `This column contains **${labels[th.compliance.classification] || 'n/a'}** and is **${th.compliance.status === "yesGDPR" ? "GDPR compliant" : "GDPR NON-compliant"}** 
+    with a confidence score of ${Math.round((th.compliance.score ?? 0) * 100)}%.`;
 
     if (isComplianceDone) {
       md += `${gdprDesc}\n\n`;
