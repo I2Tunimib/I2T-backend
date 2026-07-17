@@ -202,6 +202,7 @@ export class Log {
         .filter(
           (item) =>
             item &&
+            item.operationType &&
             !["SAVE_TABLE", "GET_TABLE", "EXPORT"].includes(item.operationType),
         );
 

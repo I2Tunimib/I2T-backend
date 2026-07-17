@@ -554,6 +554,7 @@ const DatasetsController = {
       if (format.startsWith("RDF")) format = "rdf";
 
       let schemaData = null;
+      let pipelineData = null;
       if (format === 'report_html' || format === 'report_md') {
         schemaData = await ExportService.w3c(
           {
@@ -562,6 +563,10 @@ const DatasetsController = {
             tableInstance: tableInstance,
             keepMatching: false
           });
+
+        const logInstance = new Log(idDataset, idTable);
+        logInstance.buildDependencyGraph();
+        pipelineData = logInstance.getObject();
       }
 
       const exportPayload = {
@@ -570,6 +575,7 @@ const DatasetsController = {
         datasetId: idDataset,
         tableId: idTable,
         schemaData: schemaData,
+        pipelineData: pipelineData,
         tableInstance: tableInstance,
       };
 
