@@ -25,10 +25,10 @@ export const buildHtmlReport = (data) => {
       border-color: ${compliance.status === 'yesGDPR' ? '#feb2b2' : '#9ae6b4'};
       margin-bottom: 30px;"
     >
-      <h2 style="margin-top: 0; border: none; color: ${isCompliant ? '#c53030' : '#2f855a'};">${compliance.service} Compliance Summary</h2>
+      <h2 style="margin-top: 0; border: none; color: ${isCompliant ? '#c53030' : '#2f855a'};">${compliance.service || ''} Compliance Summary</h2>
       <p style="margin: 5px 0;"><strong>Status:</strong> 
         ${compliance.reasoning !== ""
-          ? isCompliant ? `${compliance.service} compliant` : `${compliance.service} NON-compliant`
+          ? isCompliant ? `${compliance.service || ''} compliant` : `${compliance.service || ''} NON-compliant`
           : 'Compliance check not performed'}
       </p>
       <p style="margin: 5px 0;"><strong>Confidence score:</strong> ${compliance.reasoning === "" ? "-" : `${(compliance.score * 100).toFixed(0)}%`}</p>
@@ -43,8 +43,12 @@ export const buildHtmlReport = (data) => {
     const metadata = th.metadata || [];
     const types = metadata.flatMap((m) => m?.type ?? []);
 
-    const outgoing = (graphData?.links || []).filter((l) => l && cleanStr(l.source) === cleanStr(label));
-    const incoming = (graphData?.links || []).filter((l) => l && cleanStr(l.target) === cleanStr(label));
+    const outgoing = (graphData?.links || []).filter((l) =>
+      l && l.source && cleanStr(l.source.label) === cleanStr(label)
+    );
+    const incoming = (graphData?.links || []).filter((l) =>
+      l && l.target && cleanStr(l.target.label) === cleanStr(label)
+    );
     const totalPropertiesCount = outgoing.length + incoming.length;
 
     const index = key.replace('th', '');
@@ -62,14 +66,14 @@ export const buildHtmlReport = (data) => {
     const outgoingHtml = outgoing.length > 0
       ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Relations:</p>
         <ul style="margin: 0 0 6px 0; padding-left: 20px;">
-          ${outgoing.map((l) => `<li>&rarr; ${l?.target || 'N/A'} (<strong>${l?.propID || '-'}</strong> ${l?.label ? `- ${l.label}` : ''})</li>`).join('')}
+          ${outgoing.map((l) => `<li>&rarr; ${l?.target?.label || l?.target || 'N/A'} (<strong>${l?.propID || '-'}</strong> ${l?.label ? `- ${l.label}` : ''})</li>`).join('')}
         </ul>`
       : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Relations: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
     const incomingHtml = incoming.length > 0
       ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Relations:</p>
         <ul style="margin: 0; padding-left: 20px;">
-          ${incoming.map((l) => `<li>&larr; ${l?.source || 'N/A'} (<strong>${l?.propID || '-'}</strong> ${l?.label ? `- ${l.label}` : ''})</li>`).join('')}
+          ${incoming.map((l) => `<li>&larr; ${l?.source?.label || l?.source || 'N/A'} (<strong>${l?.propID || '-'}</strong> ${l?.label ? `- ${l.label}` : ''})</li>`).join('')}
         </ul>`
       : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Relations: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
@@ -310,13 +314,14 @@ export const buildMarkdownReport = (data) => {
   md += `*Generated on: ${new Date().toLocaleString()}*\n\n`;
 
   const compliance = schema?.compliance;
+  console.log("compliance", compliance);
   const isComplianceDone = compliance && compliance.reasoning !== "";
-  md += `## ${compliance.service} Compliance Summary\n\n`;
+  md += `## ${compliance.service || ''} Compliance Summary\n\n`;
   if (!isComplianceDone) {
     md += `> ⚠️ Compliance check not performed.\n\n`;
   } else {
     const isCompliant = compliance.status === 'yesGDPR';
-    md += `- **Status:** ${isCompliant ? `${compliance.service} compliant` : `${compliance.service} NON-compliant`}  \n`;
+    md += `- **Status:** ${isCompliant ? `${compliance.service || ''} compliant` : `${compliance.service || ''} NON-compliant`}  \n`;
     md += `- **Confidence score:** ${(compliance.score * 100).toFixed(0)}%  \n`;
     md += `- **Reasoning:** ${compliance.reasoning}\n\n`;
   }
@@ -373,8 +378,12 @@ export const buildMarkdownReport = (data) => {
   columnEntries.forEach(([key, th]) => {
     const label = th.label || key;
     const types = (th.metadata || []).flatMap((m) => m?.type ?? []);
-    const outgoing = (graphData?.links || []).filter((l) => l && cleanStr(l.source) === cleanStr(label));
-    const incoming = (graphData?.links || []).filter((l) => l && cleanStr(l.target) === cleanStr(label));
+    const outgoing = (graphData?.links || []).filter((l) =>
+      l && l.source && cleanStr(l.source.label) === cleanStr(label)
+    );
+    const incoming = (graphData?.links || []).filter((l) =>
+      l && l.target && cleanStr(l.target.label) === cleanStr(label)
+    );
 
     md += `### Column: ${label}\n`;
     md += `- **Kind:** ${th?.kind || '-'}\n`;
@@ -383,8 +392,8 @@ export const buildMarkdownReport = (data) => {
 
     md += `**Types:**\n${types.length > 0 ? types.map(t => `- ${t.name} (${t.id})`).join('\n') : "None"}\n\n`;
 
-    md += `**Outgoing Relations:**\n${outgoing.length > 0 ? outgoing.map(l => `- → ${l.target} (${l.propID})`).join('\n') : "None"}\n\n`;
-    md += `**Incoming Relations:**\n${incoming.length > 0 ? incoming.map(l => `- ← ${l.source} (${l.propID})`).join('\n') : "None"}\n\n`;
+    md += `**Outgoing Relations:**\n${outgoing.length > 0 ? outgoing.map(l => `- → ${l.target.label || l.target} (${l.propID} - ${l.label})`).join('\n') : "None"}\n\n`;
+    md += `**Incoming Relations:**\n${incoming.length > 0 ? incoming.map(l => `- ← ${l.source.label || l.source} (${l.propID} - ${l.label})`).join('\n') : "None"}\n\n`;
 
     const gdprDesc = `This column contains **${labels[th.compliance.classification] || 'n/a'}** and is **${th.compliance.status === "yesGDPR" ? "GDPR compliant" : "GDPR NON-compliant"}** 
     with a confidence score of ${Math.round((th.compliance.score ?? 0) * 100)}%.`;
@@ -392,6 +401,41 @@ export const buildMarkdownReport = (data) => {
     if (isComplianceDone) {
       md += `${gdprDesc}\n\n`;
     }
+  });
+
+  const relationsMap = {};
+
+  columnEntries.forEach(([_, th]) => {
+    if (!th || !th.label) return;
+    const sourceLabel = cleanStr(th.label);
+
+    (th.metadata || []).forEach((m) => {
+      if (!m) return;
+      (m.property || []).forEach((p) => {
+        if (!p || !p.obj) return;
+        const targetLabel = cleanStr(p.obj);
+        const pairKey = `${sourceLabel}->${targetLabel}`;
+
+        if (!relationsMap[pairKey]) {
+          relationsMap[pairKey] = { source: sourceLabel, target: targetLabel, properties: [] };
+        }
+        if (!relationsMap[pairKey].properties.some((prop) => prop.id === p.id)) {
+          relationsMap[pairKey].properties.push({
+            id: p.id || 'N/A',
+            name: p.name || 'Unknown'
+          });
+        }
+      });
+    });
+  });
+
+  md += `## Relations (${Object.keys(relationsMap).length})\n\n`;
+  Object.values(relationsMap).forEach((rel) => {
+    md += `### Relation: ${rel.source} → ${rel.target}\n`;
+    rel.properties.forEach((p) => {
+      md += `- **${p.id}**: ${p.name}\n`;
+    });
+    md += `\n`;
   });
 
   md += `## Graph Structural Metrics\n\n`;
