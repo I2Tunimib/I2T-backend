@@ -25,6 +25,10 @@ export default async (req) => {
   const timestamp = new Date().getTime(); // Get the current timestamp
   const randomId = Math.floor(Math.random() * 1000); // Generate a random number
   const tableName = "SN-BC-" + timestamp + randomId;
+  // Give every request its own dataset instead of sharing the caller-supplied
+  // datasetId (usually "0"), since DELETE /datasets/{name} on that endpoint
+  // wipes ALL tables under the dataset, not just this one.
+  const datasetName = "SN-DS-" + timestamp + randomId;
   const bodyAlligatorRequestTemplate = [
     {
       datasetName: "EMD-BC",
@@ -164,7 +168,7 @@ export default async (req) => {
   }
   //    console.log(`*** request alligator *** rows from items and props: ${JSON.stringify(rows)}`);
 
-  // Build new API request body: POST /dataset/{datasetId}/table/json
+  // Build new API request body: POST /dataset/{datasetName}/table/json
   const newBody = {
     table_name: tableName,
     header: header,
@@ -178,9 +182,9 @@ export default async (req) => {
     }),
   };
 
-  const postUrl = `${endpoint}/dataset/${datasetId}/table/json`;
+  const postUrl = `${endpoint}/dataset/${datasetName}/table/json`;
   console.log(
-    `*** request alligator *** postUrl to alligator: ${postUrl}?token=${access_token} *** tableName: ${tableName}`,
+    `*** request alligator *** postUrl to alligator: ${postUrl}?token=${access_token} *** tableName: ${tableName} *** datasetName: ${datasetName}`,
   );
   console.log("*** Alligator Body *** ", JSON.stringify(newBody));
 
@@ -208,6 +212,27 @@ export default async (req) => {
     let postStatus;
     let useLegacyApi = false;
     const processorParam = useLLMMode ? "&processor_id=llm-processor" : "";
+
+    // Delete + recreate the dataset so this request always starts from a
+    // clean, isolated dataset (datasetName is unique per request, so the
+    // delete is normally a no-op 404 and the create is a fresh insert).
+    try {
+      await axios.delete(`${endpoint}/datasets/${datasetName}`);
+    } catch (err) {
+      if (err?.response?.status !== 404) {
+        console.log(
+          `*** request alligator *** dataset delete pre-check failed (non-404): ${err?.response?.status}`,
+        );
+      }
+    }
+    try {
+      await axios.post(`${endpoint}/datasets`, { dataset_name: datasetName });
+    } catch (err) {
+      console.log(
+        `*** request alligator ### ERROR creating dataset ${datasetName}: ${err?.response?.status} ${JSON.stringify(err?.response?.data)}`,
+      );
+    }
+
     try {
       const res = await axios.post(
         `${postUrl}?token=${access_token}${processorParam}`,
@@ -278,8 +303,8 @@ export default async (req) => {
 
       // New API: try new GET endpoint first, fallback to legacy path on 404
       const getUrls = [
-        `${endpoint}/datasets/${datasetId}/tables/${tableName}?token=${access_token}&limit=0`,
-        `${endpoint}/dataset/${datasetId}/table/${tableName}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
+        `${endpoint}/datasets/${datasetName}/tables/${tableName}?token=${access_token}&limit=0`,
+        `${endpoint}/dataset/${datasetName}/table/${tableName}?page=1&per_page=${itemsPerPage}&token=${access_token}`,
       ];
       console.log(
         `*** request alligator *** polling urls: ${JSON.stringify(getUrls)}`,

@@ -5,8 +5,102 @@ const labels = {
   anonymousData: "Anonymous Data"
 };
 
+const OPERATION_COLORS = {
+  RECONCILIATION: { fill: '#ebf8ff', stroke: '#3498db' },
+  EXTENSION: { fill: '#f0fff4', stroke: '#2ecc71' },
+  MODIFICATION: { fill: '#fffaf0', stroke: '#e67e22' },
+  PROPAGATE_TYPE: { fill: '#faf5ff', stroke: '#9b59b6' },
+};
+
+const getStepService = (op) => op?.reconciler || op?.extender || op?.modifier || null;
+
+const escapeMermaidLabel = (str) => String(str ?? '')
+  .replace(/"/g, '#quot;')
+  .replace(/[\r\n]+/g, ' ');
+
+/**
+ * Turns the raw dependency-graph output of Log#getObject() into a flat list of
+ * report-friendly step records plus a Mermaid `graph TD` source string.
+ * Support (cross-column) dependencies are rendered as dashed edges.
+ */
+const VALID_OPERATION_TYPES = new Set(Object.keys(OPERATION_COLORS));
+
+const buildPipelineData = (pipelineData) => {
+  const nodes = pipelineData?.nodes || {};
+  // Defensively drop anything that isn't a real, fully-formed pipeline op
+  // (e.g. malformed/legacy log lines that slip past upstream filtering).
+  const operations = (Array.isArray(pipelineData?.operations) ? pipelineData.operations : [])
+    .filter((op) => op && op.id && VALID_OPERATION_TYPES.has(op.operationType) && op.opNumber !== undefined)
+    .sort((a, b) => a.opNumber - b.opNumber);
+
+  // Raw opNumber is a table-wide counter shared with EXPORT/GET_TABLE/etc.,
+  // so it rarely starts at 1 and isn't contiguous - use a clean 1-based
+  // sequence for anything shown to the user instead.
+  const displayStepById = Object.fromEntries(operations.map((op, idx) => [op.id, idx + 1]));
+  const opById = Object.fromEntries(operations.map((op) => [op.id, op]));
+
+  const steps = operations.map((op) => {
+    const node = nodes[op.id] || {};
+    const dependsOn = (node.parents || [])
+      .filter((id) => id !== 'root')
+      .map((id) => displayStepById[id])
+      .filter((n) => n !== undefined);
+    const alsoUses = (node.supportParents || [])
+      .map((id) => displayStepById[id])
+      .filter((n) => n !== undefined);
+
+    return {
+      step: displayStepById[op.id],
+      operationType: op.operationType,
+      columnName: op.columnName,
+      service: getStepService(op),
+      timestamp: op.timestamp,
+      createdColumns: op.createdColumns || [],
+      dependsOn,
+      alsoUses,
+    };
+  });
+
+  const mermaidLines = ['graph TD', '  root(["Start"])'];
+
+  operations.forEach((op) => {
+    const step = displayStepById[op.id];
+    const nodeId = `step${step}`;
+    const label = [
+      `Step ${step} - ${op.operationType}`,
+      op.columnName ? `Column: ${op.columnName}` : null,
+      getStepService(op) ? `Service: ${getStepService(op)}` : null,
+    ].filter(Boolean).map(escapeMermaidLabel).join('<br/>');
+    const cssClass = OPERATION_COLORS[op.operationType] ? `:::${op.operationType.toLowerCase()}` : '';
+
+    mermaidLines.push(`  ${nodeId}["${label}"]${cssClass}`);
+  });
+
+  Object.entries(nodes).forEach(([nodeKey, node]) => {
+    if (nodeKey !== 'root' && !opById[nodeKey]) return;
+    const sourceId = nodeKey === 'root' ? 'root' : `step${displayStepById[nodeKey]}`;
+
+    (node.children || []).forEach((childId) => {
+      if (!opById[childId]) return;
+      mermaidLines.push(`  ${sourceId} --> step${displayStepById[childId]}`);
+    });
+    (node.supportChildren || []).forEach((childId) => {
+      if (!opById[childId]) return;
+      mermaidLines.push(`  ${sourceId} -.->|support| step${displayStepById[childId]}`);
+    });
+  });
+
+  Object.entries(OPERATION_COLORS).forEach(([type, { fill, stroke }]) => {
+    mermaidLines.push(`  classDef ${type.toLowerCase()} fill:${fill},stroke:${stroke},color:#1a365d,stroke-width:2px;`);
+  });
+
+  return { steps, mermaid: mermaidLines.join('\n') };
+};
+
 export const buildHtmlReport = (data) => {
-  const { tableName, datasetId, tableId, graphSnapshots, graphData, metrics, schemaData, showCompliance } = data;
+  const { tableName, datasetId, tableId, graphSnapshots, graphData, metrics, schemaData, showCompliance, pipelineData } = data;
+
+  const { steps: pipelineSteps, mermaid: pipelineMermaid } = buildPipelineData(pipelineData);
 
   const schema = Array.isArray(schemaData) ? (schemaData[0] || {}) : (schemaData || {});
   const cleanStr = (str) => (str ? String(str).trim().replace(/^\uFEFF/, '') : '');
@@ -188,6 +282,24 @@ export const buildHtmlReport = (data) => {
     `;
   }).join('');
 
+  const pipelineStepsHtml = pipelineSteps.map((s) => {
+    const timestamp = s.timestamp ? new Date(s.timestamp).toLocaleString() : '-';
+    const dependsOnText = s.dependsOn.length > 0 ? s.dependsOn.join(', ') : 'None (initial step)';
+    const color = OPERATION_COLORS[s.operationType]?.stroke || '#3182ce';
+
+    return `
+      <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
+        <h4 style="margin: 0 0 8px 0; color: ${color};">Step ${s.step} &middot; ${s.operationType}</h4>
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Column:</strong> ${s.columnName || '-'}</p>
+        ${s.service ? `<p style="margin: 2px 0; font-size: 14px;"><strong>Service:</strong> ${s.service}</p>` : ''}
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Timestamp:</strong> ${timestamp}</p>
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Depends on:</strong> ${dependsOnText}</p>
+        ${s.alsoUses.length > 0 ? `<p style="margin: 2px 0; font-size: 14px;"><strong>Also uses:</strong> ${s.alsoUses.join(', ')}</p>` : ''}
+        ${s.createdColumns.length > 0 ? `<p style="margin: 2px 0; font-size: 14px;"><strong>Created columns:</strong> ${s.createdColumns.join(', ')}</p>` : ''}
+      </div>
+    `;
+  }).join('');
+
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -268,8 +380,22 @@ export const buildHtmlReport = (data) => {
           <h2>Graph Structural Metrics</h2>
           ${metricsHtml || '<p>No graph metrics available.</p>'}
         </div>
+
+        <div class="section" style="background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <h2>Pipeline Steps (${pipelineSteps.length})</h2>
+          ${pipelineSteps.length > 0 ? `
+          <div class="graph-container" style="margin-bottom: 20px;">
+            <pre class="mermaid">${pipelineMermaid}</pre>
+          </div>
+          ` : ''}
+          ${pipelineStepsHtml || '<p>No pipeline steps recorded.</p>'}
+        </div>
       </div>
 
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+      <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+      </script>
       <script>
         function toggleCompliance() {
           const btn = document.getElementById('btn-toggle');
@@ -303,7 +429,8 @@ export const buildHtmlReport = (data) => {
 };
 
 export const buildMarkdownReport = (data) => {
-  const { tableName, datasetId, tableId, graphSnapshots, graphData, metrics, schemaData } = data;
+  const { tableName, datasetId, tableId, graphSnapshots, graphData, metrics, schemaData, pipelineData } = data;
+  const { steps: pipelineSteps, mermaid: pipelineMermaid } = buildPipelineData(pipelineData);
   const schema = Array.isArray(schemaData) ? (schemaData[0] || {}) : (schemaData || {});
   const cleanStr = (str) => (str ? String(str).trim().replace(/^\uFEFF/, '') : '');
   const columnEntries = Object.entries(schema?.columns).filter(([key]) => key.startsWith('th'));
@@ -451,6 +578,22 @@ export const buildMarkdownReport = (data) => {
     md += `| **${m.name || 'Metric'}** | ${valueDisplay} | ${description} |\n`;
   });
   md += `\n`;
+
+  md += `## Pipeline Steps (${pipelineSteps.length})\n\n`;
+  if (pipelineSteps.length > 0) {
+    md += "```mermaid\n" + pipelineMermaid + "\n```\n\n";
+
+    md += `| Step | Type | Column | Service | Depends On | Timestamp |\n`;
+    md += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+    pipelineSteps.forEach((s) => {
+      const dependsOnText = s.dependsOn.length > 0 ? s.dependsOn.join(', ') : '—';
+      const timestamp = s.timestamp ? new Date(s.timestamp).toLocaleString() : '-';
+      md += `| ${s.step} | ${s.operationType} | ${s.columnName || '-'} | ${s.service || '-'} | ${dependsOnText} | ${timestamp} |\n`;
+    });
+    md += `\n`;
+  } else {
+    md += `> No pipeline steps recorded.\n\n`;
+  }
 
   return md;
 };
