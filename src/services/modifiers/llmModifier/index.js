@@ -18,9 +18,9 @@ export default {
       "<li>Choose an operation type (Join / Split / Edit directly).</li>" +
       "<li>(Optional) Select additional columns for the join operation.</li>" +
       "<li>(Optional) Rename new generated columns for the join and split operation.</li>" +
-      "<li>Write instructions describing how to modify the values. The LLM will receive each cell value and return output based on the operation type.</li>" +
+      "<li>Write instructions on how to modify the values. The LLM will receive each cell value and return output based on the operation type.</li>" +
       "</ul>" +
-      "<strong>Example propmts:</strong><br>" +
+      "<strong>Example prompts:</strong><br>" +
       '<ul style="list-style-type: disc;">' +
       "<li>Join: <code>Merge first_name and last_name into a full name. Trim spaces and capitalize properly.</code></li>" +
       "<li>Split: <code>From 'address' extract street, city, and postal_code. Return values exactly as: street | city | postal_code.</code></li>" +

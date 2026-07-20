@@ -520,8 +520,8 @@ const DatasetsController = {
       req.query.keepMatching === "true" || req.body.keepMatching === true;
     const user = await AuthService.verifyToken(req);
     try {
+      const user = await AuthService.verifyToken(req);
       if (format === "python" || format === "notebook") {
-        const user = await AuthService.verifyToken(req);
         const dataset = await DatasetsService.findOneDataset(idDataset);
         if (!DatasetsService.userCanView(dataset, user.id)) {
           return res.status(401).json({});
@@ -549,7 +549,20 @@ const DatasetsController = {
       }
 
       const table = await DatasetsService.findTable(idDataset, idTable);
-      const tableInstance = table?.table;
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+
+      const isOwner = String(dataset.userId) === String(user.id);
+      const isEditor = tableMeta.editors?.map(String).includes(String(user.id)) ||
+        dataset.editors?.map(String).includes(String(user.id));
+      const permissionType = (isOwner || isEditor) ? 'rw' : 'ro';
+
+      const tableInstance = {
+        ...table?.table,
+        permission: permissionType,
+        visibility: tableMeta.visibility !== undefined ? tableMeta.visibility : null
+      };
+
       //workaround to handle different rdf formats
       if (format.startsWith("RDF")) format = "rdf";
 

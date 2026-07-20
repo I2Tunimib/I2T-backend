@@ -102,9 +102,12 @@ const ExportService = {
     const complianceReports = tableInstance?.complianceReports;
     const firstRow = {
       compliance: {
+        service: (complianceReports && complianceReports.length > 0)
+          ? complianceReports?.[tableInstance.complianceReports.length - 1]?.serviceName
+          : "",
         status: (complianceReports && complianceReports.length > 0)
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.gdpr
-          : "UNKNOWN",
+          : "",
         reasoning: (complianceReports && complianceReports.length > 0)
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.reasoning
           : "",
@@ -112,9 +115,7 @@ const ExportService = {
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.score
           : "",
       },
-      permissions: {
-        type: tableInstance.permission
-      },
+      permission: tableInstance?.permission,
       columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
         const col = columns[colId] || {};
         const {
@@ -123,6 +124,7 @@ const ExportService = {
           context = {},
           metadata = [],
           annotationMeta,
+          compliance,
           ...propsToKeep
         } = col;
 
@@ -161,11 +163,15 @@ const ExportService = {
           processedMetadata = [metaItem];
         }
 
+        const lastReport = complianceReports?.[complianceReports.length - 1];
+        const latestCompliance = lastReport?.result.find(r => r[trimmedLabel])?.[trimmedLabel];
+
         acc[`th${index}`] = {
           ...propsToKeep,
           label: trimmedLabel,
           metadata: processedMetadata,
           context: standardContext,
+          compliance: latestCompliance || col.compliance,
         };
         return acc;
       }, {})
