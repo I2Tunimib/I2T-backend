@@ -102,10 +102,12 @@ const ExportService = {
     const complianceReports = tableInstance?.complianceReports;
     const firstRow = {
       compliance: {
-        service: complianceReports?.[tableInstance.complianceReports.length - 1]?.serviceName,
+        service: (complianceReports && complianceReports.length > 0)
+          ? complianceReports?.[tableInstance.complianceReports.length - 1]?.serviceName
+          : "",
         status: (complianceReports && complianceReports.length > 0)
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.gdpr
-          : "UNKNOWN",
+          : "",
         reasoning: (complianceReports && complianceReports.length > 0)
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.reasoning
           : "",
@@ -113,9 +115,7 @@ const ExportService = {
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.score
           : "",
       },
-      permissions: {
-        type: tableInstance.permission
-      },
+      permission: tableInstance?.permission,
       columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
         const col = columns[colId] || {};
         const {
