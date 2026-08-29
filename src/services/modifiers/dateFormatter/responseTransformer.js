@@ -331,6 +331,9 @@ export default async (req, res) => {
 
   let response = { columns: {}, meta: {} };
   let joinColName = "";
+  console.log("splitDatetime", splitDatetime);
+  console.log("selectedColumns", selectedColumns);
+  console.log("columnType", columnType);
   if (
     (joinColumns && selectedColumns && selectedColumns.length > 1) ||
     columnToJoin

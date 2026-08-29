@@ -24,18 +24,54 @@ export default async (req, res) => {
     meta: {},
     originalColMeta: {
       originalColName: inputColumnName,
+      types: [],
       properties: []
     }
   };
 
   for (const label of props.labels) {
     const newColumnName = label + "_" + inputColumnName;
+
+    let colType = [];
+    if (label === "id") {
+      colType = [{
+        id: "wd:Q853614",
+        name: "identifier",
+        match: true,
+        score: 100
+      }];
+    } else if (label === "name") {
+      colType = [{
+        id: "wd:Q11938905",
+        name: "official name",
+        match: true,
+        score: 100
+      }];
+    } else if (label === "description") {
+      colType = [{
+        id: "wd:Q1200750",
+        name: "description",
+        match: true,
+        score: 100
+      }];
+    } else if (label === "url") {
+      colType = [{
+        id: "wd:Q42253",
+        name: "url",
+        match: true,
+        score: 100
+      }];
+    }
+
     const newColumn = {};
     newColumn[newColumnName] = {
       label: newColumnName,
       kind: (label === "description" || label === "url") ? "literal" : "entity",
       datatype: label === "description" || label === "url" ? "STRING" : "",
-      metadata: [],
+      metadata: colType.length > 0 ? [{
+        type: colType,
+        property: []
+      }] : [],
       cells: {},
     };
     // console.log(`*** Label Extender *** rowCell: ${JSON.stringify(newColumn)}`);
