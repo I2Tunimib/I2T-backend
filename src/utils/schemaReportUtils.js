@@ -107,11 +107,11 @@ export const buildHtmlReport = (data) => {
   const columnEntries = Object.entries(schema.columns).filter(([key]) => key.startsWith('th'));
 
   const compliance = schema?.compliance;
-  const isCompliant = compliance.status === 'yesGDPR';
+  const isComplaint = compliance.status === 'yesGDPR';
   const complianceHtml = compliance ? `
     <div 
       class="section" 
-      style="background: ${isCompliant ? '#fff5f5' : '#f0fff4'};
+      style="background: ${isComplaint ? '#fff5f5' : '#f0fff4'};
       padding: 20px;
       border-radius: 6px;
       border-width: 1px;
@@ -119,10 +119,10 @@ export const buildHtmlReport = (data) => {
       border-color: ${compliance.status === 'yesGDPR' ? '#feb2b2' : '#9ae6b4'};
       margin-bottom: 30px;"
     >
-      <h2 style="margin-top: 0; border: none; color: ${isCompliant ? '#c53030' : '#2f855a'};">${compliance.service || ''} Compliance Summary</h2>
+      <h2 style="margin-top: 0; border: none; color: ${isComplaint ? '#c53030' : '#2f855a'};">${compliance.service || ''} Compliance Summary</h2>
       <p style="margin: 5px 0;"><strong>Status:</strong> 
         ${compliance.reasoning !== ""
-          ? isCompliant ? `${compliance.service || ''} compliant` : `${compliance.service || ''} NON-compliant`
+          ? isComplaint ? `${compliance.service || ''} complaint` : `${compliance.service || ''} NON-complaint`
           : 'Compliance check not performed'}
       </p>
       <p style="margin: 5px 0;"><strong>Confidence score:</strong> ${compliance.reasoning === "" ? "-" : `${(compliance.score * 100).toFixed(0)}%`}</p>
@@ -153,30 +153,59 @@ export const buildHtmlReport = (data) => {
 
     const typesListHtml = types.length > 0
       ? `<ul style="margin: 4px 0; padding-left: 20px;">
-          ${types.map((t) => `<li>${t?.name || 'Unknown'} (<strong>${t?.id || '-'}</strong>)</li>`).join('')}
+          ${types.map((t) => `<li><em>${t?.id || '-'}</em> - ${t?.name || 'Unknown'}</li>`).join('')}
          </ul>`
       : `<p style="margin: 4px 0; padding-left: 20px; color: #718096; font-style: italic;">No types</p>`;
 
+    const groupLinks = (linksList, isOutgoing = true) => {
+      const grouped = linksList.reduce((acc, l) => {
+        const key = isOutgoing
+          ? (typeof l?.target === 'object' ? l.target.label : l.target)
+          : (typeof l?.source === 'object' ? l.source.label : l.source);
+        const targetId = key || 'N/A';
+        if (!acc[targetId]) acc[targetId] = [];
+        acc[targetId].push(l);
+        return acc;
+      }, {});
+
+      return Object.entries(grouped).map(([nodeId, links]) => {
+        const arrow = isOutgoing ? '&rarr;' : '&larr;';
+        const subItems = links.map((l) => `
+          <li style="margin: 2px 0;">
+            <em>${l?.propID || '-'}</em> - ${l?.label || ''}
+          </li>
+        `).join('');
+        return `
+          <li style="margin-bottom: 6px;">
+            ${arrow} ${nodeId}:
+            <ul style="margin: 2px 0 0 0; padding-left: 16px; list-style-type: circle;">
+              ${subItems}
+            </ul>
+          </li>
+        `;
+      }).join('');
+    };
+
     const outgoingHtml = outgoing.length > 0
-      ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Relations:</p>
-        <ul style="margin: 0 0 6px 0; padding-left: 20px;">
-          ${outgoing.map((l) => `<li>&rarr; ${l?.target?.label || l?.target || 'N/A'} (<strong>${l?.propID || '-'}</strong> ${l?.label ? `- ${l.label}` : ''})</li>`).join('')}
-        </ul>`
-      : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Relations: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
+      ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Links (${outgoing.length}):</p>
+         <ul style="margin: 0 0 6px 0; padding-left: 20px; list-style-type: disc;">
+           ${groupLinks(outgoing, true)}
+         </ul>`
+      : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Links: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
     const incomingHtml = incoming.length > 0
-      ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Relations:</p>
-        <ul style="margin: 0; padding-left: 20px;">
-          ${incoming.map((l) => `<li>&larr; ${l?.source?.label || l?.source || 'N/A'} (<strong>${l?.propID || '-'}</strong> ${l?.label ? `- ${l.label}` : ''})</li>`).join('')}
-        </ul>`
-      : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Relations: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
+      ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Links (${incoming.length}):</p>
+         <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+           ${groupLinks(incoming, false)}
+         </ul>`
+      : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Links: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
     const getComplianceDescription = (th) => {
       if (th.compliance.classification) {
         return `
         <div style="margin: 10px 0; padding: 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
           <p style="margin: 0;">
-            This column contains <strong>${labels[th.compliance.classification]}</strong> and is <strong>${th.compliance.status === "yesGDPR" ? "GDPR compliant" : "GDPR non-compliant"}</strong> 
+            This column contains <strong>${labels[th.compliance.classification]}</strong> and is <strong>${th.compliance.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}</strong> 
             with a confidence score of <strong>${Math.round((th.compliance.score ?? 0) * 100)}%</strong>.
            </p>
          </div>
@@ -447,8 +476,8 @@ export const buildMarkdownReport = (data) => {
   if (!isComplianceDone) {
     md += `> ⚠️ Compliance check not performed.\n\n`;
   } else {
-    const isCompliant = compliance.status === 'yesGDPR';
-    md += `- **Status:** ${isCompliant ? `${compliance.service || ''} compliant` : `${compliance.service || ''} NON-compliant`}  \n`;
+    const isComplaint = compliance.status === 'yesGDPR';
+    md += `- **Status:** ${isComplaint ? `${compliance.service || ''} complaint` : `${compliance.service || ''} NON-complaint`}  \n`;
     md += `- **Confidence score:** ${(compliance.score * 100).toFixed(0)}%  \n`;
     md += `- **Reasoning:** ${compliance.reasoning}\n\n`;
   }
@@ -505,6 +534,23 @@ export const buildMarkdownReport = (data) => {
   columnEntries.forEach(([key, th]) => {
     const label = th.label || key;
     const types = (th.metadata || []).flatMap((m) => m?.type ?? []);
+    const groupLinksMd = (linksList, isOutgoing = true) => {
+      const grouped = linksList.reduce((acc, l) => {
+        const key = isOutgoing
+          ? (typeof l?.target === 'object' ? l.target.label : l.target)
+          : (typeof l?.source === 'object' ? l.source.label : l.source);
+        const targetId = key || 'N/A';
+        if (!acc[targetId]) acc[targetId] = [];
+        acc[targetId].push(l);
+        return acc;
+      }, {});
+
+      return Object.entries(grouped).map(([nodeId, links]) => {
+        const arrow = isOutgoing ? '→' : '←';
+        const subItems = links.map((l) => `  - <em>${l?.propID || '-'}</em> - ${l?.label || ''}`).join('\n');
+        return `- ${arrow} **${nodeId}**:\n${subItems}`;
+      }).join('\n');
+    };
     const outgoing = (graphData?.links || []).filter((l) =>
       l && l.source && cleanStr(l.source.label) === cleanStr(label)
     );
@@ -517,12 +563,12 @@ export const buildMarkdownReport = (data) => {
     md += `- **Role:** ${th?.role || '-'}\n`;
     md += `- **${th?.kind === "literal" ? "Datatype" : "Semantic Class"}:** ${th?.datatype || '-'}\n\n`;
 
-    md += `**Types:**\n${types.length > 0 ? types.map(t => `- ${t.name} (${t.id})`).join('\n') : "None"}\n\n`;
+    md += `**Types:**\n${types.length > 0 ? types.map(t => `- <em>${t.id}</em> - ${t.name}`).join('\n') : "None"}\n\n`;
 
-    md += `**Outgoing Relations:**\n${outgoing.length > 0 ? outgoing.map(l => `- → ${l.target.label || l.target} (${l.propID} - ${l.label})`).join('\n') : "None"}\n\n`;
-    md += `**Incoming Relations:**\n${incoming.length > 0 ? incoming.map(l => `- ← ${l.source.label || l.source} (${l.propID} - ${l.label})`).join('\n') : "None"}\n\n`;
+    md += `**Outgoing Relations:**\n${outgoing.length > 0 ? groupLinksMd(outgoing, true) : "None"}\n\n`;
+    md += `**Incoming Relations:**\n${incoming.length > 0 ? groupLinksMd(incoming, false) : "None"}\n\n`;
 
-    const gdprDesc = `This column contains **${labels[th.compliance.classification] || 'n/a'}** and is **${th.compliance.status === "yesGDPR" ? "GDPR compliant" : "GDPR NON-compliant"}** 
+    const gdprDesc = `This column contains **${labels[th.compliance.classification] || 'n/a'}** and is **${th.compliance.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}** 
     with a confidence score of ${Math.round((th.compliance.score ?? 0) * 100)}%.`;
 
     if (isComplianceDone) {
