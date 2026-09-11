@@ -93,6 +93,7 @@ export default async (req, res) => {
     meta: {},
     originalColMeta: {
       originalColName: "",
+      types: [],
       properties: []
     }
   };
@@ -173,8 +174,24 @@ export default async (req, res) => {
         };
 
         response.meta[label_column] = col;
+        let colType = [];
+        if (prop === "id") {
+          colType = [{
+            id: "wd:Q853614",
+            name: "identifier",
+            match: true,
+            score: 100
+          }];
+        }
 
         if (prop === "name" && !response.originalColMeta.properties.some(p => p.obj === label_column)) {
+          colType = [{
+            id: "wd:Q11938905",
+            name: "official name",
+            match: true,
+            score: 100
+          }];
+
           response.originalColMeta.properties.push({
             id: "wd:P1448",
             obj: label_column,
@@ -183,6 +200,18 @@ export default async (req, res) => {
             score: 100
           });
         }
+
+        response.columns[label_column] = {
+          label: label_column,
+          kind: "entity",
+          metadata: colType.length > 0 ? [{
+            type: colType,
+            property: []
+          }] : [],
+          cells: {},
+        };
+
+        response.meta[label_column] = col;
 
         const dictRow = await getRowDictNew(columnData);
 

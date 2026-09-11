@@ -112,18 +112,18 @@ export default async (req) => {
           url = `${endpoint}latitude=${lat}&longitude=${lon}&start_date=${baseDate}&end_date=${baseDate}&hourly=${weatherParams}&timezone=Europe/Rome`;
           //console.log("hourly url", url);
         }
+        if (granularity === "hourly" && !isDateTime) {
+          throw new Error(
+            "Invalid column for hourly params. Please select a column that includes the time " +
+            "or switch to daily granularity.",
+          );
+        }
         try {
           const res = await axios.get(url);
           //console.log("res", res);
           const data = res.data;
           //console.log("data", data);
           // Hourly params selected and column only dates
-          if (granularity === "hourly" && !isDateTime) {
-            throw new Error(
-              "Invalid column for hourly params. Please select a column that includes the time " +
-                "or switch to daily granularity.",
-            );
-          }
           // Hourly params selected and column datetime
           if (granularity === "hourly" && isDateTime && data.hourly) {
             const targetHour = date.slice(0, 13); // es. 2023-01-01T15

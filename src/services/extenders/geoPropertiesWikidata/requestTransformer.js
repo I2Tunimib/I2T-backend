@@ -17,6 +17,10 @@ export default async (req) => {
         if (id.startsWith("Q")) {
           console.log("****** id", id);
           acc.push(id);
+        } else {
+          throw new Error(
+            `Error: Invalid identifiers. ${colId} is not reconcilied with Wikidata identifiers. Please reconcile the column with a Wikidata reconciler service.`,
+          );
         }
         return acc;
       }, []);
