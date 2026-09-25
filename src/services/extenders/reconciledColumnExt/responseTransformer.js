@@ -91,6 +91,11 @@ export default async (req, res) => {
   let response = {
     columns: {},
     meta: {},
+    originalColMeta: {
+      originalColName: "",
+      types: [],
+      properties: []
+    }
   };
 
   console.log("*** selected columns", selectedColumns);
@@ -122,6 +127,10 @@ export default async (req, res) => {
       dataSource === props.column ? dataSource : dataSource[col];
 
     if (!columnData || Object.keys(columnData).length === 0) continue;
+
+    if (!response.originalColMeta.originalColName) {
+      response.originalColMeta.originalColName = col;
+    }
 
     // Auto-detect data structure by checking first row
     const firstRowKey = Object.keys(columnData)[0];
@@ -159,9 +168,50 @@ export default async (req, res) => {
         const label_column = `${prop}_${col}`;
         response.columns[label_column] = {
           label: label_column,
+          kind: "entity",
           metadata: [],
           cells: {},
         };
+
+        response.meta[label_column] = col;
+        let colType = [];
+        if (prop === "id") {
+          colType = [{
+            id: "wd:Q853614",
+            name: "identifier",
+            match: true,
+            score: 100
+          }];
+        }
+
+        if (prop === "name" && !response.originalColMeta.properties.some(p => p.obj === label_column)) {
+          colType = [{
+            id: "wd:Q11938905",
+            name: "official name",
+            match: true,
+            score: 100
+          }];
+
+          response.originalColMeta.properties.push({
+            id: "wd:P1448",
+            obj: label_column,
+            name: "official name",
+            match: true,
+            score: 100
+          });
+        }
+
+        response.columns[label_column] = {
+          label: label_column,
+          kind: "entity",
+          metadata: colType.length > 0 ? [{
+            type: colType,
+            property: []
+          }] : [],
+          cells: {},
+        };
+
+        response.meta[label_column] = col;
 
         const dictRow = await getRowDictNew(columnData);
 

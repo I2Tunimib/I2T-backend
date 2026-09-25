@@ -11,6 +11,9 @@ import config from "./config/index.js";
 import { colorString } from "./utils/log.js";
 import zipTmpFileMiddleware from "./api/middleware/zip-tmp-file.middleware.js";
 import logger from "./api/middleware/logger.js";
+import loggerJson from "./api/middleware/logger-json.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./api/docs/swagger.js";
 const __dirname = path.resolve();
 
 const { ENV, PORT } = config;
@@ -62,16 +65,10 @@ const corsOptions = {
     // Allow no-origin requests (e.g. curl, some same-origin navigation cases)
     if (!incomingOrigin) return callback(null, true);
 
-    const reqOrigin = normalizeOrigin(incomingOrigin);
-    const allowedOrigin = normalizeOrigin(FRONTEND_ORIGIN);
-
-    // Allow if normalized origins match (tolerant to trailing slash differences)
-    if (reqOrigin === allowedOrigin) {
-      return callback(null, true);
-    }
-
-    // Otherwise reject
-    return callback(new Error("Not allowed by CORS"));
+    // Allow any origin by reflecting the incoming origin.
+    // When `credentials: true` is set, the CORS middleware will echo the
+    // request Origin back in the Access-Control-Allow-Origin response header.
+    return callback(null, true);
   },
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization", "x-table-dataset-info"],
@@ -106,14 +103,121 @@ app.use(
 );
 // Apply logger middleware after body parsing
 app.use(logger);
+app.use(loggerJson);
 app.use("/api", routes);
+const swaggerUiOptions = {
+  customSiteTitle: "I2T API Docs",
+  customCss: `
+    .swagger-ui .topbar { padding: 8px 16px; }
+    #sw-login-widget {
+      display: flex; align-items: center; gap: 8px; margin-left: auto;
+    }
+    #sw-login-widget input {
+      padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;
+      font-size: 13px; background: #fff; color: #333;
+    }
+    #sw-login-widget button {
+      padding: 5px 14px; background: #49cc90; color: #fff;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 13px;
+      font-weight: 600;
+    }
+    #sw-login-widget button:hover { background: #3aaa74; }
+    #sw-login-status { font-size: 12px; min-width: 90px; }
+  `,
+  customJsStr: `
+    (function () {
+      function injectWidget() {
+        const topbar = document.querySelector('.topbar-wrapper');
+        if (!topbar || document.getElementById('sw-login-widget')) return;
+
+        const widget = document.createElement('div');
+        widget.id = 'sw-login-widget';
+        widget.innerHTML =
+          '<input id="sw-user" type="text" placeholder="Username" autocomplete="username" />' +
+          '<input id="sw-pass" type="password" placeholder="Password" autocomplete="current-password" />' +
+          '<button id="sw-login-btn">Login</button>' +
+          '<span id="sw-login-status"></span>';
+        topbar.appendChild(widget);
+
+        document.getElementById('sw-login-btn').addEventListener('click', async function () {
+          const username = document.getElementById('sw-user').value.trim();
+          const password = document.getElementById('sw-pass').value;
+          const status   = document.getElementById('sw-login-status');
+
+          if (!username || !password) {
+            status.style.color = '#f93e3e';
+            status.textContent = 'Fill both fields';
+            return;
+          }
+
+          status.style.color = '#888';
+          status.textContent = 'Signing in…';
+
+          try {
+            const resp = await fetch('/api/auth/signin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password }),
+            });
+
+            if (!resp.ok) {
+              status.style.color = '#f93e3e';
+              status.textContent = '✗ Invalid credentials';
+              return;
+            }
+
+            const data = await resp.json();
+            // preauthorizeApiKey only works for apiKey-type schemes.
+            // bearerAuth is http/bearer, so we must use authActions.authorize directly.
+            window.ui.authActions.authorize({
+              bearerAuth: {
+                name: 'bearerAuth',
+                schema: {
+                  type: 'http',
+                  scheme: 'bearer',
+                  bearerFormat: 'JWT',
+                },
+                value: data.token,
+              },
+            });
+            status.style.color = '#49cc90';
+            status.textContent = '✓ Authorized';
+            document.getElementById('sw-pass').value = '';
+          } catch (e) {
+            status.style.color = '#f93e3e';
+            status.textContent = '✗ Network error';
+          }
+        });
+
+        // Allow pressing Enter in the password field to trigger login
+        document.getElementById('sw-pass').addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') document.getElementById('sw-login-btn').click();
+        });
+      }
+
+      // Swagger UI renders asynchronously; poll until the topbar appears
+      const interval = setInterval(function () {
+        if (document.querySelector('.topbar-wrapper')) {
+          clearInterval(interval);
+          injectWidget();
+        }
+      }, 100);
+    })();
+  `,
+};
+
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+app.get("/api/docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
 
 // If production redirect to '/api'
 app.use(isProd);
 // Otherwise server app static files
 app.use(express.static(path.join(__dirname, "build")));
 // Use wildcard because of frontend routing, otherwise it will fail to serve static files
-app.get("/*", function (req, res) {
+app.get(/^(?!\/api\/).*/, function (req, res) {
   res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 

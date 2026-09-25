@@ -3,19 +3,75 @@ import { it, enUS } from "date-fns/locale";
 
 export default async (req, res) => {
   const { items, props } = req.original;
-  const { formatType, customPattern, detailLevel, outputMode, columnToJoin, joinColumns, selectedColumns, columnType,
-    separator, splitDatetime } = props;
-  const allowedTokens = ["dd","MM","MMMM","yyyy","HH","hh","mm","ss","a","SSS","XXX","z"];
-
-  const dateFormats = [
-    "yyyy-MM-dd","yyyy/MM/dd","yyyy.MM.dd","yyyyMMdd",
-    "yyyy-MM-dd","yyyy/MM/dd","yyyy.MM.dd","yyyyMMdd",
-    "dd-MM-yyyy","dd/MM/yyyy","dd.MM.yyyy","ddMMyyyy",
-    "MM-dd-yyyy","MM/dd/yyyy","MM.dd.yyyy","MMddyyyy",
-    "d MMMM yyyy","dd MMMM yyyy","MMMM d, yyyy","MMMM dd, yyyy",
+  // console.log("Input items", items);
+  const {
+    formatType,
+    customPattern,
+    detailLevel,
+    outputMode,
+    columnToJoin,
+    joinColumns,
+    selectedColumns,
+    columnType,
+    separator,
+    splitDatetime,
+  } = props;
+  const allowedTokens = [
+    "dd",
+    "MM",
+    "MMMM",
+    "yyyy",
+    "HH",
+    "hh",
+    "mm",
+    "ss",
+    "a",
+    "SSS",
+    "XXX",
+    "z",
   ];
 
-  const timeFormats = ["HH:mm","hh:mm a","HH:mm:ss","hh:mm:ss a","HH:mm:ss.SSS","HH:mm:ssXXX","HH:mm:ss z"];
+  const dateFormats = [
+    "dd/MM/yy",
+    "dd-MM-yy",
+    "dd.MM.yy",
+    "MM/dd/yy",
+    "MM-dd-yy",
+    "MM.dd.yy",
+    "yy/MM/dd",
+    "yy-MM-dd",
+    "yy.MM.dd",
+    "yyyy-MM-dd",
+    "yyyy/MM/dd",
+    "yyyy.MM.dd",
+    "yyyyMMdd",
+    "yyyy-MM-dd",
+    "yyyy/MM/dd",
+    "yyyy.MM.dd",
+    "yyyyMMdd",
+    "dd-MM-yyyy",
+    "dd/MM/yyyy",
+    "dd.MM.yyyy",
+    "ddMMyyyy",
+    "MM-dd-yyyy",
+    "MM/dd/yyyy",
+    "MM.dd.yyyy",
+    "MMddyyyy",
+    "d MMMM yyyy",
+    "dd MMMM yyyy",
+    "MMMM d, yyyy",
+    "MMMM dd, yyyy",
+  ];
+
+  const timeFormats = [
+    "HH:mm",
+    "hh:mm a",
+    "HH:mm:ss",
+    "hh:mm:ss a",
+    "HH:mm:ss.SSS",
+    "HH:mm:ssXXX",
+    "HH:mm:ss z",
+  ];
 
   const dateTimeFormats = [];
   for (const d of dateFormats) {
@@ -25,15 +81,32 @@ export default async (req, res) => {
   }
 
   let pattern = "";
-  switch(formatType) {
-    case "iso": pattern = "yyyy-MM-dd"; break;
-    case "european": pattern = "dd/MM/yyyy"; break;
-    case "us": pattern = "MM/dd/yyyy"; break;
-    case "custom": pattern = customPattern; break;
+  switch (formatType) {
+    case "iso":
+      pattern = "yyyy-MM-dd";
+      break;
+    case "european":
+      pattern = "dd/MM/yyyy";
+      break;
+    case "us":
+      pattern = "MM/dd/yyyy";
+      break;
+    case "custom":
+      pattern = customPattern;
+      break;
+    default:
+      pattern = "yyyy-MM-dd";
+      break;
   }
 
-  const datePatterns = {year: "yyyy", monthNumber: "MM", monthText: "MMMM", day: "dd",
-    monthYear: "MM-yyyy", date: pattern};
+  const datePatterns = {
+    year: "yyyy",
+    monthNumber: "MM",
+    monthText: "MMMM",
+    day: "dd",
+    monthYear: "MM-yyyy",
+    date: pattern,
+  };
 
   const timePatterns = {
     hour: "HH",
@@ -41,30 +114,49 @@ export default async (req, res) => {
     minutes: "mm",
     seconds: "ss",
     milliseconds: "SSS",
-    hourMinutes: "HH:mm",            // 12:30
-    hourMinutes12: "hh:mm a",        // 12:30 PM
-    hourSeconds: "HH:mm:ss",             // 12:30:45
-    hourSecondsUTC: "HH:mm:ss'Z'",       // 12:30:45Z
-    hourSeconds12: "hh:mm:ss a",         // 12:30:45 PM
-    hourMilliseconds: "HH:mm:ss.SSS",    // 12:30:45.123
-    timezone: "HH:mm:ssXXX",         // 12:30:45+02:00
-    timezoneAbbr: "HH:mm:ss z",      // 12:30:45 GMT+2
+    hourMinutes: "HH:mm", // 12:30
+    hourMinutes12: "hh:mm a", // 12:30 PM
+    hourSeconds: "HH:mm:ss", // 12:30:45
+    hourSecondsUTC: "HH:mm:ss'Z'", // 12:30:45Z
+    hourSeconds12: "hh:mm:ss a", // 12:30:45 PM
+    hourMilliseconds: "HH:mm:ss.SSS", // 12:30:45.123
+    timezone: "HH:mm:ssXXX", // 12:30:45+02:00
+    timezoneAbbr: "HH:mm:ss z", // 12:30:45 GMT+2
   };
 
   const dateLevels = Object.keys(datePatterns);
   const timeLevels = Object.keys(timePatterns);
   const locales = [enUS, it];
 
-  function buildPattern({ formatType, customPattern, detailLevel, columnType, joinColumns, columnToJoin }) {
+  function buildPattern({
+    formatType,
+    customPattern,
+    detailLevel,
+    columnType,
+    joinColumns,
+    columnToJoin,
+  }) {
     //Validation custom
     if (formatType === "custom") {
-      const timeAllowedTokens = ["HH","hh","mm","ss","a","SSS","XXX","z"];
+      const timeAllowedTokens = [
+        "HH",
+        "hh",
+        "mm",
+        "ss",
+        "a",
+        "SSS",
+        "XXX",
+        "z",
+      ];
       const tokens = columnType === "time" ? timeAllowedTokens : allowedTokens;
       const isPatternValid =
-        typeof customPattern === "string" && customPattern.trim() !== "" &&
+        typeof customPattern === "string" &&
+        customPattern.trim() !== "" &&
         tokens.some((token) => customPattern.includes(token));
       if (!isPatternValid) {
-        throw new Error(`Error: Invalid custom pattern. Allowed tokens: ${tokens.join(", ")}.`);
+        throw new Error(
+          `Error: Invalid custom pattern. Allowed tokens: ${tokens.join(", ")}.`,
+        );
       }
       return customPattern;
     }
@@ -76,7 +168,8 @@ export default async (req, res) => {
       if (dateLevels.includes(detailLevel)) {
         patternToUse = datePatterns[detailLevel];
       } else if (timeLevels.includes(detailLevel)) {
-        const hasColumnToJoin = columnToJoin && Object.values(columnToJoin)[0]?.[2];
+        const hasColumnToJoin =
+          columnToJoin && Object.values(columnToJoin)[0]?.[2];
         const timePattern = timePatterns[detailLevel];
         //No join
         if (!joinColumns || !columnToJoin) {
@@ -108,12 +201,29 @@ export default async (req, res) => {
     return patternToUse;
   }
 
-  function formatDateOnly(strValue, { formatType, customPattern, detailLevel, locales, joinColumns, columnToJoin }) {
+  function formatDateOnly(
+    strValue,
+    {
+      formatType,
+      customPattern,
+      detailLevel,
+      locales,
+      joinColumns,
+      columnToJoin,
+    },
+  ) {
     for (const fmt of dateFormats) {
       for (const locale of locales) {
-        const parsed = parse(strValue, fmt, new Date(), {locale});
+        const parsed = parse(strValue, fmt, new Date(), { locale });
         if (isValid(parsed)) {
-          const pattern = buildPattern({formatType, customPattern, detailLevel, columnType: "date", joinColumns, columnToJoin });
+          const pattern = buildPattern({
+            formatType,
+            customPattern,
+            detailLevel,
+            columnType: "date",
+            joinColumns,
+            columnToJoin,
+          });
           return format(parsed, pattern);
         }
       }
@@ -121,23 +231,50 @@ export default async (req, res) => {
     return null;
   }
 
-  function formatTimeOnly(strValue, { formatType, customPattern, detailLevel, joinColumns, columnToJoin }) {
+  function formatTimeOnly(
+    strValue,
+    { formatType, customPattern, detailLevel, joinColumns, columnToJoin },
+  ) {
     for (const fmt of timeFormats) {
       const parsed = parse(strValue, fmt, new Date());
       if (isValid(parsed)) {
-        const pattern = buildPattern({ formatType, customPattern, detailLevel, columnType: "time", joinColumns, columnToJoin });
+        const pattern = buildPattern({
+          formatType,
+          customPattern,
+          detailLevel,
+          columnType: "time",
+          joinColumns,
+          columnToJoin,
+        });
         return format(parsed, pattern);
       }
     }
     return null;
   }
 
-  function formatDateTime(strValue, { formatType, customPattern, detailLevel, locales, joinColumns, columnToJoin }) {
+  function formatDateTime(
+    strValue,
+    {
+      formatType,
+      customPattern,
+      detailLevel,
+      locales,
+      joinColumns,
+      columnToJoin,
+    },
+  ) {
     for (const fmt of dateTimeFormats) {
       for (const locale of locales) {
-        const parsed = parse(strValue, fmt, new Date(), {locale});
+        const parsed = parse(strValue, fmt, new Date(), { locale });
         if (isValid(parsed)) {
-          const pattern = buildPattern({formatType, customPattern, detailLevel, columnType: "datetime", joinColumns, columnToJoin });
+          const pattern = buildPattern({
+            formatType,
+            customPattern,
+            detailLevel,
+            columnType: "datetime",
+            joinColumns,
+            columnToJoin,
+          });
           return format(parsed, pattern);
         }
       }
@@ -148,29 +285,59 @@ export default async (req, res) => {
   function toFormatted(value, columnType) {
     if (!value) return { value: null };
     const strValue = String(value).trim().replace("T", " ").split(",")[0];
-    let formatted = null;
-    try {
-      switch (columnType) {
-        case "date":
-          formatted = formatDateOnly(strValue, { formatType, customPattern, detailLevel, locales });
-          break;
-        case "time":
-          formatted = formatTimeOnly(strValue, { formatType, customPattern, detailLevel });
-          break;
-        case "datetime":
-          formatted = formatDateTime(strValue, { formatType, customPattern, detailLevel, locales });
-          break;
-      }
-      if (!formatted) throw new Error();
-      return { value: formatted, valid: true };
-    } catch {
-      throw new Error("Error: Column(s) contains invalid date values");
+
+    // Resolve unknown/undefined columnType by auto-detecting from the value
+    let resolvedType = columnType;
+    if (!resolvedType || resolvedType === "unknown") {
+      const hasDateSep = strValue.includes("/") || strValue.includes("-") || strValue.includes(".");
+      const hasTimeSep = strValue.includes(":");
+      if (hasDateSep && hasTimeSep) resolvedType = "datetime";
+      else if (hasTimeSep) resolvedType = "time";
+      else resolvedType = "date";
     }
+
+    let formatted = null;
+    switch (resolvedType) {
+      case "date":
+        formatted = formatDateOnly(strValue, {
+          formatType,
+          customPattern,
+          detailLevel,
+          locales,
+        });
+        break;
+      case "time":
+        formatted = formatTimeOnly(strValue, {
+          formatType,
+          customPattern,
+          detailLevel,
+        });
+        break;
+      case "datetime":
+        formatted = formatDateTime(strValue, {
+          formatType,
+          customPattern,
+          detailLevel,
+          locales,
+        });
+        break;
+    }
+
+    if (!formatted) {
+      throw new Error(`Error: Column(s) contains invalid date values "${strValue}" (columnType: ${resolvedType}, formatType: ${formatType}, detailLevel: ${detailLevel})`);
+    }
+    return { value: formatted, valid: true };
   }
 
   let response = { columns: {}, meta: {} };
   let joinColName = "";
-  if ((joinColumns && selectedColumns && selectedColumns.length > 1) || columnToJoin) {
+  console.log("splitDatetime", splitDatetime);
+  console.log("selectedColumns", selectedColumns);
+  console.log("columnType", columnType);
+  if (
+    (joinColumns && selectedColumns && selectedColumns.length > 1) ||
+    columnToJoin
+  ) {
     let allColumnsToJoin = [];
     if (joinColumns && selectedColumns && selectedColumns.length > 1) {
       allColumnsToJoin = selectedColumns;
@@ -181,11 +348,16 @@ export default async (req, res) => {
 
     const columnsData = allColumnsToJoin.map((col) => {
       if (items[col]) return items[col];
-      if (columnToJoin && typeof columnToJoin === "object" && Object.values(columnToJoin)[0]?.[2] === col) {
+      if (
+        columnToJoin &&
+        typeof columnToJoin === "object" &&
+        Object.values(columnToJoin)[0]?.[2] === col
+      ) {
         return columnToJoin;
       }
       return undefined;
     });
+    console.log("columns data", columnsData);
     const newColumnName = `${allColumnsToJoin.join("_")}`;
     response.columns[newColumnName] = {
       label: `${newColumnName}`,
@@ -205,11 +377,24 @@ export default async (req, res) => {
         try {
           if (raw.includes(":")) {
             //Time column
-            const time = formatTimeOnly(raw, { formatType, customPattern, detailLevel, joinColumns: true, columnToJoin });
+            const time = formatTimeOnly(raw, {
+              formatType,
+              customPattern,
+              detailLevel,
+              joinColumns: true,
+              columnToJoin,
+            });
             timeParts.push(time);
           } else {
             //Date column
-            const date = formatDateOnly(raw, { formatType, customPattern, detailLevel, locales, joinColumns: true, columnToJoin});
+            const date = formatDateOnly(raw, {
+              formatType,
+              customPattern,
+              detailLevel,
+              locales,
+              joinColumns: true,
+              columnToJoin,
+            });
             dateParts.push(date);
           }
         } catch {
@@ -229,9 +414,16 @@ export default async (req, res) => {
         //Time only
         joinedValue = [...timeParts].join(separator);
       }
-      response.columns[newColumnName].cells[id] = { label: joinedValue, metadata: [] };
+      response.columns[newColumnName].cells[id] = {
+        label: joinedValue,
+        metadata: [],
+      };
     });
-  } else if (splitDatetime && columnType === "datetime" && selectedColumns.length === 1) {
+  } else if (
+    splitDatetime &&
+    columnType === "datetime" &&
+    selectedColumns.length === 1
+  ) {
     const colName = selectedColumns[0];
     const dateColName = "date";
     const timeColName = "time";
@@ -240,55 +432,71 @@ export default async (req, res) => {
       label: dateColName,
       kind: "literal",
       metadata: [],
-      cells: {}
+      cells: {},
     };
     response.columns[timeColName] = {
       label: timeColName,
       kind: "literal",
       metadata: [],
-      cells: {}
+      cells: {},
     };
 
     Object.entries(items[colName]).forEach(([rowId, valueArr]) => {
       const raw = valueArr[0];
       if (!raw) return;
       const [datePart, timePart] = raw.split(/T| /);
-      const formattedDate = formatDateOnly(datePart, { formatType, customPattern, detailLevel: "dateOnly", locales });
+      const formattedDate = formatDateOnly(datePart, {
+        formatType,
+        customPattern,
+        detailLevel: "dateOnly",
+        locales,
+      });
       let formattedTime = null;
       if (timePart) {
         for (const fmt of timeFormats) {
           const parsed = parse(timePart, fmt, new Date());
           if (isValid(parsed)) {
-            const pattern = buildPattern({ formatType, customPattern, detailLevel, columnType: "time" });
-            formattedTime =  format(parsed, pattern);
+            const pattern = buildPattern({
+              formatType,
+              customPattern,
+              detailLevel,
+              columnType: "time",
+            });
+            formattedTime = format(parsed, pattern);
           }
         }
       }
 
       response.columns[dateColName].cells[rowId] = {
         label: formattedDate,
-        metadata: []
+        metadata: [],
       };
       response.columns[timeColName].cells[rowId] = {
         label: formattedTime,
-        metadata: []
+        metadata: [],
       };
     });
   } else {
     const columnToProcess = selectedColumns[0];
     const columnData = items[columnToProcess];
-    const newColumnName = outputMode === "edit" ? columnToProcess : `formatted_${columnToProcess}`;
+    console.log("column to process", columnToProcess);
+    console.log("column data", columnData);
+    const newColumnName =
+      outputMode === "update"
+        ? columnToProcess
+        : `${columnToProcess}_formatted`;
 
     response.columns[newColumnName] = {
-      label: outputMode === "edit" ? columnToProcess : `${newColumnName}`,
+      label: outputMode === "update" ? columnToProcess : `${newColumnName}`,
       kind: "literal",
       metadata: [],
       cells: {},
     };
 
-    Object.keys(columnData).forEach(id => {
+    Object.keys(columnData).forEach((id) => {
       const value = columnData[id];
-      const result = toFormatted(value, columnType);
+      const rawValue = Array.isArray(value) ? value[0] : value;
+      const result = toFormatted(rawValue, columnType);
       response.columns[newColumnName].cells[id] = {
         label: result.value,
         metadata: [],

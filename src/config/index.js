@@ -52,16 +52,6 @@ const loadExtenders = async () => {
       `file:///${servicePath}/responseTransformer.js`
     );
 
-    // Log CH Matching service specifically
-    if (info.public.name === "CH Matching") {
-      console.log(`[Config] Loading CH Matching extender (${serviceKey}):`, {
-        name: info.public.name,
-        skipFiltering: info.public.skipFiltering,
-        allValues: info.public.allValues,
-        relativeUrl: info.public.relativeUrl,
-      });
-    }
-
     (await acc)[serviceKey] = {
       info,
       requestTransformer,

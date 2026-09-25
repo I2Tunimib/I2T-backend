@@ -18,7 +18,7 @@ router.get("/wikidata", async (req, res) => {
     const data = await result.json();
     const entity = data.entities?.[cleanId];
     console.log("entity", entity);
-
+    const name = entity?.labels?.en?.value;
     const description = entity?.descriptions?.en?.value || "";
     console.log("description", description);
     const typeClaims = entity?.claims?.P31 || [];
@@ -37,7 +37,7 @@ router.get("/wikidata", async (req, res) => {
       }));
     }
 
-    res.json({ description, type });
+    res.json({ name, description, type });
   } catch (err) {
     res.status(500).json({ error: "Wikidata request failed" });
   }
@@ -61,6 +61,7 @@ router.get("/lionlinker", async (req, res) => {
       : null;
 
     res.json({
+      name: entity?.name || label || "",
       description: entity?.description || "",
       type: entity?.types || []
     });
@@ -71,10 +72,37 @@ router.get("/lionlinker", async (req, res) => {
 
 //Geonames
 router.get("/geonames", async (req, res) => {
-  const { id } = req.query;
+  const { id, context } = req.query;
   const endpoint = process.env.GEONAMES;
   const token = process.env.GEONAMES_TOKEN;
   const cleanId = id.replace(/^geo:/, "").trim();
+
+  if (context && context === "typeTab") {
+    try {
+      const codesUrl = "http://download.geonames.org/export/dump/featureCodes_en.txt";
+      const response = await fetch(codesUrl);
+      const textData = await response.text();
+
+      const lines = textData.split("\n");
+
+      const matchedLine = lines.find((line) => {
+        const parts = line.split("\t");
+        return parts[0] && parts[0].endsWith(`.${cleanId.toUpperCase()}`);
+      });
+
+      if (matchedLine) {
+        const parts = matchedLine.split("\t");
+        return res.json({
+          name: parts[1],
+          description: parts[2] || "GeoNames Feature Code",
+          type: []
+        });
+      }
+    } catch (e) {
+      console.error("Error in fetching feature code:", e);
+      return res.status(500).json({ error: "Failed to fetch feature code mapping" });
+    }
+  }
 
   const url = `${endpoint}/getJSON?geonameId=${cleanId}&username=${token}`;
   console.log("url", url);
@@ -87,7 +115,8 @@ router.get("/geonames", async (req, res) => {
       return { description: "", type: [] };
     }
     res.json({
-      description: item.toponymName || item.name || "",
+      name: item.name || "",
+      description: item.toponymName || "",
       type: [ { id: item.fcode, name: item.fcodeName } ]
     });
   } catch (e) {
@@ -112,7 +141,8 @@ router.get("/geonamesCoordinates", async (req, res) => {
     console.log("item", item);
 
     res.json({
-      description: item?.name || "",
+      name: item?.name || "",
+      description: item?.toponymName || "",
       type: [
         {
           id: item?.fcode || "",
@@ -122,6 +152,48 @@ router.get("/geonamesCoordinates", async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ error: "Geonames geocoding failed" });
+  }
+});
+
+// OpenStreetMap (Nominatim Proxy)
+router.get("/osm", async (req, res) => {
+  const { id } = req.query;
+  let url = "";
+  const userAgent = { "User-Agent": "SemTX/1.0" };
+
+  try {
+    if (id.includes(",")) {
+      // Raw Coordinate
+      const [lat, lon] = id.split(",");
+      url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14`;
+    } else if (id.includes("/")) {
+      // Relation/Way/Node
+      const [type, osmId] = id.split("/");
+      const prefix = type.charAt(0).toUpperCase(); // R, W, o N
+      url = `https://nominatim.openstreetmap.org/lookup?osm_ids=${prefix}${osmId}&format=json`;
+    }
+
+    if (!url) return res.status(400).json({ error: "Invalid ID format" });
+
+    const response = await fetch(url, { headers: userAgent });
+    const data = await response.json();
+    console.log("OSM data:", data);
+
+    const item = Array.isArray(data) ? data[0] : data;
+
+    if (!item || item.error) {
+      return res.status(404).json({ error: "No OSM data found" });
+    }
+
+    res.json({
+      name: item.display_name?.split(",")[0] || "Unknown",
+      osmId: item.osm_id,
+      osmType: item.osm_type,
+      lat: item.lat,
+      lon: item.lon
+    });
+  } catch (err) {
+    res.status(500).json({ error: "OSM request failed" });
   }
 });
 

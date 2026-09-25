@@ -80,13 +80,13 @@ const ParseService = {
       if (condition) {
         if (await condition(obj)) {
           if (stopAtFirst) {
-            acc = transformFn ? transformFn(obj) : obj;
+            acc = transformFn ? await transformFn(obj) : obj;
             break;
           }
-          push(transformFn ? transformFn(obj) : obj);
+          push(transformFn ? await transformFn(obj) : obj);
         }
       } else {
-        push(transformFn ? transformFn(obj) : obj);
+        push(transformFn ? await transformFn(obj) : obj);
       }
     }
     stream.end();
@@ -97,7 +97,7 @@ const ParseService = {
     const stream = ParseService.createJsonStreamReader(path, pattern);
     for await (const obj of stream) {
       if (condition(obj)) {
-        value = transformFn ? transformFn(obj) : obj;
+        value = transformFn ? await transformFn(obj) : obj;
         break;
       }
     }
@@ -205,11 +205,18 @@ const ParseService = {
       // swallow invalid row: do not add it to `acc`
       return acc;
     }
+
+    // Helper to remove BOM and trim whitespace from header/column keys
+    const sanitizeKey = (key) =>
+      typeof key === "string" ? key.replace(/^\uFEFF/, "").trim() : key;
+
     const cells = Object.keys(row).reduce((acc, column) => {
-      acc[column] = {
-        id: `${id}$${column}`,
+      const cleanColumn = sanitizeKey(column);
+      acc[cleanColumn] = {
+        id: `${id}$${cleanColumn}`,
         ...DEFAULT_CELL_PROPERTIES,
-        label: row[column] || "",
+        // preserve original cell value but coerce to string and handle null/undefined
+        label: row[column] != null ? String(row[column]) : "",
       };
       return acc;
     }, {});
@@ -217,11 +224,17 @@ const ParseService = {
     return acc;
   },
   transformHeader: (acc, header) => {
+    // Remove BOM and trim whitespace from header column names so the first column
+    // doesn't end up with an invisible Unicode character (e.g. U+FEFF).
+    const sanitizeKey = (key) =>
+      typeof key === "string" ? key.replace(/^\uFEFF/, "").trim() : key;
+
     return header.reduce((columns, column) => {
-      columns[column] = {
-        id: column,
+      const cleanColumn = sanitizeKey(column);
+      columns[cleanColumn] = {
+        id: cleanColumn,
         ...DEFAULT_HEADER_PROPERTIES,
-        label: column,
+        label: cleanColumn,
       };
       return columns;
     }, acc);

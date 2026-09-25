@@ -56,7 +56,9 @@ const AuthService = {
     }
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
-      return decoded;
+      // normalize roles from common claims if present
+      const roles = decoded.roles || decoded.realm_access?.roles || [];
+      return { ...decoded, roles };
     } catch (e) {
       console.log("Local JWT decode failed, trying with keycloak");
     }

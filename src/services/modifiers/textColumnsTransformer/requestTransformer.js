@@ -1,7 +1,7 @@
 export default async (req) => {
   const { props } = req.original;
-  const { operationType, columnToJoin, separator, selectedColumns, renameJoinedColumn, renameNewColumnSplit,
-    splitMode, splitDirection, splitRenameMode } = props;
+  const { operationType, columnToJoin, separator, selectedColumns, renameMode, renameJoinedColumn, renameNewColumnSplit,
+    splitMode, splitDirection } = props;
 
   return {
     props: {
@@ -9,11 +9,11 @@ export default async (req) => {
       columnToJoin: columnToJoin || [],
       separator: separator || "; ",
       selectedColumns: selectedColumns || [],
+      renameMode: renameMode || "",
       renameJoinedColumn: renameJoinedColumn || "",
       renameNewColumnSplit: renameNewColumnSplit || "",
       splitMode: splitMode || "",
       splitDirection: splitDirection || "",
-      splitRenameMode: splitRenameMode || "",
     },
   };
 };

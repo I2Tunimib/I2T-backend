@@ -18,6 +18,84 @@ const __dirname = path.resolve();
 const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } =
   config.helpers;
 
+// --- Access control helpers ---
+const userHasViewAccess = (dataset, userId) => {
+  if (!dataset) return false;
+  const uid = userId === null || userId === undefined ? null : String(userId);
+  if (!uid) return false;
+  if (String(dataset.userId) === uid) return true; // owner
+  if (dataset.visibility === "public") return true; // public
+  if (
+    Array.isArray(dataset.viewers) &&
+    dataset.viewers.map(String).includes(uid)
+  )
+    return true;
+  if (
+    Array.isArray(dataset.editors) &&
+    dataset.editors.map(String).includes(uid)
+  )
+    return true;
+  return false;
+};
+
+const userHasEditAccess = (dataset, userId) => {
+  if (!dataset) return false;
+  const uid = userId === null || userId === undefined ? null : String(userId);
+  if (!uid) return false;
+  if (String(dataset.userId) === uid) return true; // owner
+  if (dataset.visibility === "public") return true; // public datasets may be edited by any authenticated user
+  if (
+    Array.isArray(dataset.editors) &&
+    dataset.editors.map(String).includes(uid)
+  )
+    return true;
+  return false;
+};
+
+// --- Table-level access control helpers ---
+const tableHasOwnACL = (table) =>
+  table && table.visibility !== undefined && table.visibility !== null;
+
+// Combined dataset+table view check (most restrictive wins)
+const tableUserHasViewAccess = (dataset, table, userId) => {
+  if (!dataset || userId === null || userId === undefined) return false;
+  const uid = String(userId);
+  // Dataset owner always has access
+  if (String(dataset.userId) === uid) return true;
+  // Must pass dataset-level check first
+  if (!userHasViewAccess(dataset, userId)) return false;
+  // No table-level ACL → dataset access is sufficient
+  if (!tableHasOwnACL(table)) return true;
+  // Table is public → dataset access is sufficient
+  if (table.visibility === "public") return true;
+  // Table is private → check table viewers/editors
+  const isTableViewer =
+    Array.isArray(table.viewers) && table.viewers.map(String).includes(uid);
+  const isTableEditor =
+    Array.isArray(table.editors) && table.editors.map(String).includes(uid);
+  return isTableViewer || isTableEditor;
+};
+
+// Combined dataset+table edit check (most restrictive wins)
+const tableUserHasEditAccess = (dataset, table, userId) => {
+  if (!dataset || userId === null || userId === undefined) return false;
+  const uid = String(userId);
+  // Dataset owner always has access
+  if (String(dataset.userId) === uid) return true;
+  // Must pass dataset-level edit check first
+  if (!userHasEditAccess(dataset, userId)) return false;
+  // No table-level ACL → dataset edit access is sufficient
+  if (!tableHasOwnACL(table)) return true;
+  // Table is public → dataset edit access is sufficient
+  if (table.visibility === "public") return true;
+  // Table is private → only table editors can edit (viewers cannot)
+  const isTableEditor =
+    Array.isArray(table.editors) && table.editors.map(String).includes(uid);
+  return isTableEditor;
+};
+
+// Expose helpers as part of service later in the object
+
 const COLLECTION_DATASETS_MAP = {
   name: {
     label: "Name",
@@ -56,8 +134,15 @@ const COLLECTION_TABLES_MAP = {
   nRows: {
     label: "N. Rows",
   },
+  nProperties: {
+    label: "N. Properties",
+  },
   completion: {
-    label: "Completion",
+    label: "Rec. Entities",
+    type: "percentage",
+  },
+  headerTypeMatching: {
+    label: "Header Types",
     type: "percentage",
   },
   lastModifiedDate: {
@@ -128,33 +213,174 @@ const FileSystemService = {
     };
   },
   findDatasetsByUser: async (id) => {
-    const datasets = await ParseService.readJsonFile({
-      path: getDatasetDbPath(),
-      pattern: "datasets.*",
-      acc: [],
-      condition: ({ userId }) => userId === id,
-    });
+    // Return datasets the user can view: owner, public, viewers or editors
+    const raw = JSON.parse(await readFile(getDatasetDbPath()));
+    const { meta = {}, datasets = {} } = raw;
+    const coll = Object.values(datasets).filter((d) =>
+      userHasViewAccess(d, id),
+    );
     return {
       meta: COLLECTION_DATASETS_MAP,
-      collection: datasets,
+      collection: coll,
     };
   },
-  findAllTablesByDataset: async (idDataset) => {
+
+  findDatasetsByNameAndUser: async (query, userId) => {
+    const regex = new RegExp(query.toLowerCase());
+    // Return datasets matching name that the user can view
+    const raw = JSON.parse(await readFile(getDatasetDbPath()));
+    const { datasets = {} } = raw;
+    return Object.values(datasets).filter(
+      (obj) =>
+        userHasViewAccess(obj, userId) && regex.test(obj.name.toLowerCase()),
+    );
+  },
+
+  findTablesByNameAndUser: async (query, userId) => {
+    const regex = new RegExp(query.toLowerCase());
+    return ParseService.readJsonFile({
+      path: getTablesDbPath(),
+      pattern: "tables.*",
+      condition: async (obj) => {
+        const dataset = await FileSystemService.findOneDataset(obj.idDataset);
+        return (
+          tableUserHasViewAccess(dataset, obj, userId) &&
+          regex.test(obj.name.toLowerCase())
+        );
+      },
+    });
+  },
+  findAllTablesByDataset: async (idDataset, dataset = null, userId = null) => {
     const tables = await ParseService.readJsonFile({
       path: getTablesDbPath(),
       pattern: "tables.*",
       acc: [],
-      transformFn: (item) => {
+      transformFn: async (item) => {
         const { nCells, nCellsReconciliated, ...rest } = item;
+
+        // Calculate header type matching and number of unique properties
+        let headerTypeMatching = { total: 0, value: 0 };
+        let nProperties = 0;
+        let graph = { nodes: [], links: [] };
+        try {
+          const tableJsonPath = `${getDatasetFilesPath()}/${item.idDataset}/${item.id}.json`;
+          const tableJsonContent = await readFile(tableJsonPath, "utf-8");
+          const tableData = JSON.parse(tableJsonContent);
+
+          if (tableData.columns && typeof tableData.columns === "object") {
+            const columns = tableData.columns;
+
+            const nodesMap = new Map();
+            const clean = (str) =>
+              str ? str.trim().replace(/^\uFEFF/, "") : "";
+
+            Object.keys(columns).forEach((colId) => {
+              const column = columns[colId];
+              const columnLabel = clean(column.label || colId);
+
+              nodesMap.set(columnLabel, {
+                id: columnLabel,
+                label: columnLabel,
+                role: column.role,
+                kind: column.kind,
+              });
+            });
+
+            const links = [];
+            Object.keys(columns).forEach((colId) => {
+              const column = columns[colId];
+              const sourceLabel = clean(column.label || colId);
+
+              if (column.metadata && Array.isArray(column.metadata)) {
+                column.metadata.forEach((metaItem) => {
+                  if (metaItem.property && Array.isArray(metaItem.property)) {
+                    metaItem.property.forEach((prop) => {
+                      const targetLabel = clean(prop.obj);
+                      if (targetLabel && nodesMap.has(targetLabel)) {
+                        links.push({
+                          source: sourceLabel,
+                          target: targetLabel,
+                          label: prop.label,
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
+
+            graph = {
+              nodes: Array.from(nodesMap.values()),
+              links: links,
+            };
+
+            const totalColumns = Object.keys(columns).length;
+            let matchedColumns = 0;
+            const uniquePropertyIds = new Set();
+
+            // Count columns where at least one type has match: true
+            // and collect all unique properties
+            for (const columnId of Object.keys(columns)) {
+              const column = columns[columnId];
+              if (column.metadata && Array.isArray(column.metadata)) {
+                // Check if any metadata entry has a matched type.
+                // Also checks additionalTypes, which is where literal types
+                // (QUDT units, XSD datatypes) are stored when the user picks
+                // a unit of measurement for a literal column.
+                const hasMatch = column.metadata.some((metaItem) => {
+                  const mainMatch =
+                    Array.isArray(metaItem.type) &&
+                    metaItem.type.some((t) => t.match === true);
+                  const additionalMatch =
+                    Array.isArray(metaItem.additionalTypes) &&
+                    metaItem.additionalTypes.some((t) => t.match === true);
+                  return mainMatch || additionalMatch;
+                });
+                if (hasMatch) {
+                  matchedColumns++;
+                }
+
+                // Collect unique properties from all metadata entries
+                for (const metaItem of column.metadata) {
+                  if (metaItem.property && Array.isArray(metaItem.property)) {
+                    for (const prop of metaItem.property) {
+                      if (prop.id) {
+                        uniquePropertyIds.add(prop.id);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            headerTypeMatching = { total: totalColumns, value: matchedColumns };
+            nProperties = uniquePropertyIds.size;
+          }
+        } catch (err) {
+          // If file cannot be read or parsed, return default values
+          headerTypeMatching = { total: 0, value: 0 };
+          nProperties = 0;
+        }
+
         return {
           ...rest,
           completion: {
             total: nCells,
             value: nCellsReconciliated,
           },
+          headerTypeMatching,
+          graph,
+          nProperties: nProperties !== 0 ? nProperties : "N/A",
         };
       },
-      condition: (item) => item.idDataset === idDataset,
+      condition: (item) => {
+        if (item.idDataset !== idDataset) return false;
+        // If dataset and userId are provided, apply combined ACL filter
+        if (dataset && userId !== null) {
+          return tableUserHasViewAccess(dataset, item, userId);
+        }
+        return true;
+      },
     });
     return {
       meta: COLLECTION_TABLES_MAP,
@@ -259,11 +485,14 @@ const FileSystemService = {
       readStream.pipe(ws);
 
       return new Promise((resolve, reject) => {
-        readStream.on("end", () => {
+        ws.on("finish", () => {
           resolve(id);
         });
-        readStream.on("error", () => {
-          reject("Error writing temp file");
+        ws.on("error", (err) => {
+          reject(new Error(`Error writing temp file: ${err.message}`));
+        });
+        readStream.on("error", (err) => {
+          reject(new Error(`Error reading stream: ${err.message}`));
         });
       });
     };
@@ -291,6 +520,7 @@ const FileSystemService = {
         // Check if filePath is provided for zip file processing
         if (filePath) {
           try {
+            console.log("[DEBUG] Starting zip file processing for:", filePath);
             const zip = createReadStream(filePath).pipe(
               unzipper.Parse({ forceStream: true }),
             );
@@ -298,6 +528,12 @@ const FileSystemService = {
             // unzip and write each file
             for await (const entry of zip) {
               const { path, type } = entry;
+              console.log(
+                "[DEBUG] Processing entry - path:",
+                path,
+                "type:",
+                type,
+              );
               // Skip macOS metadata entries and dotfiles, drain their contents and continue
               if (
                 typeof path === "string" &&
@@ -305,30 +541,51 @@ const FileSystemService = {
                   path.startsWith(".") ||
                   path.includes("/."))
               ) {
+                console.log("[DEBUG] Skipping macOS/dotfile:", path);
                 entry.autodrain();
                 continue;
               }
-              // Skip non-file entries or files inside subfolders, drain and continue
-              if (type !== "File" || path.includes("/")) {
+              // Skip non-file entries (directories)
+              if (type !== "File") {
+                console.log(
+                  "[DEBUG] Skipping non-file entry:",
+                  path,
+                  "type:",
+                  type,
+                );
                 entry.autodrain();
                 continue;
               }
               // skip non compatible file formats (drain before continuing)
               if (!path.endsWith(".csv") && !path.endsWith(".json")) {
+                console.log("[DEBUG] Skipping non-CSV/JSON file:", path);
                 entry.autodrain();
                 continue;
               }
               const tableName = path.split(".")[0] || "Unnamend";
+              console.log("[DEBUG] Processing valid table file:", tableName);
 
               const tmpEntryId = await writeTempFile(entry);
+              console.log("[DEBUG] Temp file written with id:", tmpEntryId);
 
               metaTables.lastIndex += 1;
               nFiles += 1;
               // transform to app format and write to file
+              console.log("[DEBUG] Parsing file tmp/" + tmpEntryId);
               const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+              console.log(
+                "[DEBUG] Parse complete. Columns:",
+                Object.keys(data.columns).length,
+                "Rows:",
+                Object.keys(data.rows).length,
+              );
               await writeFile(
                 `${datasetFolderPath}/${metaTables.lastIndex}.json`,
                 JSON.stringify(data),
+              );
+              console.log(
+                "[DEBUG] Table file written:",
+                `${datasetFolderPath}/${metaTables.lastIndex}.json`,
               );
 
               newTables[`${metaTables.lastIndex}`] = {
@@ -340,14 +597,24 @@ const FileSystemService = {
                 nCells: data.nCells,
                 nCellsReconciliated: data.nCellsReconciliated,
                 lastModifiedDate: new Date().toISOString(),
+                visibility: null,
+                viewers: [],
+                editors: [],
               };
 
               await rm(`tmp/${tmpEntryId}`);
+              console.log("[DEBUG] Table added successfully:", tableName);
             }
+            console.log(
+              "[DEBUG] Zip processing complete. Total tables:",
+              nFiles,
+            );
           } catch (err) {
             console.error("Error processing zip file:", err);
-            // Continue execution to create an empty dataset even if zip processing fails
+            throw new Error(`Failed to process zip file: ${err.message}`);
           }
+        } else {
+          console.log("[DEBUG] No filePath provided, creating empty dataset");
         }
 
         // add dataset entry
@@ -357,8 +624,16 @@ const FileSystemService = {
           name: datasetName,
           nTables: nFiles,
           lastModifiedDate: new Date().toISOString(),
+          // Access control fields
+          visibility: "private", // 'private' | 'public'
+          viewers: [], // array of user ids who can view
+          editors: [String(userId)], // array of user ids who can edit (owner included)
         };
         // add dataset entry
+        console.log(
+          "[DEBUG] Writing dataset to DB. New datasets:",
+          Object.keys(newDatasets),
+        );
         await writeFile(
           getDatasetDbPath(),
           JSON.stringify(
@@ -371,6 +646,10 @@ const FileSystemService = {
           ),
         );
         // add table entries
+        console.log(
+          "[DEBUG] Writing tables to DB. New tables:",
+          Object.keys(newTables),
+        );
         await writeFile(
           getTablesDbPath(),
           JSON.stringify(
@@ -387,7 +666,8 @@ const FileSystemService = {
           await rm(filePath);
         }
       } catch (err) {
-        console.log(err);
+        console.error("Error in addDataset:", err);
+        throw err;
       }
     });
     return { datasets: newDatasets, tables: newTables };
@@ -577,6 +857,9 @@ const FileSystemService = {
             nCells: data.nCells,
             nCellsReconciliated: data.nCellsReconciliated,
             lastModifiedDate: new Date().toISOString(),
+            visibility: null,
+            viewers: [],
+            editors: [],
           };
 
           datasets[idDataset] = {
@@ -633,6 +916,8 @@ const FileSystemService = {
       nCellsReconciliated,
       minMetaScore,
       maxMetaScore,
+      compliance,
+      complianceReports,
     } = tableInstance;
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
@@ -656,6 +941,8 @@ const FileSystemService = {
         minMetaScore,
         maxMetaScore,
         lastModifiedDate: new Date().toISOString(),
+        ...(compliance && { compliance }),
+        ...(complianceReports && { complianceReports }),
       };
 
       // update table entry
@@ -783,6 +1070,234 @@ const FileSystemService = {
       rows,
       columns,
     };
+  },
+  // expose access helpers
+  userCanView: (dataset, userId) => userHasViewAccess(dataset, userId),
+  userCanEdit: (dataset, userId) => userHasEditAccess(dataset, userId),
+
+  // Expose table-level access helpers
+  tableUserCanView: (dataset, table, userId) =>
+    tableUserHasViewAccess(dataset, table, userId),
+  tableUserCanEdit: (dataset, table, userId) =>
+    tableUserHasEditAccess(dataset, table, userId),
+
+  // ACL modifiers
+  addAclUser: async (datasetId, targetUserId, role, actingUser) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
+    // only owner can modify ACL
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
+    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    if (String(dataset.userId) !== actingId) {
+      throw new Error("Unauthorized to modify ACL");
+    }
+    // ensure target user exists in local users DB
+    const usersPath = config.helpers.getUsersPath();
+    const usersRaw = JSON.parse(await fs.promises.readFile(usersPath, "utf8"));
+    const target = Object.values(usersRaw.users || {}).find(
+      (u) => String(u.id) === String(targetUserId),
+    );
+    if (!target) throw new Error("Target user not found in users DB");
+    if (role === "editor") {
+      const targetRoles = target.roles || [];
+      if (!(targetRoles.includes("admin") || targetRoles.includes("editor"))) {
+        throw new Error(
+          "Target user does not have admin/editor role and cannot be made editor",
+        );
+      }
+    }
+
+    const listKey = role === "editor" ? "editors" : "viewers";
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getDatasetDbPath()));
+      const { meta = {}, datasets = {} } = raw;
+      const ds = datasets[datasetId];
+      if (!ds) throw new Error("Dataset not found");
+      ds[listKey] = ds[listKey] || [];
+      const uid = String(targetUserId);
+      if (!ds[listKey].map(String).includes(uid)) ds[listKey].push(uid);
+      await writeFile(
+        getDatasetDbPath(),
+        JSON.stringify({ meta, datasets }, null, 2),
+      );
+    });
+
+    return await FileSystemService.findOneDataset(datasetId);
+  },
+
+  removeAclUser: async (datasetId, targetUserId, role, actingUser) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
+    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    if (String(dataset.userId) !== actingId) {
+      throw new Error("Unauthorized to modify ACL");
+    }
+    const listKey = role === "editor" ? "editors" : "viewers";
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getDatasetDbPath()));
+      const { meta = {}, datasets = {} } = raw;
+      const ds = datasets[datasetId];
+      if (!ds) throw new Error("Dataset not found");
+      ds[listKey] = (ds[listKey] || []).filter(
+        (u) => String(u) !== String(targetUserId),
+      );
+      await writeFile(
+        getDatasetDbPath(),
+        JSON.stringify({ meta, datasets }, null, 2),
+      );
+    });
+    return await FileSystemService.findOneDataset(datasetId);
+  },
+
+  setVisibility: async (datasetId, visibility, actingUser) => {
+    if (!["private", "public"].includes(visibility))
+      throw new Error("Invalid visibility");
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
+    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    // only owner can change visibility
+    if (String(dataset.userId) !== actingId) {
+      throw new Error("Unauthorized to modify visibility");
+    }
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getDatasetDbPath()));
+      const { meta = {}, datasets = {} } = raw;
+      const ds = datasets[datasetId];
+      if (!ds) throw new Error("Dataset not found");
+      ds.visibility = visibility;
+      await writeFile(
+        getDatasetDbPath(),
+        JSON.stringify({ meta, datasets }, null, 2),
+      );
+    });
+    return await FileSystemService.findOneDataset(datasetId);
+  },
+
+  // Table ACL modifiers (only dataset owner can modify)
+  addTableAclUser: async (datasetId, tableId, targetUserId, role, actingUser) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
+    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    if (String(dataset.userId) !== actingId)
+      throw new Error("Unauthorized to modify ACL");
+    const usersPath = config.helpers.getUsersPath();
+    const usersRaw = JSON.parse(await fs.promises.readFile(usersPath, "utf8"));
+    const target = Object.values(usersRaw.users || {}).find(
+      (u) => String(u.id) === String(targetUserId),
+    );
+    if (!target) throw new Error("Target user not found in users DB");
+    if (role === "editor") {
+      const targetRoles = target.roles || [];
+      if (!(targetRoles.includes("admin") || targetRoles.includes("editor")))
+        throw new Error(
+          "Target user does not have admin/editor role and cannot be made table editor",
+        );
+    }
+
+    const listKey = role === "editor" ? "editors" : "viewers";
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getTablesDbPath()));
+      const { meta = {}, tables = {} } = raw;
+      const tbl = tables[tableId];
+      if (!tbl) throw new Error("Table not found");
+      tbl[listKey] = tbl[listKey] || [];
+      const uid = String(targetUserId);
+      if (!tbl[listKey].map(String).includes(uid)) tbl[listKey].push(uid);
+      // Ensure private when viewers/editors are explicitly set
+      if (tbl.visibility === null || tbl.visibility === undefined)
+        tbl.visibility = "private";
+      await writeFile(
+        getTablesDbPath(),
+        JSON.stringify({ meta, tables }, null, 2),
+      );
+    });
+    return await FileSystemService.findOneTable(datasetId, tableId);
+  },
+
+  removeTableAclUser: async (
+    datasetId,
+    tableId,
+    targetUserId,
+    role,
+    actingUser,
+  ) => {
+    if (!["viewer", "editor"].includes(role)) {
+      throw new Error("Invalid role");
+    }
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
+    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    if (String(dataset.userId) !== actingId)
+      throw new Error("Unauthorized to modify ACL");
+    const listKey = role === "editor" ? "editors" : "viewers";
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getTablesDbPath()));
+      const { meta = {}, tables = {} } = raw;
+      const tbl = tables[tableId];
+      if (!tbl) throw new Error("Table not found");
+      tbl[listKey] = (tbl[listKey] || []).filter(
+        (u) => String(u) !== String(targetUserId),
+      );
+      await writeFile(
+        getTablesDbPath(),
+        JSON.stringify({ meta, tables }, null, 2),
+      );
+    });
+    return await FileSystemService.findOneTable(datasetId, tableId);
+  },
+
+  setTableVisibility: async (datasetId, tableId, visibility, actingUser) => {
+    if (!["private", "public", null].includes(visibility))
+      throw new Error(
+        "Invalid visibility value (use 'private', 'public', or null to inherit)",
+      );
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
+    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    if (String(dataset.userId) !== actingId)
+      throw new Error("Unauthorized to modify visibility");
+    // Enforce most-restrictive rule: table cannot be public if dataset is private
+    if (visibility === "public" && dataset.visibility === "private")
+      throw new Error(
+        "Cannot set table to public when dataset is private. The most restrictive permission (dataset private) always wins.",
+      );
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getTablesDbPath()));
+      const { meta = {}, tables = {} } = raw;
+      const tbl = tables[tableId];
+      if (!tbl) throw new Error("Table not found");
+      tbl.visibility = visibility;
+      // If inheriting from dataset (null), clear explicit viewers/editors
+      if (visibility === null) {
+        tbl.viewers = [];
+        tbl.editors = [];
+      }
+      await writeFile(
+        getTablesDbPath(),
+        JSON.stringify({ meta, tables }, null, 2),
+      );
+    });
+    return await FileSystemService.findOneTable(datasetId, tableId);
+  },
+  async getTableWithPermissions(idDataset, idTable, userId) {
+    const tableData = await this.findTable(idDataset, idTable);
+    const dataset = await this.findOneDataset(idDataset);
+    const tableMeta = await this.findOneTable(idDataset, idTable);
+
+    const isOwner = String(dataset.userId) === String(userId);
+    const isEditor = tableMeta.editors?.map(String).includes(String(userId)) ||
+      dataset.editors?.map(String).includes(String(userId));
+
+    tableData.table.permission = (isOwner || isEditor) ? 'rw' : 'ro';
+    return tableData;
   },
 };
 

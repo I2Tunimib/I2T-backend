@@ -1,23 +1,58 @@
 import { parse } from "json2csv";
-import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 import axios from "axios";
+import { SemtParserService } from "./semtparser.service.js";
+import { buildHtmlReport, buildMarkdownReport } from '../../../utils/schemaReportUtils.js';
 
 const ExportService = {
+  schema_w3c: async ({ columns, rows, tableInstance }) => {
+    const jsonData = await ExportService.w3c({
+      columns,
+      rows,
+      tableInstance,
+      keepMatching: false
+    });
+    return jsonData[0] || {};
+  },
+  report_html: async (payload) => {
+    return buildHtmlReport(payload);
+  },
+  report_md: async (payload) => {
+    return buildMarkdownReport(payload);
+  },
   rawJson: async ({ columns, rows }) => {
-    return Object.keys(rows).map((rowId) => {
-      const colIds = Object.keys(rows[rowId].cells);
+    // Be defensive: rows or individual row.cells may be missing. Produce one object per row
+    // using the available column labels. Missing cell values produce empty string.
+    const colKeys = Object.keys(columns || {});
+    return Object.keys(rows || {}).map((rowId) => {
+      const row = rows[rowId] || {};
+      const cells = row.cells || {};
 
-      return colIds.reduce((acc, colId) => {
-        acc[columns[colId].label] = rows[rowId].cells[colId].label;
+      return colKeys.reduce((acc, colId) => {
+        const colLabel =
+          columns[colId] && columns[colId].label ? columns[colId].label : colId;
+        const cell = cells[colId] || {};
+        const cellLabel =
+          cell && cell.label !== undefined && cell.label !== null
+            ? cell.label
+            : "";
+        acc[colLabel] = cellLabel;
         return acc;
       }, {});
     });
   },
-  csv: async ({ columns, rows, delimiter, quote, decimalSeparator, includeHeader }) => {
+  csv: async ({
+    columns,
+    rows,
+    delimiter,
+    quote,
+    decimalSeparator,
+    includeHeader,
+  }) => {
     const jsonData = await ExportService.rawJson({ columns, rows });
-    const includeHeaderFlag = includeHeader === true || includeHeader === "true";
+    const includeHeaderFlag =
+      includeHeader === true || includeHeader === "true";
     let csv = parse(jsonData, {
       delimiter,
       quote,
@@ -29,7 +64,7 @@ const ExportService = {
     }
     return csv;
   },
-  w3c: async ({ columns, rows, keepMatching = false }) => {
+  w3c: async ({ columns, rows, tableInstance = {}, keepMatching = false }) => {
     // Helper function to convert score strings to numbers in type/property arrays
     const convertScoresInArray = (arr) => {
       if (!Array.isArray(arr)) return arr;
@@ -64,55 +99,95 @@ const ExportService = {
         ...rest,
       }));
     };
+    const complianceReports = tableInstance?.complianceReports;
+    const firstRow = {
+      compliance: {
+        service: (complianceReports && complianceReports.length > 0)
+          ? complianceReports?.[tableInstance.complianceReports.length - 1]?.serviceName
+          : "",
+        status: (complianceReports && complianceReports.length > 0)
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.gdpr
+          : "",
+        reasoning: (complianceReports && complianceReports.length > 0)
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.reasoning
+          : "",
+        score: (complianceReports && complianceReports.length > 0)
+          ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.score
+          : "",
+      },
+      permission: tableInstance?.permission,
+      columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
+        const col = columns[colId] || {};
+        const {
+          id,
+          status,
+          context = {},
+          metadata = [],
+          annotationMeta,
+          compliance,
+          ...propsToKeep
+        } = col;
 
-    const firstRow = Object.keys(columns).reduce((acc, colId, index) => {
-      const { id, status, context, metadata, annotationMeta, ...propsToKeep } =
-        columns[colId];
+        const trimmedLabel = (col.label || String(colId)).trim();
 
-      const trimmedLabel = columns[colId].label.trim();
+        // Guard context: it may be undefined or not an object
+        const standardContext = Object.keys(context || {}).reduce(
+          (accCtx, prefix) => {
+            const entry = context[prefix] || {};
+            const uri = entry.uri;
+            return [...accCtx, { prefix: `${prefix}:`, uri }];
+          },
+          [],
+        );
 
-      const standardContext = Object.keys(context).reduce((accCtx, prefix) => {
-        const { uri } = context[prefix];
-        return [...accCtx, { prefix: `${prefix}:`, uri }];
-      }, []);
+        // Process column metadata safely
+        let processedMetadata = [];
+        if (Array.isArray(metadata) && metadata.length > 0) {
+          const metaItem = { ...metadata[0] };
 
-      // Process column metadata
-      let processedMetadata = [];
-      if (metadata.length > 0) {
-        const metaItem = { ...metadata[0] };
+          // Convert scores in type array
+          if (metaItem.type) {
+            metaItem.type = convertScoresInArray(metaItem.type);
+          }
 
-        // Convert scores in type array
-        if (metaItem.type) {
-          metaItem.type = convertScoresInArray(metaItem.type);
+          // Convert scores in property array
+          if (metaItem.property) {
+            metaItem.property = convertScoresInArray(metaItem.property);
+          }
+
+          // Convert scores in entity array
+          if (metaItem.entity) {
+            metaItem.entity = getMetadata(metaItem.entity, keepMatching);
+          }
+
+          processedMetadata = [metaItem];
         }
 
-        // Convert scores in property array
-        if (metaItem.property) {
-          metaItem.property = convertScoresInArray(metaItem.property);
-        }
+        const lastReport = complianceReports?.[complianceReports.length - 1];
+        const latestCompliance = lastReport?.result.find(r => r[trimmedLabel])?.[trimmedLabel];
 
-        // Convert scores in entity array
-        if (metaItem.entity) {
-          metaItem.entity = getMetadata(metaItem.entity, keepMatching);
-        }
+        acc[`th${index}`] = {
+          ...propsToKeep,
+          label: trimmedLabel,
+          metadata: processedMetadata,
+          context: standardContext,
+          compliance: latestCompliance || col.compliance,
+        };
+        return acc;
+      }, {})
+    };
 
-        processedMetadata = [metaItem];
-      }
-
-      acc[`th${index}`] = {
-        ...propsToKeep,
-        label: trimmedLabel,
-        metadata: processedMetadata,
-        context: standardContext,
-      };
-      return acc;
-    }, {});
-
-    const rest = Object.keys(rows).map((rowId) => {
-      const { cells } = rows[rowId];
-      return Object.keys(cells).reduce((acc, colId) => {
-        const { id, metadata, annotationMeta, ...propsToKeep } = cells[colId];
-        const trimmedLabel = columns[colId].label.trim();
+    const rest = Object.keys(rows || {}).map((rowId) => {
+      const row = rows[rowId] || {};
+      const cells = row.cells || {};
+      // Iterate over the column keys to ensure consistent order and presence even if a cell is missing.
+      const colKeys = Object.keys(columns || {});
+      return colKeys.reduce((acc, colId) => {
+        const cell = cells[colId] || {};
+        const { id, metadata = [], annotationMeta, ...propsToKeep } = cell;
+        const trimmedLabel = (
+          columns[colId] && columns[colId].label ? columns[colId].label : colId
+        ).trim();
 
         acc[trimmedLabel] = {
           ...propsToKeep,
@@ -152,140 +227,21 @@ const ExportService = {
     }
   },
   semtParser: async ({ id, datasetId, format = "python" }) => {
-    return new Promise((resolve, reject) => {
-      let outputFilePath = null;
-      try {
-        // Get the log file path for the dataset and table
-        const logFilePath = path.join(
-          process.cwd(),
-          "public",
-          "logs",
-          `logs-${datasetId}-${id}.log`,
-        );
-
-        // Check if log file exists
-        if (!fs.existsSync(logFilePath)) {
-          return reject(
-            new Error(
-              `Log file not found for dataset ${datasetId} and table ${id}`,
-            ),
-          );
-        }
-
-        // Just use a simple default table name - the user will change it anyway when running the code
-        const tableFilePath = "table_1.csv";
-
-        // Path to semTParser executable (should be in public folder)
-        const semtParserPath = path.join(process.cwd(), "public", "semTParser");
-
-        // Generate output filename with timestamp
-        const timestamp = new Date()
-          .toISOString()
-          .replace(/:/g, "-")
-          .replace(/\..+/, "");
-        const outputFileName =
-          format === "python"
-            ? `base_file_${timestamp}.py`
-            : `base_notebook_file_${timestamp}.ipynb`;
-
-        // Execute semTParser
-        const semtParser = spawn(semtParserPath, [
-          "--log-file",
-          logFilePath,
-          "--table-file",
-          tableFilePath,
-          "--format",
-          format,
-        ]);
-
-        let outputData = "";
-        let errorData = "";
-
-        semtParser.stdout.on("data", (data) => {
-          outputData += data.toString();
-        });
-
-        semtParser.stderr.on("data", (data) => {
-          errorData += data.toString();
-        });
-
-        semtParser.on("close", (code) => {
-          if (code !== 0) {
-            console.error(`semTParser exited with code ${code}`);
-            console.error(`Error output: ${errorData}`);
-            return reject(
-              new Error(`semTParser failed with code ${code}: ${errorData}`),
-            );
-          }
-
-          // Extract file path from semTParser output
-          const outputMatch = outputData.match(/file created at: (.+)$/m);
-          if (!outputMatch || !outputMatch[1]) {
-            return reject(
-              new Error(
-                "Could not determine output file path from semTParser output",
-              ),
-            );
-          }
-
-          outputFilePath = outputMatch[1].trim();
-
-          // Read the generated file with proper encoding
-          fs.readFile(outputFilePath, "utf8", (err, data) => {
-            if (err) {
-              // Clean up the file even if we couldn't read it
-              if (outputFilePath) {
-                fs.unlink(outputFilePath, () => {
-                  console.log(
-                    `Cleaned up file after read error: ${outputFilePath}`,
-                  );
-                });
-              }
-              return reject(
-                new Error(`Failed to read generated file: ${err.message}`),
-              );
-            }
-
-            // Schedule file deletion with a slight delay to ensure response is complete
-            setTimeout(() => {
-              fs.unlink(outputFilePath, (unlinkErr) => {
-                if (unlinkErr) {
-                  console.warn(
-                    `Warning: Failed to delete temporary file ${outputFilePath}: ${unlinkErr.message}`,
-                  );
-                } else {
-                  console.log(
-                    `Successfully deleted temporary file: ${outputFilePath}`,
-                  );
-                }
-              });
-            }, 1000); // 1 second delay to ensure response is complete
-
-            // Return the file content and metadata
-            resolve({
-              data,
-              fileName: outputFileName,
-              filePath: outputFilePath,
-              contentType:
-                format === "python" ? "text/x-python" : "application/json",
-            });
-          });
-        });
-      } catch (error) {
-        // Clean up the output file if it exists and we encounter an error
-        if (outputFilePath && fs.existsSync(outputFilePath)) {
-          try {
-            fs.unlinkSync(outputFilePath);
-            console.log(`Cleaned up file after error: ${outputFilePath}`);
-          } catch (cleanupError) {
-            console.warn(
-              `Failed to clean up file: ${outputFilePath}`,
-              cleanupError,
-            );
-          }
-        }
-        reject(error);
-      }
+    const logFilePath = path.join(
+      process.cwd(),
+      "public",
+      "logs",
+      `logs-${datasetId}-${id}.jsonl`,
+    );
+    if (!fs.existsSync(logFilePath)) {
+      throw new Error(
+        `Log file not found for dataset ${datasetId} and table ${id}`,
+      );
+    }
+    return SemtParserService.generate({
+      datasetId,
+      tableId: id,
+      format: format === "notebook" ? "notebook" : "python",
     });
   },
 };

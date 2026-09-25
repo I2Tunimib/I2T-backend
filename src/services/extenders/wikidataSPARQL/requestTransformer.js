@@ -5,6 +5,35 @@ import fs from "fs";
 
 const { endpoint } = config.private;
 
+async function fetchPropertyLabels(propIds) {
+  if (!propIds || propIds.length === 0) return {};
+  const cleanEndpoint = endpoint.replace(/\?query=$/, "");
+
+  const valuesClause = propIds.map(id => `wd:${id}`).join(" ");
+  const labelQuery = `
+    SELECT ?prop ?propLabel WHERE {
+      VALUES ?prop { ${valuesClause} }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    }
+  `;
+  try {
+    const response = await axios.get(cleanEndpoint, {
+      params: { query: labelQuery, format: "json" },
+      headers: { "User-Agent": "Node.js SPARQL Client" },
+    });
+    const bindings = response.data.results.bindings;
+    const labelsMap = {};
+    bindings.forEach(row => {
+      const pId = row.prop.value.split("/").pop();
+      labelsMap[pId] = row.propLabel.value;
+    });
+    return labelsMap;
+  } catch (e) {
+    console.error("Impossible to fetch prop label:", e.message);
+    return {};
+  }
+}
+
 /**
  * Executes a SPARQL query on Wikidata and returns the results as a table.
  * @param {Array<string>} items - List of items to associate with ?item (e.g., ["Q46588", "Q3306248"]).
@@ -38,14 +67,20 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
 
   console.log("********** SPARQL QUERY", sparqlQuery);
 
+  const propMatches = [...sparqlQueryBody.matchAll(/wdt:(P\d+)/g)];
+  const propertiesFetched = propMatches.map(match => match[1]);
+
   try {
     // Send the query to Wikidata
     // Remove '?query=' from endpoint if present since axios params will add it
     const cleanEndpoint = endpoint.replace(/\?query=$/, "");
-    const response = await axios.get(cleanEndpoint, {
-      params: { query: sparqlQuery, format: "json" },
-      headers: { "User-Agent": "Node.js SPARQL Client" },
-    });
+    const [response, labelsMap] = await Promise.all([
+      axios.get(cleanEndpoint, {
+        params: { query: sparqlQuery, format: "json" },
+        headers: { "User-Agent": "Node.js SPARQL Client" },
+      }),
+      fetchPropertyLabels(propertiesFetched)
+    ]);
     console.log("********** SPARQL RESPONSE", response.data);
     // Extract the results
     const bindings = response.data.results.bindings;
@@ -59,7 +94,15 @@ async function queryWikidata(items, variables, sparqlQueryBody) {
       return parsedRow;
     });
 
-    return results;
+    const propertiesData = propertiesFetched.map(id => ({
+      id: id,
+      label: labelsMap[id] || id
+    }));
+
+    return {
+      data: results,
+      properties: propertiesData
+    };
   } catch (error) {
     console.error("Error during SPARQL query:", error.message);
     if (error.response) {

@@ -1,0 +1,645 @@
+const labels = {
+  personalData: "Personal Data",
+  quasiIdentifiers: "Quasi-Identifiers",
+  nonPersonalData: "Non-Personal Data",
+  anonymousData: "Anonymous Data"
+};
+
+const OPERATION_COLORS = {
+  RECONCILIATION: { fill: '#ebf8ff', stroke: '#3498db' },
+  EXTENSION: { fill: '#f0fff4', stroke: '#2ecc71' },
+  MODIFICATION: { fill: '#fffaf0', stroke: '#e67e22' },
+  PROPAGATE_TYPE: { fill: '#faf5ff', stroke: '#9b59b6' },
+};
+
+const getStepService = (op) => op?.reconciler || op?.extender || op?.modifier || null;
+
+const escapeMermaidLabel = (str) => String(str ?? '')
+  .replace(/"/g, '#quot;')
+  .replace(/[\r\n]+/g, ' ');
+
+/**
+ * Turns the raw dependency-graph output of Log#getObject() into a flat list of
+ * report-friendly step records plus a Mermaid `graph TD` source string.
+ * Support (cross-column) dependencies are rendered as dashed edges.
+ */
+const VALID_OPERATION_TYPES = new Set(Object.keys(OPERATION_COLORS));
+
+const buildPipelineData = (pipelineData) => {
+  const nodes = pipelineData?.nodes || {};
+  // Defensively drop anything that isn't a real, fully-formed pipeline op
+  // (e.g. malformed/legacy log lines that slip past upstream filtering).
+  const operations = (Array.isArray(pipelineData?.operations) ? pipelineData.operations : [])
+    .filter((op) => op && op.id && VALID_OPERATION_TYPES.has(op.operationType) && op.opNumber !== undefined)
+    .sort((a, b) => a.opNumber - b.opNumber);
+
+  // Raw opNumber is a table-wide counter shared with EXPORT/GET_TABLE/etc.,
+  // so it rarely starts at 1 and isn't contiguous - use a clean 1-based
+  // sequence for anything shown to the user instead.
+  const displayStepById = Object.fromEntries(operations.map((op, idx) => [op.id, idx + 1]));
+  const opById = Object.fromEntries(operations.map((op) => [op.id, op]));
+
+  const steps = operations.map((op) => {
+    const node = nodes[op.id] || {};
+    const dependsOn = (node.parents || [])
+      .filter((id) => id !== 'root')
+      .map((id) => displayStepById[id])
+      .filter((n) => n !== undefined);
+    const alsoUses = (node.supportParents || [])
+      .map((id) => displayStepById[id])
+      .filter((n) => n !== undefined);
+
+    return {
+      step: displayStepById[op.id],
+      operationType: op.operationType,
+      columnName: op.columnName,
+      service: getStepService(op),
+      timestamp: op.timestamp,
+      createdColumns: op.createdColumns || [],
+      dependsOn,
+      alsoUses,
+    };
+  });
+
+  const mermaidLines = ['graph TD', '  root(["Start"])'];
+
+  operations.forEach((op) => {
+    const step = displayStepById[op.id];
+    const nodeId = `step${step}`;
+    const label = [
+      `Step ${step} - ${op.operationType}`,
+      op.columnName ? `Column: ${op.columnName}` : null,
+      getStepService(op) ? `Service: ${getStepService(op)}` : null,
+    ].filter(Boolean).map(escapeMermaidLabel).join('<br/>');
+    const cssClass = OPERATION_COLORS[op.operationType] ? `:::${op.operationType.toLowerCase()}` : '';
+
+    mermaidLines.push(`  ${nodeId}["${label}"]${cssClass}`);
+  });
+
+  Object.entries(nodes).forEach(([nodeKey, node]) => {
+    if (nodeKey !== 'root' && !opById[nodeKey]) return;
+    const sourceId = nodeKey === 'root' ? 'root' : `step${displayStepById[nodeKey]}`;
+
+    (node.children || []).forEach((childId) => {
+      if (!opById[childId]) return;
+      mermaidLines.push(`  ${sourceId} --> step${displayStepById[childId]}`);
+    });
+    (node.supportChildren || []).forEach((childId) => {
+      if (!opById[childId]) return;
+      mermaidLines.push(`  ${sourceId} -.->|support| step${displayStepById[childId]}`);
+    });
+  });
+
+  Object.entries(OPERATION_COLORS).forEach(([type, { fill, stroke }]) => {
+    mermaidLines.push(`  classDef ${type.toLowerCase()} fill:${fill},stroke:${stroke},color:#1a365d,stroke-width:2px;`);
+  });
+
+  return { steps, mermaid: mermaidLines.join('\n') };
+};
+
+export const buildHtmlReport = (data) => {
+  const { tableName, datasetId, tableId, graphSnapshots, graphData, metrics, schemaData, showCompliance, pipelineData } = data;
+
+  const { steps: pipelineSteps, mermaid: pipelineMermaid } = buildPipelineData(pipelineData);
+
+  const schema = Array.isArray(schemaData) ? (schemaData[0] || {}) : (schemaData || {});
+  const cleanStr = (str) => (str ? String(str).trim().replace(/^\uFEFF/, '') : '');
+  const columnEntries = Object.entries(schema.columns).filter(([key]) => key.startsWith('th'));
+
+  const compliance = schema?.compliance;
+  const isComplaint = compliance.status === 'yesGDPR';
+  const complianceHtml = compliance ? `
+    <div 
+      class="section" 
+      style="background: ${isComplaint ? '#fff5f5' : '#f0fff4'};
+      padding: 20px;
+      border-radius: 6px;
+      border-width: 1px;
+      border-style: solid;
+      border-color: ${compliance.status === 'yesGDPR' ? '#feb2b2' : '#9ae6b4'};
+      margin-bottom: 30px;"
+    >
+      <h2 style="margin-top: 0; border: none; color: ${isComplaint ? '#c53030' : '#2f855a'};">${compliance.service || ''} Compliance Summary</h2>
+      <p style="margin: 5px 0;"><strong>Status:</strong> 
+        ${compliance.reasoning !== ""
+          ? isComplaint ? `${compliance.service || ''} complaint` : `${compliance.service || ''} NON-complaint`
+          : 'Compliance check not performed'}
+      </p>
+      <p style="margin: 5px 0;"><strong>Confidence score:</strong> ${compliance.reasoning === "" ? "-" : `${(compliance.score * 100).toFixed(0)}%`}</p>
+      <p style="margin: 5px 0 0 0;"><strong>Reasoning:</strong> ${compliance.reasoning === "" ? "-" : compliance.reasoning}</p>
+    </div>
+  ` : '';
+
+  const nodesHtml = columnEntries.map(([key, th]) => {
+    if (!th) return '';
+
+    const label = th.label || key;
+    const metadata = th.metadata || [];
+    const types = metadata.flatMap((m) => m?.type ?? []);
+
+    const outgoing = (graphData?.links || []).filter((l) =>
+      l && l.source && cleanStr(l.source.label) === cleanStr(label)
+    );
+    const incoming = (graphData?.links || []).filter((l) =>
+      l && l.target && cleanStr(l.target.label) === cleanStr(label)
+    );
+    const totalPropertiesCount = outgoing.length + incoming.length;
+
+    const index = key.replace('th', '');
+    const typeListId = `node-types-${index}`;
+    const typeBtnId = `node-types-btn-${index}`;
+    const propListId = `node-props-${index}`;
+    const propBtnId = `node-props-btn-${index}`;
+
+    const typesListHtml = types.length > 0
+      ? `<ul style="margin: 4px 0; padding-left: 20px;">
+          ${types.map((t) => `<li><em>${t?.id || '-'}</em> - ${t?.name || 'Unknown'}</li>`).join('')}
+         </ul>`
+      : `<p style="margin: 4px 0; padding-left: 20px; color: #718096; font-style: italic;">No types</p>`;
+
+    const groupLinks = (linksList, isOutgoing = true) => {
+      const grouped = linksList.reduce((acc, l) => {
+        const key = isOutgoing
+          ? (typeof l?.target === 'object' ? l.target.label : l.target)
+          : (typeof l?.source === 'object' ? l.source.label : l.source);
+        const targetId = key || 'N/A';
+        if (!acc[targetId]) acc[targetId] = [];
+        acc[targetId].push(l);
+        return acc;
+      }, {});
+
+      return Object.entries(grouped).map(([nodeId, links]) => {
+        const arrow = isOutgoing ? '&rarr;' : '&larr;';
+        const subItems = links.map((l) => `
+          <li style="margin: 2px 0;">
+            <em>${l?.propID || '-'}</em> - ${l?.label || ''}
+          </li>
+        `).join('');
+        return `
+          <li style="margin-bottom: 6px;">
+            ${arrow} ${nodeId}:
+            <ul style="margin: 2px 0 0 0; padding-left: 16px; list-style-type: circle;">
+              ${subItems}
+            </ul>
+          </li>
+        `;
+      }).join('');
+    };
+
+    const outgoingHtml = outgoing.length > 0
+      ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Links (${outgoing.length}):</p>
+         <ul style="margin: 0 0 6px 0; padding-left: 20px; list-style-type: disc;">
+           ${groupLinks(outgoing, true)}
+         </ul>`
+      : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Outgoing Links: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
+
+    const incomingHtml = incoming.length > 0
+      ? `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Links (${incoming.length}):</p>
+         <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+           ${groupLinks(incoming, false)}
+         </ul>`
+      : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Links: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
+
+    const getComplianceDescription = (th) => {
+      if (th.compliance.classification) {
+        return `
+        <div style="margin: 10px 0; padding: 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+          <p style="margin: 0;">
+            This column contains <strong>${labels[th.compliance.classification]}</strong> and is <strong>${th.compliance.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}</strong> 
+            with a confidence score of <strong>${Math.round((th.compliance.score ?? 0) * 100)}%</strong>.
+           </p>
+         </div>
+      `;
+      }
+      return "";
+    };
+
+    return `
+      <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
+        <h4 style="margin: 0 0 8px 0; color: #3182ce;">Column: ${label}</h4>
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Kind:</strong> ${th?.kind || '-'}</p>
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Role:</strong> ${th?.role || '-'}</p>
+        <p style="margin: 2px 0; font-size: 14px;">
+          <strong>${th?.kind === "literal" ? "Datatype:" : "Semantic Class:"}</strong> ${th?.datatype || '-'}
+        </p>
+
+        <div style="margin-top: 8px; font-size: 14px">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span><strong>Types (${types.length})</strong></span>
+            ${types.length > 0 ? `<span id="${typeBtnId}" class="action-link" onclick="toggleSection('${typeListId}', '${typeBtnId}')">Show list</span>` : ''}
+          </div>
+          <div id="${typeListId}" class="collapsible-content">${typesListHtml}</div>
+        </div>
+
+        <div style="margin-top: 2px; font-size: 14px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span><strong>Properties (${totalPropertiesCount})</strong></span>
+            ${totalPropertiesCount > 0 ? `<span id="${propBtnId}" class="action-link" onclick="toggleSection('${propListId}', '${propBtnId}')">Show list</span>` : ''}
+          </div>
+          <div id="${propListId}" class="collapsible-content">
+            <div style="margin-top: 4px; padding-left: 10px;">
+              ${outgoingHtml}
+              <div style="margin-top: 6px;"></div> 
+              ${incomingHtml}
+            </div>
+          </div>
+        </div>
+        ${getComplianceDescription(th)} 
+      </div>
+    `;
+  }).join('');
+
+  const relationsMap = {};
+
+  columnEntries.forEach(([_, th]) => {
+    if (!th || !th.label) return;
+    const sourceLabel = cleanStr(th.label);
+
+    (th.metadata || []).forEach((m) => {
+      if (!m) return;
+      (m.property || []).forEach((p) => {
+        if (!p || !p.obj) return;
+        const targetLabel = cleanStr(p.obj);
+        const pairKey = `${sourceLabel}->${targetLabel}`;
+
+        if (!relationsMap[pairKey]) {
+          relationsMap[pairKey] = { source: sourceLabel, target: targetLabel, properties: [] };
+        }
+        if (!relationsMap[pairKey].properties.some((prop) => prop.id === p.id)) {
+          relationsMap[pairKey].properties.push({
+            id: p.id || 'N/A',
+            name: p.name || 'Unknown'
+          });
+        }
+      });
+    });
+  });
+
+  const linksHtml = Object.values(relationsMap).map((rel) => {
+    const propertiesList = rel.properties
+      .map((p) => `<li style="margin: 4px 0;"><strong>${p.id}</strong> - ${p.name}</li>`)
+      .join('');
+
+    return `
+      <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
+        <h4 style="margin: 0 0 8px 0;  color: #3182ce;">Relation: ${rel.source} &rarr; ${rel.target}</h4>
+        <ul style="margin: 4px 0; padding-left: 20px; font-size: 14px; list-style-type: disc;">
+          ${propertiesList}
+        </ul>
+      </div>
+    `;
+  }).join('');
+
+  const metricsHtml = (metrics || []).map((m) => {
+    if (!m) return '';
+    if (m.name === 'Roles Distribution' && Array.isArray(m.value)) {
+      const rolesList = m.value.map((r) => `<li><strong>${r?.role || 'N/A'}:</strong> ${r?.count || 0}</li>`).join('');
+      return `
+        <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
+          <h4 style="margin: 0 0 4px 0; font-size: 14px;">${m.name}</h4>
+          <ul style="margin: 4px 0 6px 0; padding-left: 20px; font-size: 14px; list-style-type: disc;">${rolesList}</ul>
+          <p style="margin: 4px 0 0 0; color: #718096; font-size: 13px;"><em>${m.description || ''}</em></p>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
+        <h4 style="margin: 0 0 4px 0; font-size: 14px;">${m.name || 'Metric'}: <span style="color: #2d3748; font-weight: normal;">${m.value ?? '-'}</span></h4>
+        <p style="margin: 0; color: #718096; font-size: 13px;"><em>${m.description || ''}</em></p>
+      </div>
+    `;
+  }).join('');
+
+  const pipelineStepsHtml = pipelineSteps.map((s) => {
+    const timestamp = s.timestamp ? new Date(s.timestamp).toLocaleString() : '-';
+    const dependsOnText = s.dependsOn.length > 0 ? s.dependsOn.join(', ') : 'None (initial step)';
+    const color = OPERATION_COLORS[s.operationType]?.stroke || '#3182ce';
+
+    return `
+      <div style="border-bottom: 1px solid #edf2f7; padding: 12px 0;">
+        <h4 style="margin: 0 0 8px 0; color: ${color};">Step ${s.step} &middot; ${s.operationType}</h4>
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Column:</strong> ${s.columnName || '-'}</p>
+        ${s.service ? `<p style="margin: 2px 0; font-size: 14px;"><strong>Service:</strong> ${s.service}</p>` : ''}
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Timestamp:</strong> ${timestamp}</p>
+        <p style="margin: 2px 0; font-size: 14px;"><strong>Depends on:</strong> ${dependsOnText}</p>
+        ${s.alsoUses.length > 0 ? `<p style="margin: 2px 0; font-size: 14px;"><strong>Also uses:</strong> ${s.alsoUses.join(', ')}</p>` : ''}
+        ${s.createdColumns.length > 0 ? `<p style="margin: 2px 0; font-size: 14px;"><strong>Created columns:</strong> ${s.createdColumns.join(', ')}</p>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <title>Schema Report - ${tableName || 'Report'}</title>
+      <style>
+        body { font-family: Roboto, sans-serif; margin: 40px; color: #2d3748; line-height: 1.6; background-color: #f7fafc; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { color: #1a365d; border-bottom: 3px solid #2b6cb0; padding-bottom: 10px; margin-top: 0; }
+        h2 { color: #1a365d; margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+        .meta-box { background: #ebf8ff; border-left: 4px solid #3182ce; padding: 15px; border-radius: 4px; margin-bottom: 30px; }
+        .section { margin-bottom: 40px; }
+        .graph-container { text-align: center; padding: 30px; border: 1px solid #cbd5e0; border-radius: 8px; }
+        .graph-wrapper-rel { position: relative; display: inline-block; max-width: 100%; }
+        .graph-img { width: 100%; height: auto; }
+        .legend-floating-box { position: absolute; top: 8px; left: 0; z-index: 10; display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 6px; border: 1px solid #cbd5e0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: left; }
+        .legend-title { font-weight: bold; margin: 0 0 4px 0; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .toggle-btn { position: absolute; top: 8px; right: 0; z-index: 10; cursor: pointer; padding: 8px 16px; border-radius: 4px; border: 1px solid #3182ce; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 14px; font-weight: 400; color: #3182ce; white-space: nowrap; background-color: white; }
+        .toggle-btn:hover { border-color: #3182ce; color: #3182ce; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .dot-subject { background-color: #2ecc71; }
+        .dot-entity { background-color: #3498db; }
+        .dot-literal { background-color: #e67e22; }
+        .action-link { color: #a0aec0; cursor: pointer; font-size: 13px; font-weight: 400; user-select: none; transition: color 0.2s ease; }
+        .action-link:hover { color: #4a5568; text-decoration: underline; }
+        .collapsible-content { display: none; overflow: hidden; margin-top: 4px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Schema Report</h1>
+        <div class="meta-box">
+          <p style="margin: 0;"><strong>Table Name:</strong> ${tableName || 'N/A'}</p>
+          <p style="margin: 5px 0 0 0;"><strong>Dataset ID:</strong> ${datasetId || '-'} | <strong>Table ID:</strong> ${tableId || '-'}</p>
+          <p style="margin: 5px 0 0 0; font-size: 12px; color: #4a5568;"><em>Generated on: ${new Date().toLocaleString()}</em></p>
+        </div>
+        ${complianceHtml}
+        <div class="section graph-container">
+          <h2 style="margin-top: 0; border: none;">Schema Graph Visualization</h2>
+          <div class="graph-wrapper-rel">
+            <div class="legend-floating-box">
+              <p id="legend-title" class="legend-title">
+                ${showCompliance ? "Compliance Legend" : "Legend"}
+              </p>
+              <div id="legend-standard-content" style="display: ${showCompliance ? 'none' : 'block'};">
+                <div class="legend-item"><span class="dot dot-subject"></span> Subject</div>
+                <div class="legend-item"><span class="dot dot-entity"></span> Entity</div>
+                <div class="legend-item"><span class="dot dot-literal"></span> Literal</div>
+              </div>
+              <div id="legend-compliance-content" style="display: ${showCompliance ? 'block' : 'none'};">
+                <div class="legend-item"><span class="dot" style="background-color: crimson;"></span> Personal Data</div>
+                <div class="legend-item"><span class="dot" style="background-color: orange;"></span> Quasi Identifier</div>
+                <div class="legend-item"><span class="dot" style="background-color: teal;"></span> Non-Personal Data</div>
+                <div class="legend-item"><span class="dot" style="background-color: green;"></span> Anonymous Data</div>
+              </div>
+            </div>
+            <button id="btn-toggle" class="toggle-btn" onclick="toggleCompliance()">${showCompliance ? "Hide compliance" : "Show compliance"}</button>
+            <div>
+              <img id="img-standard" class="graph-img" src="${graphSnapshots.standard}" style="display:block;" />
+              <img id="img-compliance" class="graph-img" src="${graphSnapshots.compliance}" style="display:none;" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <h2>Columns (${columnEntries.length})</h2>
+          ${nodesHtml || '<p>No semantic nodes found.</p>'}
+        </div>
+        
+        <div class="section" style="background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <h2>Relations (${Object.keys(relationsMap).length})</h2>
+          ${linksHtml || '<p>No semantic relations found.</p>'}
+        </div>
+        
+        <div class="section" style="background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <h2>Graph Structural Metrics</h2>
+          ${metricsHtml || '<p>No graph metrics available.</p>'}
+        </div>
+
+        <div class="section" style="background: #fff; padding: 20px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <h2>Pipeline Steps (${pipelineSteps.length})</h2>
+          ${pipelineSteps.length > 0 ? `
+          <div class="graph-container" style="margin-bottom: 20px;">
+            <pre class="mermaid">${pipelineMermaid}</pre>
+          </div>
+          ` : ''}
+          ${pipelineStepsHtml || '<p>No pipeline steps recorded.</p>'}
+        </div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+      <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+      </script>
+      <script>
+        function toggleCompliance() {
+          const btn = document.getElementById('btn-toggle');
+    
+          const isVisible = btn.innerText === "Hide compliance";
+
+          document.getElementById('img-standard').style.display = isVisible ? 'block' : 'none';
+          document.getElementById('img-compliance').style.display = isVisible ? 'none' : 'block';
+          document.getElementById('legend-standard-content').style.display = isVisible ? 'block' : 'none';
+          document.getElementById('legend-compliance-content').style.display = isVisible ? 'none' : 'block';
+          document.getElementById('legend-title').innerText = isVisible ? "Legend" : "Compliance Legend";
+
+          btn.innerText = isVisible ? "Show compliance" : "Hide compliance";
+          btn.className = isVisible ? "toggle-btn" : "toggle-btn active";
+        }
+        function toggleSection(contentId, elementId) {
+          var content = document.getElementById(contentId);
+          var element = document.getElementById(elementId);
+          if (content.style.display === "block") {
+            content.style.display = "none";
+            element.innerText = "Show list";
+          } else {
+            content.style.display = "block";
+            element.innerText = "Hide list";
+          }
+        }
+      </script>
+    </body>
+    </html>
+  `;
+};
+
+export const buildMarkdownReport = (data) => {
+  const { tableName, datasetId, tableId, graphSnapshots, graphData, metrics, schemaData, pipelineData } = data;
+  const { steps: pipelineSteps, mermaid: pipelineMermaid } = buildPipelineData(pipelineData);
+  const schema = Array.isArray(schemaData) ? (schemaData[0] || {}) : (schemaData || {});
+  const cleanStr = (str) => (str ? String(str).trim().replace(/^\uFEFF/, '') : '');
+  const columnEntries = Object.entries(schema?.columns).filter(([key]) => key.startsWith('th'));
+
+  let md = `# Schema Report - ${tableName || 'Report'}\n\n`;
+  md += `**Table Name:** ${tableName || 'N/A'}  \n`;
+  md += `**Dataset ID:** ${datasetId || '-'} | **Table ID:** ${tableId || '-'}  \n`;
+  md += `*Generated on: ${new Date().toLocaleString()}*\n\n`;
+
+  const compliance = schema?.compliance;
+  console.log("compliance", compliance);
+  const isComplianceDone = compliance && compliance.reasoning !== "";
+  md += `## ${compliance.service || ''} Compliance Summary\n\n`;
+  if (!isComplianceDone) {
+    md += `> ⚠️ Compliance check not performed.\n\n`;
+  } else {
+    const isComplaint = compliance.status === 'yesGDPR';
+    md += `- **Status:** ${isComplaint ? `${compliance.service || ''} complaint` : `${compliance.service || ''} NON-complaint`}  \n`;
+    md += `- **Confidence score:** ${(compliance.score * 100).toFixed(0)}%  \n`;
+    md += `- **Reasoning:** ${compliance.reasoning}\n\n`;
+  }
+
+  md += `## Schema Graph Visualization\n\n`;
+  md += `### Legend\n\n`;
+
+  const itemsLegend = [
+      { color: '#2ecc71', text: 'Subject' },
+      { color: '#3498db', text: 'Entity' },
+      { color: '#e67e22', text: 'Literal' }
+    ];
+
+  itemsLegend.forEach(item => {
+    md += `<div style="display: flex; align-items: center; margin-bottom: 5px;">
+    <span style="height: 12px; width: 12px; background-color: ${item.color}; border-radius: 50%; display: inline-block; margin-right: 8px;"></span>
+    ${item.text}
+  </div>\n`;
+  });
+
+  md += `\n`;
+
+  if (graphSnapshots.standard) {
+    md += `![Schema Graph](${graphSnapshots.standard})\n\n`;
+  } else {
+    md += `> Schema Graph snapshot not available.\n\n`;
+  }
+
+  if (isComplianceDone) {
+    md += `---\n\n`;
+
+    md += `### Compliance Legend:\n\n`;
+
+    const itemsComplianceLegend = [
+      { color: 'crimson', text: 'Personal Data' },
+      { color: 'orange', text: 'Quasi-Identifier' },
+      { color: 'teal', text: 'Non-Personal Data' },
+      { color: 'green', text: 'Anonymous Data' }
+    ];
+
+    itemsComplianceLegend.forEach(item => {
+      md += `<div style="display: flex; align-items: center; margin-bottom: 5px;">
+        <span style="height: 12px; width: 12px; background-color: ${item.color}; border-radius: 50%; display: inline-block; margin-right: 8px;"></span>
+        ${item.text}
+    </div>\n`;
+    });
+
+    md += `\n`;
+
+    md += `![Compliance Graph](${graphSnapshots.compliance})\n\n`;
+  }
+
+  md += `## Columns (${columnEntries.length})\n\n`;
+  columnEntries.forEach(([key, th]) => {
+    const label = th.label || key;
+    const types = (th.metadata || []).flatMap((m) => m?.type ?? []);
+    const groupLinksMd = (linksList, isOutgoing = true) => {
+      const grouped = linksList.reduce((acc, l) => {
+        const key = isOutgoing
+          ? (typeof l?.target === 'object' ? l.target.label : l.target)
+          : (typeof l?.source === 'object' ? l.source.label : l.source);
+        const targetId = key || 'N/A';
+        if (!acc[targetId]) acc[targetId] = [];
+        acc[targetId].push(l);
+        return acc;
+      }, {});
+
+      return Object.entries(grouped).map(([nodeId, links]) => {
+        const arrow = isOutgoing ? '→' : '←';
+        const subItems = links.map((l) => `  - <em>${l?.propID || '-'}</em> - ${l?.label || ''}`).join('\n');
+        return `- ${arrow} **${nodeId}**:\n${subItems}`;
+      }).join('\n');
+    };
+    const outgoing = (graphData?.links || []).filter((l) =>
+      l && l.source && cleanStr(l.source.label) === cleanStr(label)
+    );
+    const incoming = (graphData?.links || []).filter((l) =>
+      l && l.target && cleanStr(l.target.label) === cleanStr(label)
+    );
+
+    md += `### Column: ${label}\n`;
+    md += `- **Kind:** ${th?.kind || '-'}\n`;
+    md += `- **Role:** ${th?.role || '-'}\n`;
+    md += `- **${th?.kind === "literal" ? "Datatype" : "Semantic Class"}:** ${th?.datatype || '-'}\n\n`;
+
+    md += `**Types:**\n${types.length > 0 ? types.map(t => `- <em>${t.id}</em> - ${t.name}`).join('\n') : "None"}\n\n`;
+
+    md += `**Outgoing Relations:**\n${outgoing.length > 0 ? groupLinksMd(outgoing, true) : "None"}\n\n`;
+    md += `**Incoming Relations:**\n${incoming.length > 0 ? groupLinksMd(incoming, false) : "None"}\n\n`;
+
+    const gdprDesc = `This column contains **${labels[th.compliance.classification] || 'n/a'}** and is **${th.compliance.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}** 
+    with a confidence score of ${Math.round((th.compliance.score ?? 0) * 100)}%.`;
+
+    if (isComplianceDone) {
+      md += `${gdprDesc}\n\n`;
+    }
+  });
+
+  const relationsMap = {};
+
+  columnEntries.forEach(([_, th]) => {
+    if (!th || !th.label) return;
+    const sourceLabel = cleanStr(th.label);
+
+    (th.metadata || []).forEach((m) => {
+      if (!m) return;
+      (m.property || []).forEach((p) => {
+        if (!p || !p.obj) return;
+        const targetLabel = cleanStr(p.obj);
+        const pairKey = `${sourceLabel}->${targetLabel}`;
+
+        if (!relationsMap[pairKey]) {
+          relationsMap[pairKey] = { source: sourceLabel, target: targetLabel, properties: [] };
+        }
+        if (!relationsMap[pairKey].properties.some((prop) => prop.id === p.id)) {
+          relationsMap[pairKey].properties.push({
+            id: p.id || 'N/A',
+            name: p.name || 'Unknown'
+          });
+        }
+      });
+    });
+  });
+
+  md += `## Relations (${Object.keys(relationsMap).length})\n\n`;
+  Object.values(relationsMap).forEach((rel) => {
+    md += `### Relation: ${rel.source} → ${rel.target}\n`;
+    rel.properties.forEach((p) => {
+      md += `- **${p.id}**: ${p.name}\n`;
+    });
+    md += `\n`;
+  });
+
+  md += `## Graph Structural Metrics\n\n`;
+  md += `| Metric | Value | Description |\n`;
+  md += `| :--- | :--- | :--- |\n`;
+
+  metrics.forEach((m) => {
+    if (!m) return;
+    const valueDisplay = (m.name === 'Roles Distribution' && Array.isArray(m.value))
+      ? m.value.map(r => `${r.role}: ${r.count}`).join(', ')
+      : (m.value ?? '-');
+    const description = (m.description || '').replace(/\n/g, ' ');
+    md += `| **${m.name || 'Metric'}** | ${valueDisplay} | ${description} |\n`;
+  });
+  md += `\n`;
+
+  md += `## Pipeline Steps (${pipelineSteps.length})\n\n`;
+  if (pipelineSteps.length > 0) {
+    md += "```mermaid\n" + pipelineMermaid + "\n```\n\n";
+
+    md += `| Step | Type | Column | Service | Depends On | Timestamp |\n`;
+    md += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+    pipelineSteps.forEach((s) => {
+      const dependsOnText = s.dependsOn.length > 0 ? s.dependsOn.join(', ') : '—';
+      const timestamp = s.timestamp ? new Date(s.timestamp).toLocaleString() : '-';
+      md += `| ${s.step} | ${s.operationType} | ${s.columnName || '-'} | ${s.service || '-'} | ${dependsOnText} | ${timestamp} |\n`;
+    });
+    md += `\n`;
+  } else {
+    md += `> No pipeline steps recorded.\n\n`;
+  }
+
+  return md;
+};

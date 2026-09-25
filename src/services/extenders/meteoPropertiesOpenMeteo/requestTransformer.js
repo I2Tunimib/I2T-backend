@@ -53,6 +53,15 @@ export default async (req) => {
       ? props.weatherParams_hourly
       : props.weatherParams_daily;
 
+  if (!weatherParamsInput || weatherParamsInput.length === 0) {
+    const expected =
+      granularity === "hourly" ? "weatherParams_hourly" : "weatherParams_daily";
+    throw new Error(
+      `Missing required parameter "${expected}" for granularity "${granularity}". ` +
+        `Please provide at least one weather parameter.`,
+    );
+  }
+
   let weatherParams = weatherParamsInput.join(",");
   if (weatherParams.includes("light_hours")) {
     // Replace 'light_hours' with 'sunset,sunrise'
@@ -103,18 +112,18 @@ export default async (req) => {
           url = `${endpoint}latitude=${lat}&longitude=${lon}&start_date=${baseDate}&end_date=${baseDate}&hourly=${weatherParams}&timezone=Europe/Rome`;
           //console.log("hourly url", url);
         }
+        if (granularity === "hourly" && !isDateTime) {
+          throw new Error(
+            "Invalid column for hourly params. Please select a column that includes the time " +
+            "or switch to daily granularity.",
+          );
+        }
         try {
           const res = await axios.get(url);
           //console.log("res", res);
           const data = res.data;
           //console.log("data", data);
           // Hourly params selected and column only dates
-          if (granularity === "hourly" && !isDateTime) {
-            throw new Error(
-              "Invalid column for hourly params. Please select a column that includes the time " +
-                "or switch to daily granularity.",
-            );
-          }
           // Hourly params selected and column datetime
           if (granularity === "hourly" && isDateTime && data.hourly) {
             const targetHour = date.slice(0, 13); // es. 2023-01-01T15
@@ -143,7 +152,14 @@ export default async (req) => {
             data,
           });
         } catch (err) {
-          throw new Error(err.message);
+          console.warn(`Skipping row ${rowId} (${url}): ${err.message}`);
+          allResponses.push({
+            id: coord,
+            rowId,
+            weatherParams,
+            data: null,
+            error: true,
+          });
         }
       }
     }

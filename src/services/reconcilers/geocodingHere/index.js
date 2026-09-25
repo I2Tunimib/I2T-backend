@@ -2,6 +2,7 @@ export default {
   private: {
     endpoint: process.env.WD_HERE_GEOCOORDS,
     access_token: process.env.WD_HERE_TOKEN,
+    here_key: process.env.HERE_API_KEY,
     processRequest: true,
   },
   public: {
@@ -16,8 +17,8 @@ export default {
       "<em> description </em>.<br><br> <strong>Note</strong>: Requires access to the HERE service",
     relativeUrl: "/here",
     prefix: "georss",
-    uri: "http://www.google.com/maps/place/",
-    searchPattern: "https://www.google.com/maps/search/?api=1&query={label}/",
+    uri: "https://www.openstreetmap.org/{osmType}/{osmId}",
+    searchPattern: "https://www.openstreetmap.org/search/?query={label}",
     listProps: "https://www.wikidata.org/wiki/Special:ListProperties",
     metaToView: {
       id: {

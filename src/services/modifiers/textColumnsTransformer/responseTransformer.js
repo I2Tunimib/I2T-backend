@@ -1,7 +1,7 @@
 export default async (req) => {
   const { items, props } = req.original;
-  const { operationType, columnToJoin, separator, renameJoinedColumn, renameNewColumnSplit, selectedColumns,
-    splitMode, splitDirection, splitRenameMode } = props;
+  const { operationType, columnToJoin, separator, renameMode, renameJoinedColumn, renameNewColumnSplit, selectedColumns,
+    splitMode, splitDirection } = props;
 
   const sep = separator || "; ";
   const response = { columns: {}, meta: {} };
@@ -17,9 +17,17 @@ export default async (req) => {
       throw new Error("At least two columns must be selected for join operation.");
     }
 
-    const newColName = renameJoinedColumn && renameJoinedColumn.trim() !== ""
-      ? renameJoinedColumn.trim()
-      : `${allColumnsToJoin.join("_")}`;
+    let newColName;
+
+    if (renameMode === "custom") {
+      const trimmed = (renameJoinedColumn || "").trim();
+      if (!trimmed) {
+        throw new Error("Please provide a name for the joined column.");
+      }
+      newColName = trimmed;
+    } else {
+      newColName = `${allColumnsToJoin.join("_")}`;
+    }
 
     response.columns[newColName] = {
       label: newColName,
@@ -61,11 +69,12 @@ export default async (req) => {
     let maxParts;
     let extractParts;
 
+    const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
+    if (!separatorFound) {
+      throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
+    }
+
     if (splitMode === "separatorAll") {
-      const separatorFound = rowEntries.some(([_, val]) => (val?.[0] ?? "").includes(sep));
-      if (!separatorFound) {
-        throw new Error(`Invalid separator: '${sep}' not found in any cell.`);
-      }
 
       const splitSamples = rowEntries.map(([_, val]) => String(val?.[0] ?? "").split(sep));
       maxParts = Math.max(...splitSamples.map((p) => p.length));
@@ -95,7 +104,7 @@ export default async (req) => {
     }
 
     let splitNames = [];
-    if (splitRenameMode === "custom") {
+    if (renameMode === "custom") {
       splitNames = renameNewColumnSplit
         .split(",")
         .map((n) => n.trim())

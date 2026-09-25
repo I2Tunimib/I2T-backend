@@ -9,8 +9,9 @@ const __dirname = path.resolve();
 
 const ENTITY_TYPES = {
   PERSON: true,
-  LOCATION: true,
+  PLACE: true,
   ORGANIZATION: true,
+  EVENT: true,
   OTHER: true,
 };
 const LITERAL_TYPES = { NUMBER: true, DATE: true, STRING: true };
@@ -127,11 +128,11 @@ class LLMColumnClassifierService {
 
     return latin1Safe(`
 You are given a set of table columns with sample cell values. For each column, classify its semantic type (NER-like)
-using the following allowed NER types only: PERSON, LOCATION, ORGANIZATION, OTHER, NUMBER, DATE, STRING.
+using the following allowed NER types only: PERSON, PLACE, ORGANIZATION, EVENT, OTHER, NUMBER, DATE, STRING.
 
 Then, for each column, also provide a "kind" value which must be one of: "entity", "literal", "unknown".
 The mapping rules are:
-- If NER is one of PERSON, LOCATION, ORGANIZATION, OTHER -> kind should be "entity"
+- If NER is one of PERSON, PLACE, ORGANIZATION, EVENT, OTHER -> kind should be "entity"
 - If NER is one of NUMBER, DATE, STRING -> kind should be "literal"
 - Otherwise -> kind should be "unknown"
 
@@ -145,20 +146,22 @@ Important:
     "name": "PERSON",
     "birthdate": "DATE",
     "salary": "NUMBER",
-    "city": "LOCATION"
+    "city": "PLACE",
+    "achievement_event": "EVENT"
   },
   "kind_classification": {
     "name": "entity",
     "birthdate": "literal",
     "salary": "literal",
-    "city": "entity"
+    "city": "entity",
+    "achievement_event": entity
   }
 }
 
 Columns and sample values:
 ${examples}
 
-Only use the allowed NER labels and the allowed kind values. If you're unsure, use "UNKNOWN" (for NER) and "unknown" (for kind).
+Only use the allowed NER labels and the allowed kind values. If you're unsure, use "UNDEFINED" (for NER) and "undefined" (for kind).
 Make sure keys match the column names exactly as provided above.
 `);
   }
@@ -171,16 +174,37 @@ Make sure keys match the column names exactly as provided above.
       let candidate = fenceMatch ? fenceMatch[1].trim() : input.trim();
 
       const firstBrace = candidate.indexOf("{");
-      const lastBrace = candidate.lastIndexOf("}");
 
-      if (firstBrace === -1 || lastBrace === -1) {
+      if (firstBrace === -1) {
         throw new Error("No JSON object found in response");
       }
 
-      const jsonStr = candidate.slice(firstBrace, lastBrace + 1);
+      // Try to parse with balanced braces instead of just finding last }
+      let braceCount = 0;
+      let lastValidBrace = -1;
+
+      for (let i = firstBrace; i < candidate.length; i++) {
+        if (candidate[i] === "{") {
+          braceCount++;
+        } else if (candidate[i] === "}") {
+          braceCount--;
+          if (braceCount === 0) {
+            lastValidBrace = i;
+            break; // Found the matching closing brace
+          }
+        }
+      }
+
+      if (lastValidBrace === -1) {
+        throw new Error("No matching closing brace found");
+      }
+
+      const jsonStr = candidate.slice(firstBrace, lastValidBrace + 1);
+      console.log("[LLM extractJson] Attempting to parse:", jsonStr);
       return JSON.parse(jsonStr);
     } catch (err) {
       console.error("[LLM extractJson] Invalid JSON string:", err.message);
+      console.error("[LLM extractJson] Raw response:", input);
       return null;
     }
   }
@@ -200,11 +224,11 @@ Make sure keys match the column names exactly as provided above.
         ...col,
         id: cleanId,
         label: col.label?.replace(/^\uFEFF/, "").trim() ?? cleanId,
-        kind: result.kind_classification?.[cleanId] ?? col.kind ?? "unknown",
-        nerClassification:
+        kind: result.kind_classification?.[cleanId] ?? col.kind ?? "Undefined",
+        datatype:
           result.ner_classification?.[cleanId] ??
-          col.nerClassification ??
-          "unknown",
+          col.datatype ??
+          "Undefined",
       };
     });
 

@@ -21,32 +21,24 @@ const ROUTE_PATTERNS = {
 // Raw body capture
 const getRawBody = (req) => {
   return new Promise((resolve) => {
-    // Skip if body already parsed or method doesn't have body
     if (req.body && Object.keys(req.body).length > 0) {
       return resolve(req.body);
     }
-
     if (req.method === "GET" || req.method === "OPTIONS") {
       return resolve({});
     }
-
-    // Skip if no content type or not JSON
     const contentType = req.headers["content-type"] || "";
     if (!contentType.includes("application/json")) {
       return resolve({});
     }
-
     let data = "";
     req.setEncoding("utf8");
-
     req.on("data", (chunk) => {
       data += chunk;
     });
-
     req.on("end", () => {
       try {
         const parsedData = data.length ? JSON.parse(data) : {};
-        // Store raw body for middleware access
         req._rawBody = parsedData;
         resolve(parsedData);
       } catch (e) {
@@ -59,42 +51,35 @@ const getRawBody = (req) => {
 
 export default async (req, res, next) => {
   try {
-    // Capture raw body before it's parsed by express.json()
     const rawBody = await getRawBody(req);
-    // Store it for later use
     req._rawBody = rawBody;
-    await routeLogs(req);
+    await routeLogs(req, res);
   } catch (error) {
     console.error("Error in logger middleware:", error);
-    // Log error but don't block the request
   }
-  // Always continue with next middleware
   next();
 };
 
-// Modified to use _rawBody if available
-async function routeLogs(req) {
+async function routeLogs(req, res) {
   const { method, url } = req;
-
-  // Skip OPTIONS requests
   if (method === "OPTIONS") {
     console.log("OPTIONS request, skipping logging.");
     return;
   }
   console.log("called url", url);
-  // Handle different route types
   if (url.includes(ROUTE_PATTERNS.RECONCILERS)) {
-    await handleReconciliationRoute(req, url);
+    await handleReconciliationRoute(req, res, url);
   } else if (url.includes(ROUTE_PATTERNS.EXTENDERS)) {
-    await handleExtenderRoute(req, url);
+    await handleExtenderRoute(req, res, url);
   } else if (url.includes(ROUTE_PATTERNS.MODIFIERS)) {
-    await handleModificationRoute(req, url);
+    await handleModificationRoute(req, res, url);
   } else if (ROUTE_PATTERNS.SAVE.test(url)) {
     await handleSaveRoute(req, method);
   } else if (url.includes(ROUTE_PATTERNS.EXPORT)) {
     handleExportOperation(req, url);
   }
 }
+
 async function handleExportOperation(req, url) {
   try {
     const taskInfos = await getTaskInfos(req);
@@ -106,84 +91,85 @@ async function handleExportOperation(req, url) {
     console.error("error handling export logging", error);
   }
 }
-async function handleReconciliationRoute(req, url) {
+
+async function handleReconciliationRoute(req, res, url) {
   const requestedReconciliation = extractServiceFromUrl(
     url,
     ROUTE_PATTERNS.RECONCILERS,
   );
   const taskInfos = await getTaskInfos(req);
 
-  // Only log if we have all the required information
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
+    const body = req._rawBody || req.body;
 
-    LoggerService.logReconciliation({
-      datasetId,
-      tableId,
-      columnName,
-      service: requestedReconciliation,
-      additionalData: req._rawBody || req.body,
+    // Log only after the response is sent and only on success.
+    interceptResponse(res, (_responseBody) => {
+      LoggerService.logReconciliation({
+        datasetId,
+        tableId,
+        columnName,
+        service: requestedReconciliation,
+        additionalData: body,
+      });
     });
   }
 }
 
-async function handleExtenderRoute(req, url) {
+async function handleExtenderRoute(req, res, url) {
   let requestedExtender = extractServiceFromUrl(url, ROUTE_PATTERNS.EXTENDERS);
   if (req.body && req.body.serviceId) {
     requestedExtender += `-${req.body.serviceId}`;
   }
   const taskInfos = await getTaskInfos(req);
   console.log("extension taskinfos", taskInfos);
-  // Only log if we have all the required information
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
 
-    console.log(
-      `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
-    );
-
-    LoggerService.logExtension({
-      datasetId,
-      tableId,
-      columnName,
-      service: requestedExtender,
-      additionalData: req._rawBody || req.body,
+    interceptResponse(res, (_responseBody) => {
+      console.log(
+        `📋 EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
+      );
+      LoggerService.logExtension({
+        datasetId,
+        tableId,
+        columnName,
+        service: requestedExtender,
+        additionalData: req._rawBody || req.body,
+      });
     });
   }
 }
 
-async function handleModificationRoute(req, url) {
+async function handleModificationRoute(req, res, url) {
   let requestedModifier = extractServiceFromUrl(url, ROUTE_PATTERNS.MODIFIERS);
   if (req.body && req.body.serviceId) {
     requestedModifier += `-${req.body.serviceId}`;
   }
   const taskInfos = await getTaskInfos(req);
   console.log("modification taskinfos", taskInfos);
-  // Only log if we have all the required information
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, columnName] = taskInfos;
 
-    console.log(
-        `📋 MODIFICATION LOGGED - Function: ${requestedModifier} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`
-    );
-
-    LoggerService.logModification({
-      datasetId,
-      tableId,
-      columnName,
-      service: requestedModifier,
-      additionalData: req._rawBody || req.body,
+    interceptResponse(res, (_responseBody) => {
+      console.log(
+        `📋 MODIFICATION LOGGED - Function: ${requestedModifier} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName}`,
+      );
+      LoggerService.logModification({
+        datasetId,
+        tableId,
+        columnName,
+        service: requestedModifier,
+        additionalData: req._rawBody || req.body,
+      });
     });
   }
 }
 
 async function handleSaveRoute(req, method) {
   const taskInfos = await getTaskInfos(req);
-
-  // Only log if we have all the required information
   if (taskInfos && taskInfos.length === 3) {
     const [tableId, datasetId, deletedCols] = taskInfos;
-
     if (method === "PUT") {
       LoggerService.logSave({ datasetId, tableId, deletedCols });
     }
@@ -200,6 +186,25 @@ async function handleSaveRoute(req, method) {
   }
 }
 
+/**
+ * Monkey-patches res.json so that `callback` is invoked with the response
+ * body right before the original json() sends it — but ONLY when the HTTP
+ * status code indicates success (2xx).  Errors are never logged.
+ */
+function interceptResponse(res, callback) {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    try {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        callback(body);
+      }
+    } catch (err) {
+      console.error("[logger] Error in post-response log callback:", err);
+    }
+    return originalJson(body);
+  };
+}
+
 function extractServiceFromUrl(url, pattern) {
   return url.split(pattern)[1].replace(/\/$/, "");
 }
@@ -208,16 +213,13 @@ async function getTaskInfos(req) {
   try {
     const tableDatasetInfo = req.headers["x-table-dataset-info"];
     if (!tableDatasetInfo) {
-      // Instead of throwing an error, log a debug message and return an empty array
       console.debug("x-table-dataset-info header not found, skipping log");
       return [];
     }
-
     const infoArray = tableDatasetInfo
       .split(";")
       .map((item) => item.split(":")[1]?.trim())
       .filter(Boolean);
-
     return infoArray;
   } catch (error) {
     console.error("Error extracting task infos:", error);

@@ -47,6 +47,8 @@ export default async (req, res) => {
               description: "",
               score: item.score,
               match: i === 0 ? true : false,
+              osmId: item.osmId,
+              osmType: item.osmType,
             };
           })
         : [];

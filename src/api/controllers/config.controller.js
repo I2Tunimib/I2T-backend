@@ -1,5 +1,6 @@
 import { error } from "console";
 import config from "../../config/index.js";
+import ComplianceService from "../services/tables/compliance.service.js";
 
 const {
   extenders: extConfig,
@@ -14,13 +15,6 @@ const getPublicConfiguration = (services) => {
       id: key,
       ...services[key].info.public,
     };
-    // Log extenders to verify skipFiltering is included
-    if (services[key].info.public.name === "CH Matching") {
-      console.log(
-        "[ConfigController] CH Matching extender config:",
-        JSON.stringify(publicConfig, null, 2),
-      );
-    }
     return publicConfig;
   });
 };
@@ -51,10 +45,12 @@ const ConfigController = {
     }
 
     try {
+      const complianceServices = [ComplianceService.getServiceMetadata()];
       res.json({
         reconcilers,
         extenders,
         modifiers,
+        complianceServices,
         errors,
       });
     } catch (err) {
