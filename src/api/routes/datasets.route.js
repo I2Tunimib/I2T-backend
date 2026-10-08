@@ -12,9 +12,9 @@ const router = Router();
  *   - name: Tables
  *     description: Table CRUD, export, compliance, and dependencies
  *   - name: Dataset ACL
- *     description: Dataset-level access control (viewers, editors, visibility)
+ *     description: Dataset-level access control (viewers, editors)
  *   - name: Table ACL
- *     description: Table-level access control (viewers, editors, visibility)
+ *     description: Table-level access control (viewers, editors, inherit/restricted)
  *   - name: Operations
  *     description: Operation log management (downstream deps, redo, delete)
  *   - name: Table Locks
@@ -657,6 +657,76 @@ router.delete(
   asyncMiddleware(DatasetsController.deleteOperation),
 );
 
+/**
+ * @swagger
+/dataset/{idDataset}/table/{idTable}/operation/{opId}/step:
+ *   delete:
+ *     summary: Remove a single operation from the log (no cascade)
+ *     description: >
+ *       Removes only the given operation from the log, with no downstream
+ *       deletion and no re-reconciliation. Intended for the toolbar's Undo,
+ *       which has already reverted the local table state — this just keeps
+ *       the backend operation log in sync.
+ *     tags: [Operations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/idDataset'
+ *       - $ref: '#/components/parameters/idTable'
+ *       - $ref: '#/components/parameters/opId'
+ *     responses:
+ *       200:
+ *         description: Deleted operation ID and updated dependency graph
+ *       401:
+ *         description: Unauthorized
+ *       423:
+ *         description: Table locked by another user
+ */
+router.delete(
+  "/:idDataset/table/:idTable/operation/:opId/step",
+  asyncMiddleware(DatasetsController.removeLoggedOperation),
+);
+
+/**
+ * @swagger
+/dataset/{idDataset}/table/{idTable}/operation/restore:
+ *   post:
+ *     summary: Restore a previously removed operation to the log
+ *     description: >
+ *       Re-appends the given operation record to the log with a fresh
+ *       opNumber/timestamp but the same id. Intended for the toolbar's Redo,
+ *       mirroring a prior Undo-triggered removal.
+ *     tags: [Operations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/idDataset'
+ *       - $ref: '#/components/parameters/idTable'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [operation]
+ *             properties:
+ *               operation:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Restored operation record and updated dependency graph
+ *       400:
+ *         description: Missing operation to restore
+ *       401:
+ *         description: Unauthorized
+ *       423:
+ *         description: Table locked by another user
+ */
+router.post(
+  "/:idDataset/table/:idTable/operation/restore",
+  asyncMiddleware(DatasetsController.restoreLoggedOperation),
+);
+
 // ---------------------------------------------------------------------------
 // Tracking
 // ---------------------------------------------------------------------------
@@ -770,38 +840,6 @@ router.post("/:idDataset/acl", asyncMiddleware(DatasetsController.addAclUser));
 router.delete(
   "/:idDataset/acl",
   asyncMiddleware(DatasetsController.removeAclUser),
-);
-
-/**
- * @swagger
-/dataset/{idDataset}/acl/visibility:
- *   post:
- *     summary: Set dataset visibility
- *     tags: [Dataset ACL]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - $ref: '#/components/parameters/idDataset'
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [visibility]
- *             properties:
- *               visibility:
- *                 type: string
- *                 enum: [public, private]
- *     responses:
- *       200:
- *         description: Updated dataset
- *       401:
- *         description: Unauthorized
- */
-router.post(
-  "/:idDataset/acl/visibility",
-  asyncMiddleware(DatasetsController.setVisibility),
 );
 
 // ---------------------------------------------------------------------------
@@ -926,7 +964,7 @@ router.delete(
  * @swagger
 /dataset/{idDataset}/table/{idTable}/acl/visibility:
  *   post:
- *     summary: Set table-level visibility
+ *     summary: Toggle a table between inheriting the dataset ACL and its own ACL
  *     tags: [Table ACL]
  *     security:
  *       - bearerAuth: []
@@ -943,7 +981,11 @@ router.delete(
  *             properties:
  *               visibility:
  *                 type: string
- *                 enum: [public, private]
+ *                 nullable: true
+ *                 enum: [restricted, inherit, null]
+ *                 description: >
+ *                   `restricted` = table keeps its own viewers/editors;
+ *                   `inherit`/`null` = table follows the dataset ACL.
  *     responses:
  *       200:
  *         description: Updated table metadata

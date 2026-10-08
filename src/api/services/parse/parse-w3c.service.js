@@ -265,7 +265,11 @@ const ParseW3C = {
           if (rowIndex === -1) {
             // to parse header and transform to initial state.
             // we need to add information after rows are parsed.
-            columns = ParseW3C.parseHeader(row, reconcilers);
+            // The W3C export wraps per-column headers under a "columns" key
+            // (alongside "compliance"/"permission" metadata); unwrap it so we
+            // read th0/th1/... as the actual columns instead of treating
+            // "compliance"/"permission"/"columns" themselves as columns.
+            columns = ParseW3C.parseHeader(row.columns || row, reconcilers);
             // pass to next iteration
             rowIndex += 1;
             continue;

@@ -7,6 +7,7 @@ const {
   reconcilers: reconConfig,
   modifiers: modConfig,
   errors,
+  ANNOTATION_QUICKVIEW_URL,
 } = config;
 
 const getPublicConfiguration = (services) => {
@@ -52,6 +53,7 @@ const ConfigController = {
         modifiers,
         complianceServices,
         errors,
+        annotationQuickViewUrl: ANNOTATION_QUICKVIEW_URL,
       });
     } catch (err) {
       next(err);

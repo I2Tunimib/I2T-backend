@@ -143,12 +143,9 @@ const DatasetsController = {
   },
   getTable: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
-    //testing the logger
     const LogFile = new Log(idDataset, idTable);
     LogFile.buildDependencyGraph();
     LogFile.pruneNonConsolidated();
-    LogFile.optimize();
-    console.log("Log file json", LogFile);
     try {
       const user = await AuthService.verifyToken(req);
       const dataset = await DatasetsService.findOneDataset(idDataset);
@@ -160,10 +157,13 @@ const DatasetsController = {
       if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
         return res.status(401).json({});
       }
-      const isOwner = String(dataset.userId) === String(user.id);
-      const isEditor = tableMeta.editors?.map(String).includes(String(user.id)) ||
-        dataset.editors?.map(String).includes(String(user.id));
-      const permissionType = (isOwner || isEditor) ? 'rw' : 'ro';
+      const permissionType = DatasetsService.tableUserCanEdit(
+        dataset,
+        tableMeta,
+        user.id,
+      )
+        ? "rw"
+        : "ro";
 
       const tableData = await DatasetsService.findTable(idDataset, idTable);
       const tableDataWithPerm = {
@@ -424,7 +424,24 @@ const DatasetsController = {
         });
       }
 
-      res.json(await DatasetsService.updateTable(data));
+      const result = await DatasetsService.updateTable(data);
+
+      // Collapse redundant consecutive reconciliations now that the table
+      // has been saved. Cleanup failures must not fail the save itself.
+      try {
+        const optimizeLog = new Log(tableInstance.idDataset, tableId);
+        optimizeLog.buildDependencyGraph();
+        const removed = optimizeLog.optimize();
+        if (removed.length > 0) {
+          console.log(
+            `[optimize] Removed ${removed.length} redundant reconciliation op(s) for table ${tableId}`,
+          );
+        }
+      } catch (err) {
+        console.error("[optimize] Failed to optimize dependency pipeline:", err);
+      }
+
+      res.json(result);
     } catch (err) {
       next(err);
     }
@@ -552,15 +569,22 @@ const DatasetsController = {
       const dataset = await DatasetsService.findOneDataset(idDataset);
       const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
 
-      const isOwner = String(dataset.userId) === String(user.id);
-      const isEditor = tableMeta.editors?.map(String).includes(String(user.id)) ||
-        dataset.editors?.map(String).includes(String(user.id));
-      const permissionType = (isOwner || isEditor) ? 'rw' : 'ro';
+      const permissionType = DatasetsService.tableUserCanEdit(
+        dataset,
+        tableMeta,
+        user.id,
+      )
+        ? "rw"
+        : "ro";
 
       const tableInstance = {
         ...table?.table,
         permission: permissionType,
-        visibility: tableMeta.visibility !== undefined ? tableMeta.visibility : null
+        visibility:
+          tableMeta.visibility === "restricted" ||
+          tableMeta.visibility === "private"
+            ? "restricted"
+            : null,
       };
 
       //workaround to handle different rdf formats
@@ -584,6 +608,7 @@ const DatasetsController = {
 
       const exportPayload = {
         ...table,
+        ...req.query,
         ...req.body,
         datasetId: idDataset,
         tableId: idTable,
@@ -889,6 +914,101 @@ const DatasetsController = {
     }
   },
 
+  /**
+   * Remove exactly one operation from the log — no downstream cascade, no
+   * re-reconciliation. Used by the toolbar's Undo: the local table state has
+   * already been reverted via the frontend's Redux undo stack, so this only
+   * needs to keep the backend's operation log in sync with what's now
+   * visible. Only ever called for the single most-recently-logged operation
+   * (the tip of its column's chain), so there is nothing downstream to
+   * relink.
+   */
+  removeLoggedOperation: async (req, res, next) => {
+    const { idDataset, idTable, opId } = req.params;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      if (!DatasetsService.userCanEdit(dataset, user.id))
+        return res.status(401).json({});
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id))
+        return res.status(401).json({});
+
+      const tableLock = TableLockService.getTableLock(idTable);
+      if (tableLock && String(tableLock.userId) !== String(user.id)) {
+        console.log(
+          `[LOCK] User ${user.id} attempted to undo operation on table ${idTable} locked by ${tableLock.userId}`,
+        );
+        return res.status(423).json({
+          error: "Table is currently being edited by another user",
+          lockedBy: tableLock.userId,
+          lockedSince: tableLock.timestamp,
+        });
+      }
+
+      const log = new Log(idDataset, idTable);
+      log.deleteOperationsFromLog([opId]);
+
+      const freshLog = new Log(idDataset, idTable);
+      freshLog.buildDependencyGraph();
+      const dependencies = freshLog.getObject();
+
+      res.json({ deleted: [opId], dependencies });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  /**
+   * Re-append a previously removed operation to the log (mirror of
+   * removeLoggedOperation). Used by the toolbar's Redo to restore an
+   * operation that Undo had removed; the request body carries the exact
+   * operation record the frontend cached before it was undone.
+   */
+  restoreLoggedOperation: async (req, res, next) => {
+    const { idDataset, idTable } = req.params;
+    const { operation } = req.body ?? {};
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+      if (!DatasetsService.userCanEdit(dataset, user.id))
+        return res.status(401).json({});
+      const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+      if (!DatasetsService.tableUserCanEdit(dataset, tableMeta, user.id))
+        return res.status(401).json({});
+
+      if (!operation || !operation.id) {
+        return res.status(400).json({ error: "Missing operation to restore" });
+      }
+
+      const tableLock = TableLockService.getTableLock(idTable);
+      if (tableLock && String(tableLock.userId) !== String(user.id)) {
+        console.log(
+          `[LOCK] User ${user.id} attempted to redo operation on table ${idTable} locked by ${tableLock.userId}`,
+        );
+        return res.status(423).json({
+          error: "Table is currently being edited by another user",
+          lockedBy: tableLock.userId,
+          lockedSince: tableLock.timestamp,
+        });
+      }
+
+      const log = new Log(idDataset, idTable);
+      const restored = log.restoreOperation(operation);
+      if (!restored) {
+        return res.status(404).json({ error: "Could not restore operation" });
+      }
+
+      const freshLog = new Log(idDataset, idTable);
+      freshLog.buildDependencyGraph();
+      const dependencies = freshLog.getObject();
+
+      res.json({ restored, dependencies });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   // ACL management endpoints
   addAclUser: async (req, res, next) => {
     const { idDataset } = req.params;
@@ -924,22 +1044,6 @@ const DatasetsController = {
     }
   },
 
-  setVisibility: async (req, res, next) => {
-    const { idDataset } = req.params;
-    const { visibility } = req.body;
-    try {
-      const acting = await AuthService.verifyToken(req);
-      const result = await DatasetsService.setVisibility(
-        idDataset,
-        visibility,
-        acting,
-      );
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  },
-
   // Table ACL management endpoints
   getTableAcl: async (req, res, next) => {
     const { idDataset, idTable } = req.params;
@@ -956,7 +1060,11 @@ const DatasetsController = {
         id: tableMeta.id,
         idDataset: tableMeta.idDataset,
         name: tableMeta.name,
-        visibility: tableMeta.visibility ?? null,
+        visibility:
+          tableMeta.visibility === "restricted" ||
+          tableMeta.visibility === "private"
+            ? "restricted"
+            : null,
         viewers: tableMeta.viewers || [],
         editors: tableMeta.editors || [],
         datasetOwnerId: dataset.userId,

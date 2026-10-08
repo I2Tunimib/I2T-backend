@@ -201,6 +201,7 @@ Here are the key environment variables you can configure:
 | `MANTIS` | Mantis service URL | - | No |
 | `MANTIS_AUTH_TOKEN` | Mantis authentication token | - | No |
 | `RECAPTCHA_SECRET_KEY` | reCAPTCHA secret key | - | No |
+| `ANNOTATION_QUICKVIEW_URL` | Base URL of the semTProxy quickView page; forwarded to the frontend via `/config` and used by the "Open in quickView" button in the annotated-text metadata view. When empty the button is hidden. | - | No |
 
 ## API Documentation
 

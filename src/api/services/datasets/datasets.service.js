@@ -19,22 +19,22 @@ const { getDatasetDbPath, getTablesDbPath, getDatasetFilesPath, getTmpPath } =
   config.helpers;
 
 // --- Access control helpers ---
+// Access is granted purely through explicit role assignments on the resource:
+//   - dataset owner  (dataset.userId)
+//   - dataset viewers / editors  (dataset.viewers[] / dataset.editors[])
+//   - table  viewers / editors   (table.viewers[]  / table.editors[])
+// There is no "public" bypass: every grant is an explicit (user, role, resource)
+// assignment.
+const inList = (list, uid) =>
+  Array.isArray(list) && list.map(String).includes(uid);
+
 const userHasViewAccess = (dataset, userId) => {
   if (!dataset) return false;
   const uid = userId === null || userId === undefined ? null : String(userId);
   if (!uid) return false;
   if (String(dataset.userId) === uid) return true; // owner
-  if (dataset.visibility === "public") return true; // public
-  if (
-    Array.isArray(dataset.viewers) &&
-    dataset.viewers.map(String).includes(uid)
-  )
-    return true;
-  if (
-    Array.isArray(dataset.editors) &&
-    dataset.editors.map(String).includes(uid)
-  )
-    return true;
+  if (inList(dataset.viewers, uid)) return true;
+  if (inList(dataset.editors, uid)) return true;
   return false;
 };
 
@@ -43,18 +43,17 @@ const userHasEditAccess = (dataset, userId) => {
   const uid = userId === null || userId === undefined ? null : String(userId);
   if (!uid) return false;
   if (String(dataset.userId) === uid) return true; // owner
-  if (dataset.visibility === "public") return true; // public datasets may be edited by any authenticated user
-  if (
-    Array.isArray(dataset.editors) &&
-    dataset.editors.map(String).includes(uid)
-  )
-    return true;
+  if (inList(dataset.editors, uid)) return true;
   return false;
 };
 
 // --- Table-level access control helpers ---
+// A table has its own ACL when its visibility is "restricted".
+// null / "inherit" (and the legacy "public") mean "inherit the dataset ACL".
+// The legacy "private" value is treated as "restricted".
 const tableHasOwnACL = (table) =>
-  table && table.visibility !== undefined && table.visibility !== null;
+  !!table &&
+  (table.visibility === "restricted" || table.visibility === "private");
 
 // Combined dataset+table view check (most restrictive wins)
 const tableUserHasViewAccess = (dataset, table, userId) => {
@@ -64,16 +63,10 @@ const tableUserHasViewAccess = (dataset, table, userId) => {
   if (String(dataset.userId) === uid) return true;
   // Must pass dataset-level check first
   if (!userHasViewAccess(dataset, userId)) return false;
-  // No table-level ACL → dataset access is sufficient
+  // No table-level ACL → dataset access is sufficient (inherit)
   if (!tableHasOwnACL(table)) return true;
-  // Table is public → dataset access is sufficient
-  if (table.visibility === "public") return true;
-  // Table is private → check table viewers/editors
-  const isTableViewer =
-    Array.isArray(table.viewers) && table.viewers.map(String).includes(uid);
-  const isTableEditor =
-    Array.isArray(table.editors) && table.editors.map(String).includes(uid);
-  return isTableViewer || isTableEditor;
+  // Restricted table → must be explicitly listed on the table
+  return inList(table.viewers, uid) || inList(table.editors, uid);
 };
 
 // Combined dataset+table edit check (most restrictive wins)
@@ -84,14 +77,10 @@ const tableUserHasEditAccess = (dataset, table, userId) => {
   if (String(dataset.userId) === uid) return true;
   // Must pass dataset-level edit check first
   if (!userHasEditAccess(dataset, userId)) return false;
-  // No table-level ACL → dataset edit access is sufficient
+  // No table-level ACL → dataset edit access is sufficient (inherit)
   if (!tableHasOwnACL(table)) return true;
-  // Table is public → dataset edit access is sufficient
-  if (table.visibility === "public") return true;
-  // Table is private → only table editors can edit (viewers cannot)
-  const isTableEditor =
-    Array.isArray(table.editors) && table.editors.map(String).includes(uid);
-  return isTableEditor;
+  // Restricted table → only table editors can edit (viewers cannot)
+  return inList(table.editors, uid);
 };
 
 // Expose helpers as part of service later in the object
@@ -438,32 +427,12 @@ const FileSystemService = {
       },
     });
   },
-  findTablesByNameAndUser: async (query, userId) => {
-    const regex = new RegExp(query.toLowerCase());
-    return ParseService.readJsonFile({
-      path: getTablesDbPath(),
-      pattern: "tables.*",
-      condition: async (obj) => {
-        const dataset = await FileSystemService.findOneDataset(obj.idDataset);
-        return dataset.userId === userId && regex.test(obj.name.toLowerCase());
-      },
-    });
-  },
   findDatasetsByName: async (query) => {
     const regex = new RegExp(query.toLowerCase());
     return ParseService.readJsonFile({
       path: getDatasetDbPath(),
       pattern: "datasets.*",
       condition: (obj) => regex.test(obj.name.toLowerCase()),
-    });
-  },
-  findDatasetsByNameAndUser: async (query, userId) => {
-    const regex = new RegExp(query.toLowerCase());
-    return ParseService.readJsonFile({
-      path: getDatasetDbPath(),
-      pattern: "datasets.*",
-      condition: (obj) =>
-        userId === obj.userId && regex.test(obj.name.toLowerCase()),
     });
   },
   addDataset: async (filePath, datasetName, userId) => {
@@ -624,10 +593,10 @@ const FileSystemService = {
           name: datasetName,
           nTables: nFiles,
           lastModifiedDate: new Date().toISOString(),
-          // Access control fields
-          visibility: "private", // 'private' | 'public'
-          viewers: [], // array of user ids who can view
-          editors: [String(userId)], // array of user ids who can edit (owner included)
+          // Access control fields — access is granted only through these lists
+          // (plus the owner via userId). No "public" flag.
+          viewers: [], // user ids who can view
+          editors: [String(userId)], // user ids who can edit (owner included)
         };
         // add dataset entry
         console.log(
@@ -1154,29 +1123,6 @@ const FileSystemService = {
     return await FileSystemService.findOneDataset(datasetId);
   },
 
-  setVisibility: async (datasetId, visibility, actingUser) => {
-    if (!["private", "public"].includes(visibility))
-      throw new Error("Invalid visibility");
-    const dataset = await FileSystemService.findOneDataset(datasetId);
-    if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
-    // only owner can change visibility
-    if (String(dataset.userId) !== actingId) {
-      throw new Error("Unauthorized to modify visibility");
-    }
-    await writeQueue.push(async () => {
-      const raw = JSON.parse(await readFile(getDatasetDbPath()));
-      const { meta = {}, datasets = {} } = raw;
-      const ds = datasets[datasetId];
-      if (!ds) throw new Error("Dataset not found");
-      ds.visibility = visibility;
-      await writeFile(
-        getDatasetDbPath(),
-        JSON.stringify({ meta, datasets }, null, 2),
-      );
-    });
-    return await FileSystemService.findOneDataset(datasetId);
-  },
 
   // Table ACL modifiers (only dataset owner can modify)
   addTableAclUser: async (datasetId, tableId, targetUserId, role, actingUser) => {
@@ -1211,9 +1157,10 @@ const FileSystemService = {
       tbl[listKey] = tbl[listKey] || [];
       const uid = String(targetUserId);
       if (!tbl[listKey].map(String).includes(uid)) tbl[listKey].push(uid);
-      // Ensure private when viewers/editors are explicitly set
-      if (tbl.visibility === null || tbl.visibility === undefined)
-        tbl.visibility = "private";
+      // Adding an explicit table-level assignment switches the table to its
+      // own ACL (no longer inheriting the dataset).
+      if (tbl.visibility !== "restricted" && tbl.visibility !== "private")
+        tbl.visibility = "restricted";
       await writeFile(
         getTablesDbPath(),
         JSON.stringify({ meta, tables }, null, 2),
@@ -1254,29 +1201,31 @@ const FileSystemService = {
     return await FileSystemService.findOneTable(datasetId, tableId);
   },
 
+  // Toggle a table between inheriting the dataset ACL and having its own.
+  //   "restricted"        → table keeps its own viewers/editors
+  //   null / "inherit"    → table follows the dataset ACL (lists cleared)
   setTableVisibility: async (datasetId, tableId, visibility, actingUser) => {
-    if (!["private", "public", null].includes(visibility))
+    let mode;
+    if (visibility === "restricted" || visibility === "private")
+      mode = "restricted";
+    else if (visibility === null || visibility === "inherit") mode = null;
+    else
       throw new Error(
-        "Invalid visibility value (use 'private', 'public', or null to inherit)",
+        "Invalid visibility value (use 'restricted' or null/'inherit')",
       );
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
     const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId)
       throw new Error("Unauthorized to modify visibility");
-    // Enforce most-restrictive rule: table cannot be public if dataset is private
-    if (visibility === "public" && dataset.visibility === "private")
-      throw new Error(
-        "Cannot set table to public when dataset is private. The most restrictive permission (dataset private) always wins.",
-      );
     await writeQueue.push(async () => {
       const raw = JSON.parse(await readFile(getTablesDbPath()));
       const { meta = {}, tables = {} } = raw;
       const tbl = tables[tableId];
       if (!tbl) throw new Error("Table not found");
-      tbl.visibility = visibility;
-      // If inheriting from dataset (null), clear explicit viewers/editors
-      if (visibility === null) {
+      tbl.visibility = mode;
+      // If inheriting from dataset, clear explicit viewers/editors
+      if (mode === null) {
         tbl.viewers = [];
         tbl.editors = [];
       }
@@ -1292,11 +1241,13 @@ const FileSystemService = {
     const dataset = await this.findOneDataset(idDataset);
     const tableMeta = await this.findOneTable(idDataset, idTable);
 
-    const isOwner = String(dataset.userId) === String(userId);
-    const isEditor = tableMeta.editors?.map(String).includes(String(userId)) ||
-      dataset.editors?.map(String).includes(String(userId));
-
-    tableData.table.permission = (isOwner || isEditor) ? 'rw' : 'ro';
+    tableData.table.permission = tableUserHasEditAccess(
+      dataset,
+      tableMeta,
+      userId,
+    )
+      ? "rw"
+      : "ro";
     return tableData;
   },
 };

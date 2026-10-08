@@ -11,8 +11,10 @@ async function migrate() {
   let modified = false;
   for (const id of Object.keys(datasets)) {
     const ds = datasets[id];
-    if (!ds.visibility) {
-      ds.visibility = "private";
+    // Drop the obsolete "public/private" flag — access is now purely
+    // list-based. A previously "public" dataset becomes owner + list only.
+    if ("visibility" in ds) {
+      delete ds.visibility;
       modified = true;
     }
     if (!Array.isArray(ds.viewers)) {
@@ -27,7 +29,7 @@ async function migrate() {
   }
   if (modified) {
     await fs.writeFile(datasetDbPath, JSON.stringify({ meta, datasets }, null, 2));
-    console.log("Migration applied: added visibility/viewers/editors fields where missing.");
+    console.log("Migration applied: removed visibility, ensured viewers/editors.");
   } else {
     console.log("No migration needed.");
   }

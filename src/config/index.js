@@ -253,6 +253,7 @@ const loadConfig = async () => {
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
+    ANNOTATION_QUICKVIEW_URL: process.env.ANNOTATION_QUICKVIEW_URL || "",
     reconcilers,
     extenders,
     modifiers,

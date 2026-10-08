@@ -210,8 +210,10 @@ class LoggerJsonService {
       );
 
       fs.appendFileSync(logPath, JSON.stringify(logEntry) + "\n");
+      return logEntry;
     } catch (error) {
       console.error(`Error writing to ${operationType} JSON log:`, error);
+      return null;
     }
   }
 
