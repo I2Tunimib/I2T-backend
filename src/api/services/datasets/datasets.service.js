@@ -672,7 +672,30 @@ const FileSystemService = {
     });
     return { datasets: newDatasets, tables: newTables };
   },
+  updateDataset: async (datasetId, updateData) => {
+    const dataset = await FileSystemService.findOneDataset(datasetId);
+    if (!dataset) throw new Error("Dataset not found");
 
+    let updatedDataset = {};
+    await writeQueue.push(async () => {
+      const raw = JSON.parse(await readFile(getDatasetDbPath()));
+      const { meta = {}, datasets = {} } = raw;
+      const ds = datasets[datasetId];
+      if (!ds) throw new Error("Dataset not found");
+      updatedDataset = {
+        ...ds,
+        ...updateData,
+        lastModifiedDate: new Date().toISOString(),
+      };
+      datasets[datasetId] = updatedDataset;
+      await writeFile(
+        getDatasetDbPath(),
+        JSON.stringify({ meta, datasets }, null, 2),
+      );
+    });
+
+    return updatedDataset;
+  },
   removeDataset: async (datasetId) => {
     await writeQueue.push(async () => {
       try {

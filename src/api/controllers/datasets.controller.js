@@ -244,6 +244,23 @@ const DatasetsController = {
       next(err);
     }
   },
+  updateDataset: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const updateData = req.body;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+
+      if (!DatasetsService.userCanEdit(dataset, user.id)) {
+        return res.status(401).json();
+      }
+
+      const updated = await DatasetsService.updateDataset(idDataset, updateData, user);
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  },
   removeDataset: async (req, res, next) => {
     const { idDataset } = req.params;
     try {

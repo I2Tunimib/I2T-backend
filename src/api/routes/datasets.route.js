@@ -150,6 +150,35 @@ router.post("/", asyncMiddleware(DatasetsController.addDataset));
 
 /**
  * @swagger
+ * /dataset/{idDataset}:
+ *   put:
+ *     summary: Update a dataset's metadata (e.g. name)
+ *     tags: [Datasets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/idDataset'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Updated dataset object
+ *       401:
+ *         description: Unauthorized — must be dataset owner or editor
+ *       404:
+ *         description: Dataset not found
+ */
+router.put("/:idDataset", asyncMiddleware(DatasetsController.updateDataset));
+
+/**
+ * @swagger
 /dataset/{idDataset}:
  *   delete:
  *     summary: Delete a dataset and all its tables
