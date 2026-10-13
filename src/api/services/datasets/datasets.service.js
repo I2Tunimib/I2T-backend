@@ -215,10 +215,26 @@ const FileSystemService = {
   findDatasetsByUser: async (id) => {
     // Return datasets the user can view: owner, public, viewers or editors
     const raw = JSON.parse(await readFile(getDatasetDbPath()));
+    const tablesRaw = JSON.parse(await readFile(getTablesDbPath()));
     const { meta = {}, datasets = {} } = raw;
-    const coll = Object.values(datasets).filter((d) =>
-      userHasViewAccess(d, id),
-    );
+    const { tables = {} } = tablesRaw;
+
+    const uid = String(id);
+
+    const coll = Object.values(datasets).filter((d) => {
+      if (userHasViewAccess(d, id)) return true;
+
+      // Check if user viewer or editor of a table but not of the table's dataset
+      const hasAccessToTable = Object.values(tables).some(
+        (t) =>
+          String(t.idDataset) === String(d.id) &&
+          ((Array.isArray(t.viewers) && t.viewers.map(String).includes(uid)) ||
+            (Array.isArray(t.editors) && t.editors.map(String).includes(uid)))
+      );
+
+      return hasAccessToTable;
+    });
+
     return {
       meta: COLLECTION_DATASETS_MAP,
       collection: coll,
@@ -229,11 +245,26 @@ const FileSystemService = {
     const regex = new RegExp(query.toLowerCase());
     // Return datasets matching name that the user can view
     const raw = JSON.parse(await readFile(getDatasetDbPath()));
+    const tablesRaw = JSON.parse(await readFile(getTablesDbPath()));
     const { datasets = {} } = raw;
-    return Object.values(datasets).filter(
-      (obj) =>
-        userHasViewAccess(obj, userId) && regex.test(obj.name.toLowerCase()),
-    );
+    const { tables = {} } = tablesRaw;
+    const uid = String(userId);
+
+    return Object.values(datasets).filter((obj) => {
+      const matchesName = regex.test(obj.name.toLowerCase());
+      if (!matchesName) return false;
+      if (userHasViewAccess(obj, userId)) return true;
+
+      // Check if user viewer or editor of a table but not of the table's dataset
+      const hasAccessToTable = Object.values(tables).some(
+        (t) =>
+          String(t.idDataset) === String(obj.id) &&
+          ((Array.isArray(t.viewers) && t.viewers.map(String).includes(uid)) ||
+            (Array.isArray(t.editors) && t.editors.map(String).includes(uid)))
+      );
+
+      return hasAccessToTable;
+    });
   },
 
   findTablesByNameAndUser: async (query, userId) => {
@@ -626,7 +657,7 @@ const FileSystemService = {
           lastModifiedDate: new Date().toISOString(),
           // Access control fields
           visibility: "private", // 'private' | 'public'
-          viewers: [], // array of user ids who can view
+          viewers: [String(userId)], // array of user ids who can view (owner included)
           editors: [String(userId)], // array of user ids who can edit (owner included)
         };
         // add dataset entry
@@ -881,8 +912,8 @@ const FileSystemService = {
             nCellsReconciliated: data.nCellsReconciliated,
             lastModifiedDate: new Date().toISOString(),
             visibility: null,
-            viewers: [],
-            editors: [],
+            viewers: [String(datasets[idDataset].userId)],  // array of user ids who can view (owner included)
+            editors: [String(datasets[idDataset].userId)],  // array of user ids who can edit (owner included)
           };
 
           datasets[idDataset] = {
@@ -1217,6 +1248,7 @@ const FileSystemService = {
       (u) => String(u.id) === String(targetUserId),
     );
     if (!target) throw new Error("Target user not found in users DB");
+    /*{
     if (role === "editor") {
       const targetRoles = target.roles || [];
       if (!(targetRoles.includes("admin") || targetRoles.includes("editor")))
@@ -1224,23 +1256,39 @@ const FileSystemService = {
           "Target user does not have admin/editor role and cannot be made table editor",
         );
     }
+     */
 
     const listKey = role === "editor" ? "editors" : "viewers";
+    const uid = String(targetUserId);
     await writeQueue.push(async () => {
-      const raw = JSON.parse(await readFile(getTablesDbPath()));
-      const { meta = {}, tables = {} } = raw;
+      const rawTables = JSON.parse(await readFile(getTablesDbPath()));
+      const { meta: metaTables, tables = {} } = rawTables;
       const tbl = tables[tableId];
       if (!tbl) throw new Error("Table not found");
       tbl[listKey] = tbl[listKey] || [];
-      const uid = String(targetUserId);
       if (!tbl[listKey].map(String).includes(uid)) tbl[listKey].push(uid);
-      // Ensure private when viewers/editors are explicitly set
+
       if (tbl.visibility === null || tbl.visibility === undefined)
         tbl.visibility = "private";
+
       await writeFile(
         getTablesDbPath(),
-        JSON.stringify({ meta, tables }, null, 2),
+        JSON.stringify({ meta: metaTables, tables }, null, 2),
       );
+
+      const rawDatasets = JSON.parse(await readFile(getDatasetDbPath()));
+      const { meta: metaDatasets, datasets = {} } = rawDatasets;
+      const ds = datasets[datasetId];
+      if (ds) {
+        ds.viewers = ds.viewers || [];
+        if (!ds.viewers.map(String).includes(uid)) {
+          ds.viewers.push(uid);
+          await writeFile(
+            getDatasetDbPath(),
+            JSON.stringify({ meta: metaDatasets, datasets }, null, 2),
+          );
+        }
+      }
     });
     return await FileSystemService.findOneTable(datasetId, tableId);
   },
