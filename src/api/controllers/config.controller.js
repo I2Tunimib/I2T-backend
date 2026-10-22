@@ -52,6 +52,7 @@ const ConfigController = {
         modifiers,
         complianceServices,
         errors,
+        policyEditorUrl: process.env.POLICY_EDITOR_URL,
       });
     } catch (err) {
       next(err);
