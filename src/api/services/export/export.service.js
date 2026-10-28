@@ -115,6 +115,7 @@ const ExportService = {
           ? complianceReports[complianceReports.length - 1]?.result[0]?.table?.score
           : "",
       },
+      odrlPolicies: tableInstance?.odrlPolicies,
       permission: tableInstance?.permission,
       columns: Object.keys(columns || {}).reduce((acc, colId, index) => {
         const col = columns[colId] || {};

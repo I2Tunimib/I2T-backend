@@ -972,6 +972,7 @@ const FileSystemService = {
       maxMetaScore,
       compliance,
       complianceReports,
+      odrlPolicies,
     } = tableInstance;
     const { byId: columns, allIds: allIdsCols } = columnsRaw;
     const { byId: rows, allIds: allIdsRows } = rowsRaw;
@@ -997,6 +998,7 @@ const FileSystemService = {
         lastModifiedDate: new Date().toISOString(),
         ...(compliance && { compliance }),
         ...(complianceReports && { complianceReports }),
+        ...(odrlPolicies && { odrlPolicies }),
       };
 
       // update table entry

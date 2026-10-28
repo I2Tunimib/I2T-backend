@@ -576,6 +576,7 @@ const DatasetsController = {
 
       const tableInstance = {
         ...table?.table,
+        odrlPolicies: tableMeta?.odrlPolicies || null,
         permission: permissionType,
         visibility: tableMeta.visibility !== undefined ? tableMeta.visibility : null
       };
