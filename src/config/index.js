@@ -254,6 +254,7 @@ const loadConfig = async () => {
     JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
     RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
     POLICY_EDITOR_BASE_URL: process.env.POLICY_EDITOR_BASE_URL,
+    POLICY_ENGINE_BASE_URL: process.env.POLICY_ENGINE_BASE_URL,
     reconcilers,
     extenders,
     modifiers,
