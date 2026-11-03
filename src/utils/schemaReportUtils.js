@@ -201,12 +201,12 @@ export const buildHtmlReport = (data) => {
       : `<p style="margin: 2px 0; font-size: 13px; font-weight: bold;">Incoming Links: <span style="color: #718096; font-weight: normal; font-style: italic; margin-left: 5px;">None</span></p>`;
 
     const getComplianceDescription = (th) => {
-      if (th.compliance.classification) {
+      if (th.compliance?.classification) {
         return `
         <div style="margin: 10px 0; padding: 12px; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
           <p style="margin: 0;">
-            This column contains <strong>${labels[th.compliance.classification]}</strong> and is <strong>${th.compliance.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}</strong> 
-            with a confidence score of <strong>${Math.round((th.compliance.score ?? 0) * 100)}%</strong>.
+            This column contains <strong>${labels[th.compliance?.classification]}</strong> and is <strong>${th.compliance?.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}</strong> 
+            with a confidence score of <strong>${Math.round((th.compliance?.score ?? 0) * 100)}%</strong>.
            </p>
          </div>
       `;
@@ -568,8 +568,8 @@ export const buildMarkdownReport = (data) => {
     md += `**Outgoing Relations:**\n${outgoing.length > 0 ? groupLinksMd(outgoing, true) : "None"}\n\n`;
     md += `**Incoming Relations:**\n${incoming.length > 0 ? groupLinksMd(incoming, false) : "None"}\n\n`;
 
-    const gdprDesc = `This column contains **${labels[th.compliance.classification] || 'n/a'}** and is **${th.compliance.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}** 
-    with a confidence score of ${Math.round((th.compliance.score ?? 0) * 100)}%.`;
+    const gdprDesc = `This column contains **${labels[th.compliance?.classification] || 'n/a'}** and is **${th.compliance?.status === "yesGDPR" ? "GDPR complaint" : "GDPR NON-complaint"}** 
+    with a confidence score of ${Math.round((th.compliance?.score ?? 0) * 100)}%.`;
 
     if (isComplianceDone) {
       md += `${gdprDesc}\n\n`;
