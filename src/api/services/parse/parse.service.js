@@ -345,6 +345,21 @@ const ParseService = {
       return fs.createReadStream(entryPath);
     };
 
+    try {
+      const fileContent = fs.readFileSync(entryPath, 'utf8');
+      const firstChunk = JSON.parse(fileContent.trim().substring(0, 3000) + (fileContent.endsWith(']') ? '' : ']'));
+
+      const isW3CFormat = Array.isArray(firstChunk) && firstChunk.length > 0 &&
+          (firstChunk[0].columns || firstChunk[0].compliance);
+
+      if (isW3CFormat) {
+        const parseW3CResult = await ParseW3C.parse(getStream());
+        if (parseW3CResult.status === "success") {
+          return parseW3CResult.data;
+        }
+      }
+    } catch (e) {}
+
     const parsedCsvResult = await ParseService.parseCsv(getStream());
 
     if (parsedCsvResult.status === "success") {

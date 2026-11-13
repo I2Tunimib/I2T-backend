@@ -896,7 +896,44 @@ const FileSystemService = {
           metaTables.lastIndex += 1;
           // transform to app format and write to file
           const data = await ParseService.parse(`tmp/${tmpEntryId}`);
+          let complianceReports = [];
+          if (data.complianceReports && data.complianceReports.length > 0) {
+            if (data.columns) {
+              let columnResults = [];
 
+              Object.keys(data.columns).forEach((colKey) => {
+                const col = data.columns[colKey];
+                if (col.compliance) {
+                  columnResults.push({
+                    [col.label || colKey]: {
+                      classification: col.compliance.classification || "",
+                      action: col.compliance.action || "",
+                      reasoning: col.compliance.reasoning || "",
+                      score: col.compliance.score || ""
+                    }
+                  });
+                }
+              });
+
+              complianceReports = data.complianceReports.map(rep => ({
+                userId: "unknown",
+                date: new Date().toISOString(),
+                serviceName: rep.serviceName,
+                result: [
+                  {
+                    table: {
+                      gdpr: rep.result[0].table.gdpr,
+                      reasoning: rep.result[0].table.reasoning,
+                      score: rep.result[0].table.score
+                    }
+                  },
+                  ...columnResults
+                ]
+              }));
+            }
+          }
+
+          const complianceStatus = complianceReports.length > 0 ? "DONE" : null;
           await writeFile(
             `${datasetFolderPath}/${metaTables.lastIndex}.json`,
             JSON.stringify(data),
@@ -914,6 +951,8 @@ const FileSystemService = {
             visibility: null,
             viewers: [String(datasets[idDataset].userId)],  // array of user ids who can view (owner included)
             editors: [String(datasets[idDataset].userId)],  // array of user ids who can edit (owner included)
+            ...(complianceStatus && { complianceStatus }),
+            ...(complianceReports.length > 0 && { complianceReports }),
           };
 
           datasets[idDataset] = {
@@ -1145,7 +1184,7 @@ const FileSystemService = {
     // only owner can modify ACL
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    const actingId = actingUser && actingUser.id !== undefined && actingUser.id !== null ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId) {
       throw new Error("Unauthorized to modify ACL");
     }
@@ -1189,7 +1228,7 @@ const FileSystemService = {
     }
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    const actingId = actingUser && actingUser.id !== undefined && actingUser.id !== null ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId) {
       throw new Error("Unauthorized to modify ACL");
     }
@@ -1215,7 +1254,7 @@ const FileSystemService = {
       throw new Error("Invalid visibility");
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    const actingId = actingUser && actingUser.id !== undefined && actingUser.id !== null ? String(actingUser.id) : null;
     // only owner can change visibility
     if (String(dataset.userId) !== actingId) {
       throw new Error("Unauthorized to modify visibility");
@@ -1241,7 +1280,7 @@ const FileSystemService = {
     }
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    const actingId = actingUser && actingUser.id !== undefined && actingUser.id !== null ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId)
       throw new Error("Unauthorized to modify ACL");
     const usersPath = config.helpers.getUsersPath();
@@ -1307,7 +1346,7 @@ const FileSystemService = {
     }
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    const actingId = actingUser && actingUser.id !== undefined && actingUser.id !== null ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId)
       throw new Error("Unauthorized to modify ACL");
     const listKey = role === "editor" ? "editors" : "viewers";
@@ -1334,7 +1373,7 @@ const FileSystemService = {
       );
     const dataset = await FileSystemService.findOneDataset(datasetId);
     if (!dataset) throw new Error("Dataset not found");
-    const actingId = actingUser && actingUser.id ? String(actingUser.id) : null;
+    const actingId = actingUser && actingUser.id !== undefined && actingUser.id !== null ? String(actingUser.id) : null;
     if (String(dataset.userId) !== actingId)
       throw new Error("Unauthorized to modify visibility");
     // Enforce most-restrictive rule: table cannot be public if dataset is private
