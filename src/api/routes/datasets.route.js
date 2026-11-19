@@ -572,6 +572,125 @@ router.get(
 );
 
 // ---------------------------------------------------------------------------
+// Policy Engine
+// ---------------------------------------------------------------------------
+
+
+/**
+ * @swagger
+ * /dataset/{idDataset}/table/{idTable}/evaluate:
+ *   post:
+ *     summary: Evaluate an ODRL policy against the State of the World (SotW)
+ *     description: >
+ *       Evaluates an ODRL policy (JSON-LD) against the State of the World (CSV)
+ *       and returns compliance status along with any rows violating permissions or prohibitions.
+ *     tags: [Tables]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/idDataset'
+ *       - $ref: '#/components/parameters/idTable'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [policy, sotw]
+ *             properties:
+ *               policy:
+ *                 type: string
+ *                 description: ODRL policy serialized as a JSON-LD string
+ *               sotw:
+ *                 type: string
+ *                 description: State of the World serialized as a CSV string
+ *     responses:
+ *       200:
+ *         description: Policy evaluation result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ *                   description: Whether the State of the World is compliant with the policy
+ *                 rows_violating_permissions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                   description: Rows that violated defined permissions
+ *                 rows_violating_prohibitions:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                   description: Rows that violated defined prohibitions
+ *       400:
+ *         description: Missing or malformed policy / SotW input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Dataset or table not found
+ */
+router.post(
+  "/:idDataset/table/:idTable/evaluate",
+  asyncMiddleware(DatasetsController.evaluatePolicyOnSotw)
+);
+
+/**
+ * @swagger
+ * /dataset/{idDataset}/table/{idTable}/validate:
+ *   post:
+ *     summary: Validate an ODRL policy using SHACL shapes
+ *     description: >
+ *       Validates the structural correctness of an ODRL policy
+ *       for the specified table against SHACL validation rules.
+ *     tags: [Tables]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/idDataset'
+ *       - $ref: '#/components/parameters/idTable'
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [policy]
+ *             properties:
+ *               policy:
+ *                 type: string
+ *                 description: ODRL policy serialized as a JSON-LD string
+ *     responses:
+ *       200:
+ *         description: SHACL validation report
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 conforms:
+ *                   type: boolean
+ *                   description: Whether the policy conforms to the SHACL shapes
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                   description: Detailed SHACL validation violations or warnings
+ *       400:
+ *         description: Missing or invalid policy payload
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Dataset or table not found
+ */
+router.post(
+  "/:idDataset/table/:idTable/validate",
+  asyncMiddleware(DatasetsController.shaclPolicyValidator)
+);
+
+// ---------------------------------------------------------------------------
 // Operations
 // ---------------------------------------------------------------------------
 
