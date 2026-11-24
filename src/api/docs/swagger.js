@@ -44,7 +44,6 @@ const options = {
             id: { type: "string" },
             name: { type: "string" },
             userId: { type: "integer" },
-            visibility: { type: "string", enum: ["public", "private"] },
             viewers: { type: "array", items: { type: "integer" } },
             editors: { type: "array", items: { type: "integer" } },
           },

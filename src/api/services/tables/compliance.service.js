@@ -110,8 +110,17 @@ class ComplianceService {
           },
         ],
         temperature: 0.3, // Lower temperature for more consistent/deterministic results
-        max_tokens: 4000, // Ensure enough tokens for complete response with all columns
+        // Reasoning per column makes the output grow with table width; reasoning models also spend this budget on thinking
+        max_tokens: Number(process.env.LLM_MAX_TOKENS) || 16000,
       });
+
+      if (completion.choices[0]?.finish_reason === "length") {
+        console.error(
+          "[makeCompliance] LLM output truncated (finish_reason=length). Increase LLM_MAX_TOKENS or reduce the number of columns.",
+        );
+        await this.finishWithError({ idDataset, idTable, io });
+        return;
+      }
 
       const raw = completion.choices[0]?.message?.content;
       console.log("raw compliance results", raw);

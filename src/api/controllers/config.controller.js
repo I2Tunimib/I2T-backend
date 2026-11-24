@@ -7,6 +7,7 @@ const {
   reconcilers: reconConfig,
   modifiers: modConfig,
   errors,
+  ANNOTATION_QUICKVIEW_URL,
 } = config;
 
 const getPublicConfiguration = (services) => {
@@ -54,6 +55,7 @@ const ConfigController = {
         errors,
         policyEditorUrl: process.env.POLICY_EDITOR_URL,
         policyEngineUrl: process.env.POLICY_ENGINE_URL,
+        annotationQuickViewUrl: ANNOTATION_QUICKVIEW_URL,
       });
     } catch (err) {
       next(err);

@@ -255,6 +255,7 @@ const loadConfig = async () => {
     RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY,
     POLICY_EDITOR_BASE_URL: process.env.POLICY_EDITOR_BASE_URL,
     POLICY_ENGINE_BASE_URL: process.env.POLICY_ENGINE_BASE_URL,
+    ANNOTATION_QUICKVIEW_URL: process.env.ANNOTATION_QUICKVIEW_URL || "",
     reconcilers,
     extenders,
     modifiers,

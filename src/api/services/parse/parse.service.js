@@ -183,8 +183,10 @@ const ParseService = {
       // which — if not properly handled — can crash the process. Let callers decide how to clean up.
       throw err;
     } finally {
-      parser.removeAllListeners && parser.removeAllListeners("error");
-      passThrough.removeAllListeners && passThrough.removeAllListeners("error");
+      // Do NOT remove the 'error' listeners here. Throwing out of a `for await` loop makes
+      // Node implicitly destroy() the stream on a later tick, emitting an async 'error'
+      // (AbortError). Stripping the listeners now means that later event has nobody to catch
+      // it, which crashes the whole process instead of just failing this parse attempt.
     }
   },
   transformRow: (acc, row, index) => {

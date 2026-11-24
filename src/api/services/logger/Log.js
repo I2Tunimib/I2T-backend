@@ -1,6 +1,19 @@
 import fs from "fs";
 import util from "util";
 
+/**
+ * Column names sometimes reach us with (or without) a leading UTF-8 BOM
+ * (U+FEFF) — e.g. a CSV header that had one, echoed back inconsistently
+ * across the request body vs. an HTTP header (headers don't reliably carry
+ * non-Latin1 characters, so a BOM can silently vanish in transit for a
+ * columnName sent that way while the same name inside a JSON body keeps it).
+ * Every column-name lookup in this file goes through this so "Foo" and a
+ * BOM-prefixed "Foo" are always treated as the same column.
+ */
+function normalizeColName(name) {
+  return typeof name === "string" ? name.replace(/^\uFEFF/, "") : name;
+}
+
 export class Log {
   #operations = [];
   #columns = {};
@@ -18,7 +31,7 @@ export class Log {
     this.#parseLogFileJson();
     if (this.#tableData !== null && this.#tableData.columns) {
       for (const col of this.#tableData.columns) {
-        this.#columns[col] = { type: "original", lastOpId: null };
+        this.#columns[normalizeColName(col)] = { type: "original", lastOpId: null };
       }
     }
   }
@@ -48,9 +61,9 @@ export class Log {
       ) {
         for (const formItem of serviceConfiguration.public.formParams) {
           if (formItem.inputType === "multipleColumnSelect") {
-            return Object.keys(operation.additionalData[formItem.id]).filter(
-              (col) => col !== operation.columnName,
-            );
+            return Object.keys(operation.additionalData[formItem.id])
+              .map((col) => normalizeColName(col))
+              .filter((col) => col !== normalizeColName(operation.columnName));
           }
           if (formItem.inputType === "selectColumns") {
             const rows = operation.additionalData?.[formItem.id];
@@ -60,9 +73,10 @@ export class Log {
               if (
                 Array.isArray(firstRow) &&
                 firstRow[2] &&
-                firstRow[2] !== operation.columnName
+                normalizeColName(firstRow[2]) !==
+                  normalizeColName(operation.columnName)
               ) {
-                return [firstRow[2]];
+                return [normalizeColName(firstRow[2])];
               }
             }
           }
@@ -167,9 +181,13 @@ export class Log {
         index++;
       }
 
-      // Find the last SAVE_TABLE index to use as the consolidation boundary
+      // Find the last SAVE_TABLE index to use as the consolidation boundary.
+      // parsedLines is newest-first, so the most recent SAVE_TABLE is found
+      // by scanning forward from index 0 (not backward from the end, which
+      // would find the OLDEST save instead and wrongly treat everything
+      // after it — including already-saved history — as non-consolidated).
       let lastSaveTableIdx = -1;
-      for (let i = parsedLines.length - 1; i >= 0; i--) {
+      for (let i = 0; i < parsedLines.length; i++) {
         if (parsedLines[i] && parsedLines[i].operationType === "SAVE_TABLE") {
           lastSaveTableIdx = i;
           break;
@@ -210,7 +228,7 @@ export class Log {
       for (const op of orderedLines) {
         if (op.createdColumns) {
           for (const col of op.createdColumns) {
-            this.#columns[col] = {
+            this.#columns[normalizeColName(col)] = {
               type: "created",
               lastOpId: null,
               createdBy: op.id,
@@ -221,7 +239,7 @@ export class Log {
     }
   }
   #appendOperationNode(operation) {
-    const opColName = operation.columnName;
+    const opColName = normalizeColName(operation.columnName);
     const sup = this.#getOpSupportColumns(operation);
 
     // Skip operations with no column name to avoid polluting #columns with an "undefined" key
@@ -339,17 +357,14 @@ export class Log {
           break;
         case "RECONCILIATION":
           if (lastOp.operationType === "RECONCILIATION") {
-            let parent = this.#getCurrentColParent(
-              lastOp,
-              operation.columnName,
-            );
-            // Fall back to the direct last op when no matching ancestor exists
-            // (e.g. lastOp's only parent is the virtual "root" node)
-            const parentId = parent !== null ? parent.id : lastOp.id;
-            this.#nodes[parentId].children.push(operation.id);
+            // Chain directly off the immediately preceding reconciliation so
+            // consecutive same-column reconciliations form a real linear
+            // chain (R1 -> R2 -> R3 -> ...) instead of all fanning out as
+            // siblings of the first one.
+            this.#nodes[lastOp.id].children.push(operation.id);
             this.#nodes[operation.id] = {
               children: [],
-              parents: [parentId],
+              parents: [lastOp.id],
               supportChildren: [],
               supportParents: [],
             };
@@ -380,7 +395,7 @@ export class Log {
               ].includes(lastOpDirectParent.operationType)
             ) {
               lastOpDirectParent = this.#getCurrentColParent(
-                lastOp,
+                lastOpDirectParent,
                 operation.columnName,
               );
             }
@@ -420,12 +435,9 @@ export class Log {
               lastOpDirectParent.operationType !== "MODIFICATION"
             ) {
               lastOpDirectParent = this.#getCurrentColParent(
-                lastOp,
+                lastOpDirectParent,
                 operation.columnName,
               );
-              if (lastOpDirectParent === null) {
-                break;
-              }
             }
             if (lastOpDirectParent === null) {
               this.#nodes["root"].children.push(operation.id);
@@ -461,7 +473,7 @@ export class Log {
             const candidates = this.#operations
               .filter(
                 (op) =>
-                  op.columnName === opColName &&
+                  normalizeColName(op.columnName) === opColName &&
                   op.operationType === "RECONCILIATION" &&
                   op.opNumber < operation.opNumber &&
                   this.#nodes[op.id],
@@ -524,10 +536,14 @@ export class Log {
     if (!operationNode || !Array.isArray(operationNode.parents)) {
       return null;
     }
+    const normalizedColName = normalizeColName(colName);
     for (const parent of operationNode.parents) {
       const currentParent = this.#getOpById(parent);
       // "root" is a virtual node with no matching operation record
-      if (currentParent && currentParent.columnName === colName) {
+      if (
+        currentParent &&
+        normalizeColName(currentParent.columnName) === normalizedColName
+      ) {
         return currentParent;
       }
     }
@@ -537,15 +553,16 @@ export class Log {
     return this.#operations.find((operation) => operation.id === id);
   }
   #updateLastOp(operation) {
-    if (!this.#columns[operation.columnName]) {
+    const colName = normalizeColName(operation.columnName);
+    if (!this.#columns[colName]) {
       // Column was not explicitly initialized (e.g. a pre-save historical op);
       // create a minimal entry so subsequent lookups don't crash.
-      this.#columns[operation.columnName] = {
+      this.#columns[colName] = {
         type: "original",
         lastOpId: null,
       };
     }
-    this.#columns[operation.columnName].lastOpId = operation.id;
+    this.#columns[colName].lastOpId = operation.id;
   }
 
   buildDependencyGraph() {
@@ -693,45 +710,104 @@ export class Log {
       this.#deleteFromPlainLog(removedTimestamps);
     }
   }
+
+  /**
+   * Re-append a previously removed operation to the log — used by the
+   * frontend's Redo to restore an operation that Undo had removed. Reuses
+   * the operation's original `id` (so repeated undo/redo cycles keep
+   * referring to the same logical operation) but assigns a fresh
+   * `opNumber`/`timestamp` so it lands at the current tip of the log.
+   *
+   * @param {object} operationRecord - The full operation object as previously
+   *   read from the log (id, operationType, columnName, reconciler/extender/
+   *   modifier, additionalData, createdColumns, etc.)
+   * @returns {object|null} the restored operation record, or null if it
+   *   could not be written (e.g. no log file yet for this table)
+   */
+  restoreOperation(operationRecord) {
+    if (!operationRecord || !operationRecord.id) return null;
+    const logFilePath = `public/logs/logs-${this.datasetId}-${this.tableId}.jsonl`;
+    if (!fs.existsSync(logFilePath)) return null;
+
+    const maxOpNumber = this.#operations.reduce(
+      (max, op) => Math.max(max, op.opNumber ?? 0),
+      0,
+    );
+    const restored = {
+      ...operationRecord,
+      opNumber: maxOpNumber + 1,
+      timestamp: new Date().toISOString(),
+    };
+    delete restored.consolidated;
+
+    fs.appendFileSync(logFilePath, JSON.stringify(restored) + "\n");
+    this.#appendToPlainLog(restored);
+
+    return restored;
+  }
+
+  /**
+   * Detect and remove redundant reconciliation operations: whenever a
+   * RECONCILIATION operation is directly followed, on the same column and
+   * with no other operation in between, by another RECONCILIATION
+   * operation, the earlier one is superseded and safe to drop — only the
+   * last reconciliation of each chain reflects the column's current state.
+   *
+   * Unlike deleteOperation(), this never removes the terminal op of a
+   * chain, so no downstream re-run is needed: the surviving op already
+   * reflects the final reconciled state.
+   *
+   * An intermediate reconciliation is also kept (never collapsed) if some
+   * other operation's cross-column "support" dependency points at it — e.g.
+   * an EXTENSION created while that reconciliation was the column's current
+   * state. supportParents/supportChildren aren't persisted; they're
+   * recomputed from scratch on every buildDependencyGraph() replay purely
+   * from surviving ops in opNumber order, so removing such a node would
+   * silently and permanently drop that dependency on the next rebuild
+   * (nothing re-links it to the surviving op).
+   *
+   * NOTE: buildDependencyGraph() must be called before this method.
+   *
+   * @returns {object[]} the operation records that were removed
+   */
   optimize() {
-    let nodesWhoCanBeDeleted = [];
+    const supportReferenced = new Set();
+    for (const node of Object.values(this.#nodes)) {
+      (node.supportParents ?? []).forEach((id) => supportReferenced.add(id));
+    }
 
-    let sortedOps = this.#operations.sort((a, b) => a.opNumber < b.opNumber);
-    for (const nodeId of Object.keys(this.#nodes)) {
-      const nodeDetails = this.#getOpById(nodeId);
-      const nodeChildrens = this.#nodes[nodeId].children;
+    const redundantIds = [];
+    for (const operation of this.#operations) {
+      if (operation.operationType !== "RECONCILIATION") continue;
+      if (supportReferenced.has(operation.id)) continue;
+      const node = this.#nodes[operation.id];
+      if (!node) continue;
 
-      if (nodeDetails !== undefined && nodeChildrens) {
-        let hasOnlyReconciliations = true;
-        for (const child of nodeChildrens) {
-          const currentChildren = this.#getOpById(child);
-          if (currentChildren.operationType !== "RECONCILIATION") {
-            hasOnlyReconciliations = false;
-            break;
-          }
-        }
-        if (
-          hasOnlyReconciliations &&
-          Array.isArray(nodeChildrens) &&
-          nodeChildrens.length > 0
-        ) {
-          let lastRec = nodeChildrens.reduce((prev, current) => {
-            return this.#getOpById(prev).opNumber >
-              this.#getOpById(current).opNumber
-              ? prev
-              : current;
-          });
-          nodesWhoCanBeDeleted.push(nodeId);
-          nodesWhoCanBeDeleted.push(
-            ...nodeChildrens.filter((item) => item !== lastRec),
+      const hasReconciliationChild = (node.children ?? []).some(
+        (childId) => {
+          const child = this.#getOpById(childId);
+          return (
+            child &&
+            child.operationType === "RECONCILIATION" &&
+            normalizeColName(child.columnName) ===
+              normalizeColName(operation.columnName)
           );
-        }
+        },
+      );
+      if (hasReconciliationChild) {
+        redundantIds.push(operation.id);
       }
     }
-    nodesWhoCanBeDeleted = nodesWhoCanBeDeleted.map((nodeId) =>
-      this.#getOpById(nodeId),
+
+    const removedOps = this.#operations.filter((op) =>
+      redundantIds.includes(op.id),
     );
-    console.log("nodes to delete", nodesWhoCanBeDeleted);
+
+    if (redundantIds.length > 0) {
+      this.deleteOperationsFromLog(redundantIds);
+    }
+
+    return removedOps;
   }
   /**
    * Remove lines from the plain-text .log file whose embedded ISO timestamp
@@ -757,5 +833,37 @@ export class Log {
     });
 
     fs.writeFileSync(plainLogPath, kept.join("\n") + (kept.length ? "\n" : ""));
+  }
+
+  /**
+   * Append a single restored operation to the companion plain-text .log
+   * file, mirroring the bracketed-timestamp format written for normal
+   * operations so #deleteFromPlainLog can still find/remove it later.
+   *
+   * @param {object} op - the restored operation record (already has its
+   *   final opNumber/timestamp assigned)
+   * @private
+   */
+  #appendToPlainLog(op) {
+    const plainLogPath = `public/logs/logs-${this.datasetId}-${this.tableId}.log`;
+    if (!fs.existsSync(plainLogPath)) return;
+
+    const serviceLabels = {
+      RECONCILIATION: "Reconciler",
+      EXTENSION: "Extender",
+      MODIFICATION: "Modifier",
+    };
+    const serviceLabel = serviceLabels[op.operationType] ?? "Service";
+    const serviceValue =
+      op.reconciler ?? op.extender ?? op.modifier ?? op.service ?? "";
+
+    let message = `[${op.timestamp}] -| OpType: ${op.operationType} -| DatasetId: ${this.datasetId} -| TableId: ${this.tableId}`;
+    if (op.columnName) message += ` -| ColumnName: ${op.columnName}`;
+    if (serviceValue) message += ` -| ${serviceLabel}: ${serviceValue}`;
+    if (op.additionalData) {
+      message += ` -| AdditionalData: ${JSON.stringify(op.additionalData)}`;
+    }
+
+    fs.appendFileSync(plainLogPath, message + "\n");
   }
 }

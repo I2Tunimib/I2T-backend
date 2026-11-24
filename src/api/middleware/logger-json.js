@@ -111,14 +111,17 @@ async function handleReconciliationRoute(req, res, url) {
     const body = req._rawBody || req.body;
 
     // Log only after the response is sent and only on success.
-    interceptResponse(res, async (_responseBody) => {
-      await LoggerJsonService.logReconciliation({
+    interceptResponse(res, async (responseBody) => {
+      const entry = await LoggerJsonService.logReconciliation({
         datasetId,
         tableId,
         columnName,
         service: requestedReconciliation,
         additionalData: body,
       });
+      if (entry && responseBody && typeof responseBody === "object") {
+        responseBody.operationLog = entry;
+      }
     });
   }
 }
@@ -138,7 +141,7 @@ async function handleExtenderRoute(req, res, url) {
       console.log(
         `📋 [JSON] EXTENSION LOGGED - Service: ${requestedExtender} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName} | CreatedColumns: ${createdColumns}`,
       );
-      await LoggerJsonService.logExtension({
+      const entry = await LoggerJsonService.logExtension({
         datasetId,
         tableId,
         columnName,
@@ -146,6 +149,9 @@ async function handleExtenderRoute(req, res, url) {
         additionalData: req._rawBody || req.body,
         createdColumns,
       });
+      if (entry && responseBody && typeof responseBody === "object") {
+        responseBody.operationLog = entry;
+      }
     });
   }
 }
@@ -165,7 +171,7 @@ async function handleModificationRoute(req, res, url) {
       console.log(
         `📋 [JSON] MODIFICATION LOGGED - Function: ${requestedModifier} | Dataset: ${datasetId} | Table: ${tableId} | Column: ${columnName} | CreatedColumns: ${createdColumns}`,
       );
-      await LoggerJsonService.logModification({
+      const entry = await LoggerJsonService.logModification({
         datasetId,
         tableId,
         columnName,
@@ -173,6 +179,9 @@ async function handleModificationRoute(req, res, url) {
         additionalData: req._rawBody || req.body,
         createdColumns,
       });
+      if (entry && responseBody && typeof responseBody === "object") {
+        responseBody.operationLog = entry;
+      }
     });
   }
 }
