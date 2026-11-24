@@ -10,6 +10,7 @@ import LoggerService from "../services/logger/logger.service.js";
 import LoggerJsonService from "../services/logger/logger-json.service.js";
 import { Log } from "../services/logger/Log.js";
 import reconciliationPipeline from "../services/reconciliation/reconciliation-pipeline.js";
+import { evaluatePolicySotw, shaclValidator } from "../../utils/policyEngineUtils.js";
 
 const {
   JWT_SECRET,
@@ -240,6 +241,23 @@ const DatasetsController = {
       res.json({
         datasets: Object.keys(datasets).map((key) => datasets[key]),
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+  updateDataset: async (req, res, next) => {
+    const { idDataset } = req.params;
+    const updateData = req.body;
+    try {
+      const user = await AuthService.verifyToken(req);
+      const dataset = await DatasetsService.findOneDataset(idDataset);
+
+      if (!DatasetsService.userCanEdit(dataset, user.id)) {
+        return res.status(401).json();
+      }
+
+      const updated = await DatasetsService.updateDataset(idDataset, updateData, user);
+      res.json(updated);
     } catch (err) {
       next(err);
     }
@@ -565,6 +583,26 @@ const DatasetsController = {
         return res.send(data);
       }
 
+      if (format === "sotwCsv") {
+        const dataset = await DatasetsService.findOneDataset(idDataset);
+        if (!DatasetsService.userCanView(dataset, user.id)) {
+          return res.status(401).json({});
+        }
+        const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
+        if (!DatasetsService.tableUserCanView(dataset, tableMeta, user.id)) {
+          return res.status(401).json({});
+        }
+
+        const csvData = await ExportService.sotwCsv({
+          id: idTable,
+          tableId: idTable,
+          datasetId: idDataset,
+        });
+
+        res.setHeader("Content-Type", "text/plain");
+        return res.send(csvData);
+      }
+
       const table = await DatasetsService.findTable(idDataset, idTable);
       const dataset = await DatasetsService.findOneDataset(idDataset);
       const tableMeta = await DatasetsService.findOneTable(idDataset, idTable);
@@ -579,6 +617,7 @@ const DatasetsController = {
 
       const tableInstance = {
         ...table?.table,
+        odrlPolicies: tableMeta?.odrlPolicies || null,
         permission: permissionType,
         visibility:
           tableMeta.visibility === "restricted" ||
@@ -612,6 +651,7 @@ const DatasetsController = {
         ...req.body,
         datasetId: idDataset,
         tableId: idTable,
+        tableName: tableMeta?.name,
         schemaData: schemaData,
         pipelineData: pipelineData,
         tableInstance: tableInstance,
@@ -1256,6 +1296,34 @@ const DatasetsController = {
       next(err);
     }
   },
+  evaluatePolicyOnSotw: async (req, res, next) => {
+    const { policy, sotw } = req.body;
+
+    try {
+      const result = await evaluatePolicySotw(policy, sotw);
+      return res.json(result);
+    } catch (err) {
+      console.error("Error evaluating policy on Policy Engine:", err.message);
+      return res.status(500).json({
+        error: "Failed to evaluate policy on Policy Engine",
+        details: err.message,
+      });
+    }
+  },
+  shaclPolicyValidator: async (req, res, next) => {
+    const { odrl } = req.body;
+
+    try {
+      const result = await shaclValidator(odrl);
+      return res.json(result);
+    } catch (err) {
+      console.error("Error validating policy on Policy Engine:", err.message);
+      return res.status(500).json({
+        error: "Failed to validating policy on Policy Engine",
+        details: err.message,
+      });
+    }
+  }
 };
 
 export default DatasetsController;

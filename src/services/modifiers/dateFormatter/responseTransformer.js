@@ -362,6 +362,7 @@ export default async (req, res) => {
     response.columns[newColumnName] = {
       label: `${newColumnName}`,
       kind: "literal",
+      datatype: "DATE",
       metadata: [],
       cells: {},
     };
@@ -431,12 +432,14 @@ export default async (req, res) => {
     response.columns[dateColName] = {
       label: dateColName,
       kind: "literal",
+      datatype: "DATE",
       metadata: [],
       cells: {},
     };
     response.columns[timeColName] = {
       label: timeColName,
       kind: "literal",
+      datatype: "DATE",
       metadata: [],
       cells: {},
     };
@@ -489,6 +492,7 @@ export default async (req, res) => {
     response.columns[newColumnName] = {
       label: outputMode === "update" ? columnToProcess : `${newColumnName}`,
       kind: "literal",
+      datatype: "DATE",
       metadata: [],
       cells: {},
     };

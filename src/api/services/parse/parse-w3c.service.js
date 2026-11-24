@@ -71,7 +71,7 @@ const ParseW3C = {
     };
 
     return Object.keys(header).reduce((columns, key) => {
-      const { label, context = [], metadata: metaRaw, ...rest } = header[key];
+      const { label, context = [], metadata: metaRaw, compliance, ...rest } = header[key];
 
       const {
         annotated,
@@ -88,6 +88,7 @@ const ParseW3C = {
         ...DEFAULT_HEADER_PROPERTIES,
         label,
         context: ParseW3C.getContext(context),
+        ...(compliance && { compliance }),
         ...(metaRaw &&
           metaRaw.length > 0 && {
             metadata: [
@@ -257,27 +258,50 @@ const ParseW3C = {
       let nCellsReconciliated = 0;
       let minMetaScore = 0;
       let maxMetaScore = 0;
-
-      let rowIndex = -1;
+      let complianceReports = [];
+      let rowIndex = 0;
 
       try {
         for await (const row of stream) {
-          if (rowIndex === -1) {
+          if (rowIndex === 0) {
             // to parse header and transform to initial state.
             // we need to add information after rows are parsed.
-            // The W3C export wraps per-column headers under a "columns" key
-            // (alongside "compliance"/"permission" metadata); unwrap it so we
-            // read th0/th1/... as the actual columns instead of treating
-            // "compliance"/"permission"/"columns" themselves as columns.
-            columns = ParseW3C.parseHeader(row.columns || row, reconcilers);
-            // pass to next iteration
-            rowIndex += 1;
-            continue;
+            if (row && (row.columns || row.compliance)) {
+              if (row.compliance) {
+                complianceReports = [{
+                  serviceName: row.compliance.service || "",
+                  result: [{
+                    table: {
+                      gdpr: row.compliance.status || row.compliance.gdpr || "",
+                      reasoning: row.compliance.reasoning || "",
+                      score: row.compliance.score || ""
+                    }
+                  }]
+                }];
+              }
+
+              if (row.columns) {
+                columns = ParseW3C.parseHeader(row.columns, reconcilers);
+              }
+              // pass to next iteration
+              rowIndex += 1;
+              continue;
+            }
           }
+            // parse row and update reconcilers count
+          if (rowIndex === 0 && !row.columns && !row.compliance) {
+            const syntheticHeader = Object.keys(row).reduce((acc, key, idx) => {
+              acc[`th${idx}`] = { label: key };
+              return acc;
+            }, {});
+            columns = ParseW3C.parseHeader(syntheticHeader, reconcilers);
+          }
+
+          const dataRowIndex = Object.keys(rows).length;
           // parse row and update reconcilers count
           const { nReconciliated, ...rest } = ParseW3C.parseRow(
             row,
-            rowIndex,
+            dataRowIndex,
             columns,
             minMetaScore,
             maxMetaScore,
@@ -292,7 +316,7 @@ const ParseW3C = {
         try {
           stream.end();
         } catch (e) {}
-        const data = { columns, rows, nCells, nCellsReconciliated };
+        const data = { columns, rows, nCells, nCellsReconciliated, complianceReports };
         return { status: "success", data };
       } catch (err) {
         console.error(

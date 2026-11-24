@@ -4,6 +4,7 @@ import fs from "fs";
 import axios from "axios";
 import { SemtParserService } from "./semtparser.service.js";
 import { buildHtmlReport, buildMarkdownReport } from '../../../utils/schemaReportUtils.js';
+import { generateSotwCsv } from "../../../utils/policyEngineUtils.js";
 
 const ExportService = {
   schema_w3c: async ({ columns, rows, tableInstance }) => {
@@ -243,6 +244,9 @@ const ExportService = {
       tableId: id,
       format: format === "notebook" ? "notebook" : "python",
     });
+  },
+  sotwCsv: async ({ id, datasetId }) => {
+    return await generateSotwCsv({ id, datasetId });
   },
 };
 

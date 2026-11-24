@@ -53,6 +53,8 @@ const ConfigController = {
         modifiers,
         complianceServices,
         errors,
+        policyEditorUrl: process.env.POLICY_EDITOR_URL,
+        policyEngineUrl: process.env.POLICY_ENGINE_URL,
         annotationQuickViewUrl: ANNOTATION_QUICKVIEW_URL,
       });
     } catch (err) {

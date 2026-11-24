@@ -1,6 +1,8 @@
 import atokaPeopleExtender from "./src/services/extenders/atokaPeopleExtender/index.js";
 
 export default {
+  policyEditorBaseUrl: process.env.POLICY_EDITOR_BASE_URL,
+  policyEngineBaseUrl: process.env.POLICY_ENGINE_BASE_URL,
   //Keycloak configuration
   keycloak: {
     enabled: true,
